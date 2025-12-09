@@ -51,7 +51,7 @@ MAKE_SIGNATURE(RandomSeed, "client.dll", "0F B6 1D ? ? ? ? 89 9D", 0x0);
 MAKE_SIGNATURE(SharedRandomInt, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 8B FA 41 8B D8", 0x0);
 MAKE_SIGNATURE(BInEndOfMatch, "client.dll", "48 83 EC ? 48 8B 05 ? ? ? ? 48 85 C0 74 ? 83 78 ? ? 75", 0x0);
 MAKE_SIGNATURE(GetClientInterpAmount, "client.dll", "40 53 48 83 EC ? 8B 05 ? ? ? ? A8 ? 75 ? 48 8B 0D ? ? ? ? 48 8D 15", 0x0);
-MAKE_SIGNATURE(LookupSequence, "client.dll", "48 89 5C 24 ? 55 48 83 EC ? 48 8B EA 48 8B D9 48 85 C9", 0x0);
+MAKE_SIGNATURE(LookupSequence, "client.dll", "55 8B EC 83 E4 F8 83 EC 08 56 8B F1 57 8B 7D 08", 0x0);
 
 namespace SDKUtils
 {
@@ -87,7 +87,7 @@ namespace SDKUtils
 		return reinterpret_cast<int*>(dest);
 	}
 
-	inline void GetProjectileFireSetupRebuilt(C_TFPlayer *player, Vec3 offset, const Vec3 &ang_in, Vec3 &pos_out, Vec3 &ang_out, bool pipes)
+	inline void GetProjectileFireSetupRebuilt(C_TFPlayer* player, Vec3 offset, const Vec3& ang_in, Vec3& pos_out, Vec3& ang_out, bool pipes)
 	{
 		static auto cl_flipviewmodels{ I::CVar->FindVar("cl_flipviewmodels") };
 
@@ -123,20 +123,20 @@ namespace SDKUtils
 
 	static float GetLerp()
 	{
-		static ConVar *cl_interp = I::CVar->FindVar("cl_interp");
-		static ConVar *cl_interp_ratio = I::CVar->FindVar("cl_interp_ratio");
-		static ConVar *cl_updaterate = I::CVar->FindVar("cl_updaterate");
+		static ConVar* cl_interp = I::CVar->FindVar("cl_interp");
+		static ConVar* cl_interp_ratio = I::CVar->FindVar("cl_interp_ratio");
+		static ConVar* cl_updaterate = I::CVar->FindVar("cl_updaterate");
 
 		return std::max(cl_interp->GetFloat(), cl_interp_ratio->GetFloat() / cl_updaterate->GetFloat());
 	}
 
-	static Vec3 GetHitboxPosFromMatrix(C_BaseAnimating *pAnimating, int nHitbox, matrix3x4_t *pMatrix)
+	static Vec3 GetHitboxPosFromMatrix(C_BaseAnimating* pAnimating, int nHitbox, matrix3x4_t* pMatrix)
 	{
 		auto pModel = pAnimating->GetModel();
 
 		if (!pModel)
 			return {};
-		
+
 		auto pHDR = I::ModelInfoClient->GetStudiomodel(pModel);
 
 		if (!pHDR)
@@ -157,7 +157,7 @@ namespace SDKUtils
 		return vOut;
 	}
 
-	static void GetHitboxInfoFromMatrix(C_BaseAnimating *pAnimating, int nHitbox, matrix3x4_t *pMatrix, Vec3 *pCenter, Vec3 *pMins, Vec3 *pMaxs)
+	static void GetHitboxInfoFromMatrix(C_BaseAnimating* pAnimating, int nHitbox, matrix3x4_t* pMatrix, Vec3* pCenter, Vec3* pMins, Vec3* pMaxs)
 	{
 		auto pModel = pAnimating->GetModel();
 
@@ -199,25 +199,25 @@ namespace SDKUtils
 
 	inline float GetGravity()
 	{
-		static ConVar *sv_gravity = I::CVar->FindVar("sv_gravity");
+		static ConVar* sv_gravity = I::CVar->FindVar("sv_gravity");
 		return sv_gravity ? sv_gravity->GetFloat() : 0.0f;
 	}
 
 	static float RandomFloat(float min_val, float max_val)
 	{
-		static auto fn = reinterpret_cast<float(__cdecl *)(float, float)>(GetProcAddress(GetModuleHandleA("vstdlib.dll"), "RandomFloat"));
+		static auto fn = reinterpret_cast<float(__cdecl*)(float, float)>(GetProcAddress(GetModuleHandleA("vstdlib.dll"), "RandomFloat"));
 		return fn(min_val, max_val);
 	}
 
 	static int RandomInt(int min_val, int max_val)
 	{
-		static auto fn = reinterpret_cast<int(__cdecl *)(int, int)>(GetProcAddress(GetModuleHandleA("vstdlib.dll"), "RandomInt"));
+		static auto fn = reinterpret_cast<int(__cdecl*)(int, int)>(GetProcAddress(GetModuleHandleA("vstdlib.dll"), "RandomInt"));
 		return fn(min_val, max_val);
 	}
 
 	static void RandomSeed(unsigned int seed)
 	{
-		static auto fn = reinterpret_cast<void(__cdecl *)(unsigned int)>(GetProcAddress(GetModuleHandleA("vstdlib.dll"), "RandomSeed"));
+		static auto fn = reinterpret_cast<void(__cdecl*)(unsigned int)>(GetProcAddress(GetModuleHandleA("vstdlib.dll"), "RandomSeed"));
 		fn(seed);
 	}
 
@@ -236,21 +236,21 @@ namespace SDKUtils
 		return nCommandNumber;
 	}
 
-	static int SharedRandomInt(const char *sharedname, int iMinVal, int iMaxVal, int additionalSeed)
+	static int SharedRandomInt(const char* sharedname, int iMinVal, int iMaxVal, int additionalSeed)
 	{
-		using fn = int(__fastcall *)(const char *, int, int, int);
+		using fn = int(__fastcall*)(const char*, int, int, int);
 		return reinterpret_cast<fn>(Signatures::SharedRandomInt.Get())(sharedname, iMinVal, iMaxVal, additionalSeed);
 	}
 
 	static bool BInEndOfMatch() {
-		return reinterpret_cast<bool(__cdecl *)()>(Signatures::BInEndOfMatch.Get())();
+		return reinterpret_cast<bool(__cdecl*)()>(Signatures::BInEndOfMatch.Get())();
 	}
 
-	static int LookupSequence(CStudioHdr *pstudiohdr, const char *label) {
-		return reinterpret_cast<int(__cdecl *)(CStudioHdr *, const char *)>(Signatures::LookupSequence.Get())(pstudiohdr, label);
+	static int LookupSequence(CStudioHdr* pstudiohdr, const char* label) {
+		return reinterpret_cast<int(__thiscall*)(CStudioHdr*, const char*)>(Signatures::LookupSequence.Get())(pstudiohdr, label);
 	};
 
-	static int CreateTextureFromArray(const unsigned char *rgba, int w, int h)
+	static int CreateTextureFromArray(const unsigned char* rgba, int w, int h)
 	{
 		int nTextureIdOut = I::MatSystemSurface->CreateNewTextureID(true);
 		I::MatSystemSurface->DrawSetTextureRGBAEx(nTextureIdOut, rgba, w, h, IMAGE_FORMAT_BGRA8888);
@@ -297,7 +297,7 @@ namespace G
 		float m_flSimulationTime = 0.0f;
 	};
 
-	inline std::map<C_BasePlayer *, VelFixRecord_t> mapVelFixRecords = {};
+	inline std::map<C_BasePlayer*, VelFixRecord_t> mapVelFixRecords = {};
 	inline std::unordered_map<int, float> WarpTimeStamps = {};
 
 	inline bool bFiring = false;
@@ -352,7 +352,7 @@ struct ShaderStencilState_t
 		m_nTestMask = m_nWriteMask = 0xFFFFFFFF;
 	}
 
-	void SetStencilState(IMatRenderContext *pRenderContext)
+	void SetStencilState(IMatRenderContext* pRenderContext)
 	{
 		pRenderContext->SetStencilEnable(m_bEnable);
 		pRenderContext->SetStencilFailOperation(m_FailOp);
@@ -367,12 +367,12 @@ struct ShaderStencilState_t
 
 inline float GetClientInterpAmount()
 {
-	return reinterpret_cast<float(__cdecl *)()>(Signatures::GetClientInterpAmount.Get())();
+	return reinterpret_cast<float(__cdecl*)()>(Signatures::GetClientInterpAmount.Get())();
 }
 
 inline double Plat_FloatTime()
 {
-	static auto fn{ reinterpret_cast<double(__cdecl *)()>(GetProcAddress(GetModuleHandleA("tier0.dll"), "Plat_FloatTime")) };
+	static auto fn{ reinterpret_cast<double(__cdecl*)()>(GetProcAddress(GetModuleHandleA("tier0.dll"), "Plat_FloatTime")) };
 
 	return fn();
 }

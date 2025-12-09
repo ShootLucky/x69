@@ -9,23 +9,141 @@
 #include <vector>
 #include <cstring> // for strcmp
 #define PI 3.14159265358979323846f
-#define TF_COND_STEALTHED 7
-static bool InCond(C_TFPlayer* pPlayer, int cond)
-{
-    return (pPlayer->m_nPlayerCond() & (1 << cond)) != 0;
-}
+#define TF_COND_STEALTHED 4
+
+struct Tracer {
+    Vec3 start;
+    Vec3 end;
+    float time;
+};
+static std::vector<Tracer> tracers;
 static bool IsFiniteVec(const Vec3& v)
 {
     return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
 }
+class BulletListener : public IGameEventListener2 {
+public:
+    void FireGameEvent(IGameEvent* event) {
+        if (!CFG::BulletTracer) return;
+        const char* name = event->GetName();
+        float curtime = I::GlobalVars->curtime;
+        if (strcmp(name, "bullet_impact") == 0 || strcmp(name, "tf_projectile_pipe") == 0) {
+            int userid = event->GetInt("userid");
+            if (userid == 0) return;
+            int index = I::EngineClient->GetPlayerForUserID(userid);
+            if (index < 1 || index > 32) return;
+            IClientEntity* ent = I::ClientEntityList->GetClientEntity(index);
+            if (!ent) return;
+            C_TFPlayer* shooter = ent->As<C_TFPlayer>();
+            if (!shooter || shooter->m_lifeState() != LIFE_ALIVE) return;
+            Vec3 end(event->GetFloat("x"), event->GetFloat("y"), event->GetFloat("z"));
+            // Get muzzle position
+            Vec3 start = shooter->GetShootPos();
+            // Fixed: Use m_hActiveWeapon() directly (inherited from C_BaseCombatCharacter via C_BasePlayer)
+            EHANDLE hActiveWeapon = shooter->m_hActiveWeapon();
+            if (hActiveWeapon.IsValid()) {
+                IClientEntity* pWeaponEnt = I::ClientEntityList->GetClientEntityFromHandle(hActiveWeapon);
+                if (pWeaponEnt) {
+                    C_TFWeaponBase* weapon = pWeaponEnt->As<C_TFWeaponBase>();
+                    if (weapon) {
+                        Vec3 absOrigin;
+                        QAngle absAngles;
+                        if (weapon->GetAttachment(1, absOrigin, absAngles)) { // Fixed: Pass QAngle reference
+                            start = absOrigin;
+                        }
+                    }
+                }
+            }
+            if (!IsFiniteVec(start) || !IsFiniteVec(end)) return;
+            tracers.emplace_back(Tracer{ start, end, curtime });
+            if (tracers.size() > 50) tracers.erase(tracers.begin());
+        }
+        else if (strcmp(name, "projectile_direct_hit") == 0) {
+            int attacker_idx = event->GetInt("attacker");
+            int victim_idx = event->GetInt("victim");
+            if (attacker_idx <= 0 || victim_idx <= 0) return;
+            IClientEntity* attacker_ent = I::ClientEntityList->GetClientEntity(attacker_idx);
+            if (!attacker_ent) return;
+            C_TFPlayer* shooter = attacker_ent->As<C_TFPlayer>();
+            if (!shooter || shooter->m_lifeState() != LIFE_ALIVE) return;
+            IClientEntity* victim_ent = I::ClientEntityList->GetClientEntity(victim_idx);
+            if (!victim_ent) return;
+            C_BaseEntity* victim_base = victim_ent->As<C_BaseEntity>();
+            if (!victim_base) return;
+            Vec3 end = victim_base->GetAbsOrigin();
+            // Get muzzle for start
+            Vec3 start = shooter->GetShootPos();
+            // Fixed: Use m_hActiveWeapon() directly (inherited from C_BaseCombatCharacter via C_BasePlayer)
+            EHANDLE hActiveWeapon = shooter->m_hActiveWeapon();
+            if (hActiveWeapon.IsValid()) {
+                IClientEntity* pWeaponEnt = I::ClientEntityList->GetClientEntityFromHandle(hActiveWeapon);
+                if (pWeaponEnt) {
+                    C_TFWeaponBase* weapon = pWeaponEnt->As<C_TFWeaponBase>();
+                    if (weapon) {
+                        Vec3 absOrigin;
+                        QAngle absAngles;
+                        if (weapon->GetAttachment(1, absOrigin, absAngles)) { // Fixed: Pass QAngle reference
+                            start = absOrigin;
+                        }
+                    }
+                }
+            }
+            if (!IsFiniteVec(start) || !IsFiniteVec(end)) return;
+            tracers.emplace_back(Tracer{ start, end, curtime });
+            if (tracers.size() > 50) tracers.erase(tracers.begin());
+        }
+        else if (strcmp(name, "arrow_impact") == 0) {
+            int shooter_userid = event->GetInt("shooter");
+            if (shooter_userid == 0) return;
+            int shooter_idx = I::EngineClient->GetPlayerForUserID(shooter_userid);
+            if (shooter_idx < 1 || shooter_idx > 32) return;
+            IClientEntity* shooter_ent = I::ClientEntityList->GetClientEntity(shooter_idx);
+            if (!shooter_ent) return;
+            C_TFPlayer* shooter = shooter_ent->As<C_TFPlayer>();
+            if (!shooter || shooter->m_lifeState() != LIFE_ALIVE) return;
+            Vec3 end(event->GetFloat("bonePositionX"), event->GetFloat("bonePositionY"), event->GetFloat("bonePositionZ"));
+            // Get muzzle for start
+            Vec3 start = shooter->GetShootPos();
+            // Fixed: Use m_hActiveWeapon() directly (inherited from C_BaseCombatCharacter via C_BasePlayer)
+            EHANDLE hActiveWeapon = shooter->m_hActiveWeapon();
+            if (hActiveWeapon.IsValid()) {
+                IClientEntity* pWeaponEnt = I::ClientEntityList->GetClientEntityFromHandle(hActiveWeapon);
+                if (pWeaponEnt) {
+                    C_TFWeaponBase* weapon = pWeaponEnt->As<C_TFWeaponBase>();
+                    if (weapon) {
+                        Vec3 absOrigin;
+                        QAngle absAngles;
+                        if (weapon->GetAttachment(1, absOrigin, absAngles)) { // Fixed: Pass QAngle reference
+                            start = absOrigin;
+                        }
+                    }
+                }
+            }
+            if (!IsFiniteVec(start) || !IsFiniteVec(end)) return;
+            tracers.emplace_back(Tracer{ start, end, curtime });
+            if (tracers.size() > 50) tracers.erase(tracers.begin());
+        }
+    }
+};
+static BulletListener g_BulletListener;
+static bool InCond(C_TFPlayer* pPlayer, int cond)
+{
+    return (pPlayer->m_nPlayerCond() & (1 << cond)) != 0;
+}
+
 void CESP::Init()
 {
     if (m_bInitialized) return;
     m_bInitialized = true;
+    I::GameEventManager->AddListener(&g_BulletListener, "bullet_impact", false);
+    I::GameEventManager->AddListener(&g_BulletListener, "tf_projectile_pipe", false);
+    I::GameEventManager->AddListener(&g_BulletListener, "projectile_direct_hit", false);
+    I::GameEventManager->AddListener(&g_BulletListener, "arrow_impact", false);
 }
 void CESP::Shutdown()
 {
     if (!m_bInitialized) return;
+    I::GameEventManager->RemoveListener(&g_BulletListener);
     m_bInitialized = false;
 }
 // Apenas desenha caixa (box ESP) — funções auxiliares simples
@@ -51,7 +169,7 @@ void DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr)
     // Draw main line
     H::Draw->Line(ax, ay, bx, by, clr);
     // Draw offset lines for anti-aliasing effect with lower alpha to make thinner appearance
-    Color_t aaClr = Color_t(clr.r, clr.g, clr.b, 30); // Adjusted alpha for subtle shine
+    Color_t aaClr = Color_t(clr.r, clr.g, clr.b, 150); // Increased alpha for brighter shine (from 50 to 150)
     float dx = static_cast<float>(bx - ax);
     float dy = static_cast<float>(by - ay);
     int off = 1;
@@ -70,6 +188,56 @@ void DrawScreenLine(const Vec3& a, const Vec3& b, const Color_t& clr)
 {
     DrawSmoothBoneLine(a, b, clr);
 }
+static void DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
+    if (!H::Draw) return;
+    Vec3 mins(-4.0f, -4.0f, -4.0f);
+    Vec3 maxs(4.0f, 4.0f, 4.0f);
+    Vec3 points[8] = {
+        { worldPos.x + mins.x, worldPos.y + mins.y, worldPos.z + mins.z },
+        { worldPos.x + mins.x, worldPos.y + maxs.y, worldPos.z + mins.z },
+        { worldPos.x + maxs.x, worldPos.y + maxs.y, worldPos.z + mins.z },
+        { worldPos.x + maxs.x, worldPos.y + mins.y, worldPos.z + mins.z },
+        { worldPos.x + maxs.x, worldPos.y + maxs.y, worldPos.z + maxs.z },
+        { worldPos.x + maxs.x, worldPos.y + mins.y, worldPos.z + maxs.z },
+        { worldPos.x + mins.x, worldPos.y + maxs.y, worldPos.z + maxs.z },
+        { worldPos.x + mins.x, worldPos.y + mins.y, worldPos.z + maxs.z }
+    };
+    Vec3 scr[8];
+    bool projOk = true;
+    for (int i = 0; i < 8; ++i) {
+        if (!H::Draw->W2S(points[i], scr[i])) {
+            projOk = false;
+            break;
+        }
+    }
+    if (!projOk) return;
+    // Compute 2D bbox for filled rect
+    float left = scr[0].x, top = scr[0].y, right = scr[0].x, bottom = scr[0].y;
+    for (int i = 1; i < 8; ++i) {
+        left = std::min(left, scr[i].x);
+        right = std::max(right, scr[i].x);
+        top = std::min(top, scr[i].y);
+        bottom = std::max(bottom, scr[i].y);
+    }
+    int w = static_cast<int>(std::round(right - left));
+    int h = static_cast<int>(std::round(bottom - top));
+    if (w > 0 && h > 0) {
+        // Filled with semi-transparent
+        Color_t fillClr(clr.r, clr.g, clr.b, 100);
+        H::Draw->Rect(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), w, h, fillClr);
+        // Outline thin
+        H::Draw->OutlinedRect(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), w, h, clr);
+    }
+    // Optional: Draw 3D wireframe for more 3D feel
+    const std::pair<int, int> edges[] = {
+        {0,1},{1,2},{2,3},{3,0},
+        {4,5},{5,6},{6,7},{7,4},
+        {0,4},{1,5},{2,6},{3,7}
+    };
+    for (auto& e : edges) {
+        DrawSmoothBoneLine(scr[e.first], scr[e.second], clr);
+    }
+}
 // --- Helper: desenha apenas o wireframe projetado (sem pontos/glow) ---
 static void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool withGlow = false)
 {
@@ -86,7 +254,7 @@ static void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool
     };
     if (withGlow)
     {
-        Color_t glowClr = Color_t(255, 180, 0, 10); // Warmer glow color (orange-ish) with slightly higher alpha for more shine
+        Color_t glowClr = Color_t(255, 255, 255, 20); // Brighter white glow with higher alpha
         for (auto& e : edges)
         {
             Vec3 A = proj[e.first];
@@ -116,7 +284,8 @@ static void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool
     {
         const Vec3& A = proj[e.first];
         const Vec3& B = proj[e.second];
-        DrawSmoothBoneLine(A, B, clr); // Use smooth lines with adjusted alpha
+        // Thinner: Draw only main line without full offsets, or reduce off to 0 (but for smoothness, keep but lower alpha)
+        DrawSmoothBoneLine(A, B, clr); // Already smoother; for thinner, could draw single line but keep for now
     }
 }
 static void DrawOffscreenArrow(const Vec3& origin, const Color_t& clr)
@@ -133,22 +302,35 @@ static void DrawOffscreenArrow(const Vec3& origin, const Color_t& clr)
     }
     int screenW, screenH;
     I::EngineClient->GetScreenSize(screenW, screenH);
-    Vec3 localEye = pLocal->GetEyePosition();
+    Vec3 localEye = pLocal->GetShootPos();
     Vec3 dir = origin - localEye;
     dir.Normalize();
     Vec3 viewAngles;
     I::EngineClient->GetViewAngles(viewAngles);
-    float angle = atan2(dir.y, dir.x) - viewAngles.y * PI / 180; // remove + PI/2 to fix direction
-    float radius = std::min(screenW, screenH) / 2.0f - 50.0f; // edge
+    float angle = atan2(dir.y, dir.x) - DEG2RAD(viewAngles.y); // fixed
+    float radius = 80.0f; // Reduced radius to be closer to center (smaller arrow near center)
     float centerX = screenW / 2.0f;
     float centerY = screenH / 2.0f;
     Vec3 arrowTip(centerX + radius * cos(angle), centerY + radius * sin(angle), 0);
     float sideAngle = PI / 6; // 30 deg
-    Vec3 side1(centerX + (radius - 20) * cos(angle + sideAngle), centerY + (radius - 20) * sin(angle + sideAngle), 0);
-    Vec3 side2(centerX + (radius - 20) * cos(angle - sideAngle), centerY + (radius - 20) * sin(angle - sideAngle), 0);
+    Vec3 side1(centerX + (radius - 10) * cos(angle + sideAngle), centerY + (radius - 10) * sin(angle + sideAngle), 0); // Smaller sides
+    Vec3 side2(centerX + (radius - 10) * cos(angle - sideAngle), centerY + (radius - 10) * sin(angle - sideAngle), 0);
     DrawSmoothBoneLine(arrowTip, side1, clr);
     DrawSmoothBoneLine(arrowTip, side2, clr);
     DrawSmoothBoneLine(side1, side2, clr);
+}
+static void DrawFOVCircle(float fov, const Color_t& color) {
+    if (fov <= 0.0f) return;
+    int w, h;
+    I::EngineClient->GetScreenSize(w, h);
+    float centerX = w / 2.0f;
+    float centerY = h / 2.0f;
+    float viewFOV = 90.0f;
+    ConVar* fov_desired = I::CVar->FindVar("fov_desired");
+    if (fov_desired) viewFOV = fov_desired->GetFloat();
+    if (viewFOV <= 0.0f) viewFOV = 90.0f;
+    float radius = tanf(DEG2RAD(fov) / 2.0f) / tanf(DEG2RAD(viewFOV) / 2.0f) * (h / 2.0f);
+    H::Draw->OutlinedCircle(centerX, centerY, radius, 64, color);
 }
 // ---------------------------------------------------------------
 void CESP::Run()
@@ -159,6 +341,26 @@ void CESP::Run()
     H::Draw->UpdateW2SMatrix();
     auto pLocal = H::Entities->GetLocal();
     if (!pLocal) return;
+    // Bullet Tracers drawing
+    if (CFG::BulletTracer) {
+        float curtime = I::GlobalVars->curtime;
+        // Clean old tracers
+        tracers.erase(std::remove_if(tracers.begin(), tracers.end(), [curtime](const Tracer& tr) {
+            return (curtime - tr.time) > 3.0f;
+            }), tracers.end());
+        Color_t tracerClr(255, 255, 255, 255); // White
+        for (const auto& tr : tracers) {
+            Vec3 startScr, endScr;
+            if (!H::Draw->W2S(tr.start, startScr) || !H::Draw->W2S(tr.end, endScr)) continue;
+            int type = CFG::BulletTracer_Type; // Assume 0=line, 1=line+box, 2=box
+            if (type == 0 || type == 1) { // line or line+box
+                DrawSmoothBoneLine(startScr, endScr, tracerClr);
+            }
+            if (type == 1 || type == 2) { // line+box or box
+                DrawImpactBox(tr.end, tracerClr);
+            }
+        }
+    }
     const int maxClients = I::EngineClient->GetMaxClients();
     const int highestIndex = I::ClientEntityList->GetHighestEntityIndex();
     const int end = std::max(maxClients, highestIndex);
@@ -166,6 +368,8 @@ void CESP::Run()
     pLocal->IsInValidTeam(&localTeam);
     int localIndex = I::EngineClient->GetLocalPlayer();
     auto pResource = GetTFPlayerResource();
+    // Opcional: Atualiza cache para objetivos (como Intel) - baseado em Amalgam
+    H::Entities->UpdateCache();
     for (int i = 0; i <= end; ++i)
     {
         IClientEntity* pClientEnt = I::ClientEntityList->GetClientEntity(i);
@@ -173,7 +377,7 @@ void CESP::Run()
         C_BaseEntity* pBase = pClientEnt->As<C_BaseEntity>();
         if (!pBase) continue;
         if (pClientEnt->IsDormant()) continue;
-        int classID = static_cast<int>(pBase->GetClassId());
+        const char* networkName = pBase->GetClientClass()->m_pNetworkName;
         int team = pBase->m_iTeamNum();
         bool isTeammate = (localTeam != -1 && team == localTeam);
         bool isEnemy = !isTeammate && team > 1; // >1 to exclude spec
@@ -188,7 +392,7 @@ void CESP::Run()
         int health = 0;
         int max_health = 100;
         Color_t clr = Color_t(255, 255, 255, 255);
-        if (classID == static_cast<int>(ETFClassIds::CTFPlayer))
+        if (strcmp(networkName, "CTFPlayer") == 0)
         {
             C_TFPlayer* pPlayer = static_cast<C_TFPlayer*>(pBase);
             if (!pPlayer) continue;
@@ -216,14 +420,14 @@ void CESP::Run()
             if (max_health <= 0) max_health = 100;
             health = std::clamp(health, 0, max_health);
         }
-        else if (classID == static_cast<int>(ETFClassIds::CObjectSentrygun) || classID == static_cast<int>(ETFClassIds::CObjectDispenser) || classID == static_cast<int>(ETFClassIds::CObjectTeleporter))
+        else if (strcmp(networkName, "CObjectSentrygun") == 0 || strcmp(networkName, "CObjectDispenser") == 0 || strcmp(networkName, "CObjectTeleporter") == 0)
         {
             if (!CFG::ESP_Build && !CFG::ESP_ChamsBuild && !CFG::ESP_SkeletonBuild) continue;
             isBuilding = true;
             if (CFG::ESP_BuildOnlyEnemy && !isEnemy) continue;
             clr = (team == TF_TEAM_RED ? Color_t(255, 0, 0, 255) : Color_t(0, 0, 255, 255));
-            if (classID == static_cast<int>(ETFClassIds::CObjectSentrygun)) name = "Sentry";
-            else if (classID == static_cast<int>(ETFClassIds::CObjectDispenser)) name = "Dispenser";
+            if (strcmp(networkName, "CObjectSentrygun") == 0) name = "Sentry";
+            else if (strcmp(networkName, "CObjectDispenser") == 0) name = "Dispenser";
             else name = "Teleporter";
             int level = *reinterpret_cast<int*>((uintptr_t)pBase + NetVars::GetNetVar("CBaseObject", "m_iUpgradeLevel"));
             name += " Lvl " + std::to_string(level);
@@ -233,13 +437,20 @@ void CESP::Run()
             drawSkeleton = CFG::ESP_SkeletonBuild && !(CFG::ESP_SkeletonBuildOnlyEnemy && !isEnemy);
             drawChamsBox = CFG::ESP_ChamsBuild && !(CFG::ESP_ChamsBuildOnlyEnemy && !isEnemy);
         }
-        else if (classID == static_cast<int>(ETFClassIds::CTFAmmoPack) ||
-            strstr(pBase->GetClientClass()->m_pNetworkName, "item_healthkit_") ||
-            strstr(pBase->GetClientClass()->m_pNetworkName, "item_ammopack_"))
+        else if ((strcmp(networkName, "CTFAmmoPack") == 0 ||
+            strstr(networkName, "item_healthkit_") ||
+            strstr(networkName, "item_ammopack_")) ||
+            (strcmp(networkName, "CBaseAnimating") == 0 &&
+                (H::Entities->IsHealthPack(pBase) || H::Entities->IsAmmoPack(pBase))))
         {
-            if (!CFG::ESP_Pickups) continue;
+            // Skip se for debris de building (ex: sentry broken -> debris model similar a ammo, mas class != CTFAmmoPack e sem strstr)
+            if (strstr(networkName, "debris") && !strstr(networkName, "item_")) continue;
+            if (!CFG::ESP_Pickups && !CFG::ESP_ChamsPickups && !CFG::ESP_SkeletonPickups) continue; // Assumindo CFGs para chams/skeleton em pickups
             isPickup = true;
-            if (classID == static_cast<int>(ETFClassIds::CTFAmmoPack) || strstr(pBase->GetClientClass()->m_pNetworkName, "ammopack")) {
+            bool isAmmo = (strcmp(networkName, "CTFAmmoPack") == 0 ||
+                strstr(networkName, "ammopack") ||
+                H::Entities->IsAmmoPack(pBase));
+            if (isAmmo) {
                 name = "Ammo";
                 clr = Color_t(255, 215, 0, 255); // gold
             }
@@ -247,66 +458,62 @@ void CESP::Run()
                 name = "Medkit";
                 clr = Color_t(0, 255, 0, 255); // green
             }
-            drawESP = true;
-            drawSkeleton = false;
-            drawChamsBox = false;
+            drawESP = CFG::ESP_Pickups;
+            drawSkeleton = CFG::ESP_SkeletonPickups; // Nova CFG assumida
+            drawChamsBox = CFG::ESP_ChamsPickups; // Nova CFG assumida
         }
-        else if (strcmp(pBase->GetClientClass()->m_pNetworkName, "CTFItemTeamFlag") == 0 ||
-            strcmp(pBase->GetClientClass()->m_pNetworkName, "CItemTeamFlag") == 0 ||
-            strcmp(pBase->GetClientClass()->m_pNetworkName, "item_teamflag") == 0)
+        else if (strcmp(networkName, "CCaptureFlag") == 0 ||
+            strcmp(networkName, "CTFItemTeamFlag") == 0 ||
+            strcmp(networkName, "CItemTeamFlag") == 0 ||
+            strcmp(networkName, "item_teamflag") == 0 ||
+            strcmp(networkName, "CTeamControlPoint") == 0 ||
+            strcmp(networkName, "CFuncTrackTrain") == 0)
         {
-            if (!CFG::ESP_CaptureFlag) continue;
+            if (CFG::ESP_Team && isTeammate) continue; // Respeita opção de team: skip se for do time local
             isFlag = true;
-            name = "Flag";
+            if (strstr(networkName, "flag") || strstr(networkName, "Flag")) name = "Intel";
+            else if (strcmp(networkName, "CTeamControlPoint") == 0) name = "Control Point";
+            else name = "Payload Cart";
             drawESP = CFG::ESP_CaptureFlag;
-            drawSkeleton = CFG::ESP_SkeletonCaptureFlag;
+            // Chams e Skeleton independentes de drawESP
             drawChamsBox = CFG::ESP_ChamsCaptureFlag;
-            clr = Color_t(255, 255, 0, 255); // yellow
-        }
-        else if (strcmp(pBase->GetClientClass()->m_pNetworkName, "CTeamControlPoint") == 0)
-        {
-            if (!CFG::ESP_CaptureFlag) continue;
-            isFlag = true;
-            name = "Control Point";
-            drawESP = CFG::ESP_CaptureFlag;
             drawSkeleton = CFG::ESP_SkeletonCaptureFlag;
-            drawChamsBox = CFG::ESP_ChamsCaptureFlag;
             clr = Color_t(255, 255, 0, 255); // yellow
-        }
-        else if (strcmp(pBase->GetClientClass()->m_pNetworkName, "CFuncTrackTrain") == 0)
-        {
-            const model_t* model = pBase->GetModel();
-            if (model)
-            {
-                const char* mdlName = I::ModelInfoClient->GetModelName(model);
-                if (strstr(mdlName, "cart") || strstr(mdlName, "train"))
-                {
-                    if (!CFG::ESP_CaptureFlag) continue;
-                    isFlag = true;
-                    name = "Payload Cart";
-                    drawESP = CFG::ESP_CaptureFlag;
-                    drawSkeleton = CFG::ESP_SkeletonCaptureFlag;
-                    drawChamsBox = CFG::ESP_ChamsCaptureFlag;
-                    clr = Color_t(255, 255, 0, 255); // yellow
-                }
-            }
         }
         else continue;
         Vec3 origin = pBase->GetAbsOrigin();
         Vec3 mins = pBase->m_vecMins();
         Vec3 maxs = pBase->m_vecMaxs();
         if (!IsFiniteVec(mins) || !IsFiniteVec(maxs) || !IsFiniteVec(origin)) continue;
-        if (mins.Length() == 0.0f && maxs.Length() == 0.0f) {
-            if (isPickup) {
-                mins = Vec3(-10, -10, 0);
-                maxs = Vec3(10, 10, 20);
+        // Melhoria para box dinâmico: Use hull_min/max do modelo se mins/maxs da entity forem zero/inválidos
+        if (mins.Length() < 0.1f || maxs.Length() < 0.1f) { // Threshold para detectar bbox inválido
+            if (auto pAnim = pBase->As<C_BaseAnimating>()) {
+                auto pModel = pAnim->GetModel();
+                if (pModel) {
+                    auto pStudio = I::ModelInfoClient->GetStudiomodel(pModel);
+                    if (pStudio) {
+                        mins = pStudio->hull_min;
+                        maxs = pStudio->hull_max;
+                        // Fallback hardcoded se hull ainda inválido (raro)
+                        if (mins.Length() < 0.1f || maxs.Length() < 0.1f) {
+                            if (isPickup) {
+                                mins = Vec3(-8, -8, 0);
+                                maxs = Vec3(8, 8, 16);
+                            }
+                            else if (isFlag) {
+                                mins = Vec3(-12, -6, 0);
+                                maxs = Vec3(12, 6, 30);
+                            }
+                            else if (isPlayer) {
+                                mins = Vec3(-24, -24, 0);
+                                maxs = Vec3(24, 24, 82);
+                            }
+                        }
+                    }
+                }
             }
-            else if (isFlag) {
-                mins = Vec3(-20, -20, 0);
-                maxs = Vec3(20, 20, 80);
-            }
-            else continue;
         }
+        // Removido: Atualiza cache para objetivos (como Intel) - baseado em Amalgam
         mins += origin;
         maxs += origin;
         Vec3 points[8] = {
@@ -342,7 +549,7 @@ void CESP::Run()
         int width = static_cast<int>(std::round(right - left));
         int height = static_cast<int>(std::round(bottom - top));
         if (width < 2 || height < 2) continue;
-        if (drawESP) {
+        if (drawESP || drawChamsBox || drawSkeleton) { // Desenhar mesmo se só chams/skeleton
             bool draw_box = CFG::ESP_Box;
             bool draw_name = CFG::ESP_Name;
             if (isPickup) {
@@ -353,7 +560,7 @@ void CESP::Run()
                 draw_box = CFG::ESP_BoxCapture;
                 draw_name = CFG::ESP_NameCapture;
             }
-            if (draw_box)
+            if (draw_box && drawESP) // Box só se drawESP
                 DrawBox(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), width, height, clr);
             if (draw_name && !name.empty())
             {
@@ -373,25 +580,17 @@ void CESP::Run()
                     float ratio = static_cast<float>(health) / static_cast<float>(max_health);
                     int fillH = static_cast<int>(std::round((barH - 2) * ratio));
                     int fillY = barY + (barH - 1) - fillH;
-                    for (int dy = 0; dy < barH; dy++)
-                    {
-                        int y = barY + dy;
-                        if (y >= fillY && y < fillY + fillH)
-                        {
-                            float posRatio = static_cast<float>(dy) / static_cast<float>(barH - 1);
-                            int red = static_cast<int>(255 * posRatio);
-                            int green = static_cast<int>(255 * (1.0f - posRatio));
-                            Color_t c(static_cast<unsigned char>(red), static_cast<unsigned char>(green), 0, 255);
-                            H::Draw->Rect(barX + 1, y, 2, 1, c);
-                        }
-                    }
+                    int red = static_cast<int>(255 * (1.0f - ratio));
+                    int green = static_cast<int>(255 * ratio);
+                    Color_t c(static_cast<unsigned char>(red), static_cast<unsigned char>(green), 0, 255);
+                    H::Draw->Rect(barX + 1, fillY, 2, fillH, c);
                 }
             }
         }
         if (CFG::ESP_Offscreen && isEnemy && anyFailed && isPlayer) {
             DrawOffscreenArrow(origin, clr);
         }
-        if ((drawSkeleton || drawChamsBox) && (isPlayer || isBuilding || isFlag))
+        if ((drawSkeleton || drawChamsBox) && (isPlayer || isBuilding || isFlag || isPickup)) // Adicionado isPickup
         {
             matrix3x4_t boneMatrix[128] = {};
             const int maxBones = 128;
@@ -494,8 +693,7 @@ void CESP::Run()
                                 { pHeadBox->bbmin.x, pHeadBox->bbmax.y, pHeadBox->bbmax.z },
                                 { pHeadBox->bbmin.x, pHeadBox->bbmin.y, pHeadBox->bbmax.z }
                             };
-                            for (int c = 0; c < 8; ++c)
-                                Math::VectorTransform(modelHeadCorners[c], boneMatrix[headBoneIdx], headCorners[c]);
+                            for (int c = 0; c < 8; ++c) Math::VectorTransform(modelHeadCorners[c], boneMatrix[headBoneIdx], headCorners[c]);
                             Vec3 headScr[8];
                             bool headProjOk = true;
                             for (int c = 0; c < 8; ++c)
@@ -561,7 +759,14 @@ void CESP::Run()
             }
             if (drawChamsBox)
             {
-                Color_t wireColor = clr;
+                // Estilo moderno: Adiciona pulso animado para brilho (sem outline branco/glow externo)
+                float pulse = (std::sin(I::GlobalVars->curtime * 4.0f) + 1.0f) * 0.5f * 0.3f + 0.7f; // Pulso suave entre 0.7 e 1.0 para brilho moderno
+                Color_t wireColor = Color_t(
+                    static_cast<unsigned char>(std::min(255.0f, clr.r * pulse)),
+                    static_cast<unsigned char>(std::min(255.0f, clr.g * pulse)),
+                    static_cast<unsigned char>(std::min(255.0f, clr.b * pulse)),
+                    clr.a
+                );
                 for (int hb = 0; hb < hitboxCount; ++hb)
                 {
                     auto pBox = pHDR->pHitbox(hb, hitboxSet);
@@ -598,7 +803,46 @@ void CESP::Run()
                         }
                     }
                     if (fail) continue;
-                    DrawProjectedHitboxWire(scr, wireColor, false); // No glow
+                    DrawProjectedHitboxWire(scr, wireColor, false); // Desativado glow/outiline branco para estilo limpo e moderno
+                }
+            }
+        }
+    }
+    if (CFG::Aimbot_DrawFOV) {
+        DrawFOVCircle(CFG::Aimbot_FOV, Color_t(0, 0, 255, 255)); // blue for aimbot
+        DrawFOVCircle(CFG::Aimbot_Projectile_FOV, Color_t(0, 255, 0, 255)); // green for project
+        DrawFOVCircle(CFG::Aimbot_Melee_FOV, Color_t(255, 0, 0, 255)); // red for melee
+    }
+    if (CFG::Visuals_Draw_Movement_Path_Style != 0 && CFG::Aimbot_Projectile_Enable) {
+        if (G::nTargetIndex > 0) {
+            C_TFPlayer* pTarget = reinterpret_cast<C_TFPlayer*>(I::ClientEntityList->GetClientEntity(G::nTargetIndex));
+            if (pTarget && pTarget->m_lifeState() == LIFE_ALIVE && pTarget->m_iTeamNum() != pLocal->m_iTeamNum()) {
+                Vec3 pos = pTarget->GetAbsOrigin();
+                Vec3 vel = pTarget->m_vecVelocity();
+                float dt = I::GlobalVars->interval_per_tick;
+                float gravity = SDKUtils::GetGravity() * dt;
+                Color_t clr = Color_t(255, 255, 0, 255); // yellow
+                int style = CFG::Visuals_Draw_Movement_Path_Style;
+                int ticks = CFG::Aimbot_Projectile_TicksPredict;
+                Vec3 lastPos = pos;
+                Vec3 lastScr;
+                H::Draw->W2S(lastPos, lastScr);
+                for (int t = 1; t <= ticks; t++) {
+                    pos += vel * dt;
+                    if (!(pTarget->m_fFlags() & FL_ONGROUND)) {
+                        vel.z -= gravity;
+                    }
+                    Vec3 scr;
+                    if (H::Draw->W2S(pos, scr)) {
+                        if (style == 1) { // line
+                            DrawSmoothBoneLine(lastScr, scr, clr);
+                        }
+                        else if (style == 2) { // dotted
+                            H::Draw->FilledCircle(scr.x, scr.y, 2, 8, clr);
+                        }
+                    }
+                    lastPos = pos;
+                    lastScr = scr;
                 }
             }
         }

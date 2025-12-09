@@ -5,6 +5,7 @@
 #include "../../Utils/SignatureManager/SignatureManager.h"
 #include "multiplayer_animstate.h"
 
+MAKE_SIGNATURE(CTFPlayer_IsPlayerOnSteamFriendsList, "client.dll", "40 57 48 81 EC ? ? ? ? 48 8B FA E8", 0x0);
 MAKE_SIGNATURE(TeamFortress_CalculateMaxSpeed, "client.dll", "88 54 24 ? 53 55", 0x0);
 MAKE_SIGNATURE(CTFPlayer_UpdateClientSideAnimation, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B F8 48 85 C0 74 ? 48 8B 00 48 8B CF FF 90 ? ? ? ? 84 C0 75 ? 33 FF 48 3B DF", 0x0);
 MAKE_SIGNATURE(CTFPlayer_UpdateWearables, "client.dll", "40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B 03 48 8B CB FF 90 ? ? ? ? 4C 8D 0D ? ? ? ? C7 44 24 ? ? ? ? ? 48 8B C8 4C 8D 05 ? ? ? ? 33 D2 E8 ? ? ? ? 48 85 C0", 0x0);
@@ -193,11 +194,6 @@ public:
 
 	int GetMaxHealth() {
 		return reinterpret_cast<int(__fastcall*)(void*)>(Memory::GetVFunc(this, 107))(this);
-	}
-
-	Vec3 GetEyePosition()
-	{
-		return GetAbsOrigin() + m_vecViewOffset();
 	}
 
 	Vec3 GetShootPos() {

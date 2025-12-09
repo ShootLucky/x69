@@ -4,19 +4,86 @@ namespace CFG
 {
 #pragma region Aimbot
 	CFGVAR(Aimbot_Enable, false);
-	// 0 = hold (use key while held or mouse click), 1 = toggle (press to toggle), 2 = always on
 	CFGVAR(Aimbot_Key, 0);
 	CFGVAR(Aimbot_KeyMode, 0);
-	CFGVAR(Aimbot_FOV, 10.f);
+	CFGVAR(Aimbot_FOV, 45.f);
 	CFGVAR(Aimbot_VisibleCheck, true);
 	CFGVAR(Aimbot_TeamCheck, true);
 	CFGVAR(Aimbot_SilentAim, false);
 	CFGVAR(Aimbot_Aimlock, false);
-	CFGVAR(Aimbot_Hitscan_Smoothing, 10.f);
+	CFGVAR(Aimbot_Hitscan_Smoothing, 5.f);
 	CFGVAR(Aimbot_Hitbox_Head, false);
 	CFGVAR(Aimbot_Hitbox_Neck, false);
 	CFGVAR(Aimbot_Hitbox_Chest, false);
 	CFGVAR(Aimbot_Hitbox_Pelvis, false);
+	CFGVAR(Aimbot_Hitbox_Body, false);
+	CFGVAR(Aimbot_Hitbox_Buildings, false);
+	CFGVAR(Aimbot_Projectile_Enable, false);
+	CFGVAR(Aimbot_Projectile_Key, 0);
+	CFGVAR(Aimbot_Projectile_FOV, 45.f);
+	CFGVAR(Aimbot_Projectile_Smoothing, 5.f);
+	CFGVAR(Aimbot_Projectile_TicksPredict, 0);
+	CFGVAR(Aimbot_Projectile_TeamCheck, true);
+	CFGVAR(Aimbot_Projectile_Mode, 0);
+	CFGVAR(Aimbot_ActiveShoot, false);
+	CFGVAR(Aimbot_ActiveLagRecords, false);
+	CFGVAR(Aimbot_AutoShoot, false);
+	CFGVAR(Aimbot_TargetStickies, false);
+	CFGVAR(Aimbot_SmoothAutoShoot, false);
+	CFGVAR(Aimbot_WaitForHeadshot, false);
+	CFGVAR(Aimbot_AutoScope, false);
+	CFGVAR(Aimbot_MinigunTapfire, false);
+	CFGVAR(Aimbot_WaitForCharge, false)
+		CFGVAR(Aimbot_Target_Players, true);
+	CFGVAR(Aimbot_Target_Buildings, false);
+	CFGVAR(Aimbot_Ignore_Friends, true);
+	CFGVAR(Aimbot_Ignore_Invulnerable, true);
+	CFGVAR(Aimbot_ActiveMelee, false);
+	CFGVAR(Aimbot_Hitscan_Mode, 0);
+	CFGVAR(Aimbot_Hitscan_Sort, 0);
+	CFGVAR(Aimbot_TargetLagRecords, false);
+	CFGVAR(Aimbot_WalkToTarget, false);
+	CFGVAR(Aimbot_WhitelistTeammates, false);
+	CFGVAR(Aimbot_BaimAfterShots, 0);
+	CFGVAR(Aimbot_BaimAfterHealth, 0.18f);
+	CFGVAR(Aimbot_Hitbox_Sort, 0);
+	CFGVAR(Aimbot_Projectile_NoSpread, false);//Aimbot_Projectile_AimPosition Aimbot_Projectile_BBoxMultipoint
+	CFGVAR(Aimbot_Projectile_AutoDoubleDonk, false);
+	CFGVAR(Aimbot_Projectile_AimPosition, 0);
+	CFGVAR(Aimbot_Projectile_GroundStrafePrediction, false);
+	CFGVAR(Aimbot_Projectile_AdvancedAirStrafe, false);
+	CFGVAR(Aimbot_Projectile_RocketSplashPoint, false);
+	CFGVAR(Aimbot_Projectile_Sort, 0);
+	CFGVAR(Aimbot_Projectile_PredictionMethod, 0);
+	CFGVAR(Aimbot_Projectile_MaxSimulationTime, 1.5f);
+	CFGVAR(Aimbot_Projectile_MaxTargets, 1);
+	CFGVAR(Aimbot_Melee_Active, false);
+	CFGVAR(Aimbot_Melee_AlwaysActive, false);
+	CFGVAR(Aimbot_Melee_TargetLagRecords, false);
+	CFGVAR(Aimbot_Melee_PredictSwing, false);
+	CFGVAR(Aimbot_Melee_WalkToTarget, false);
+	CFGVAR(Aimbot_Melee_WhipTeammates, false);
+	CFGVAR(Aimbot_Melee_Key, 0);
+	CFGVAR(Aimbot_Melee_Mode, 0);
+	CFGVAR(Aimbot_Melee_Sort, 0);
+	CFGVAR(Aimbot_Melee_FOV, 45.f);
+	CFGVAR(Aimbot_Melee_Smoothing, 5.f);
+	CFGVAR(Aimbot_Melee_PredictSwingTime, 0.18f);
+	CFGVAR(Aimbot_Ignore_Invisible, true);
+	CFGVAR(Aimbot_Ignore_Taunting, true);
+	CFGVAR(Aimbot_Projectile_Active, false);
+	CFGVAR(Aimbot_Projectile_Advanced_Head_Aim, false);
+	CFGVAR(Aimbot_Projectile_Auto_Double_Donk, false);
+	CFGVAR(Aimbot_Projectile_BBox_Multipoint, false);
+	CFGVAR(Aimbot_Projectile_Max_Processing_Targets, 5);
+	CFGVAR(Aimbot_Projectile_Max_Simulation_Time, 2.0f);
+	CFGVAR(Aimbot_Projectile_Rocket_Splash, false);
+	CFGVAR(Aimbot_Hitscan_Hitbox, 0);
+	CFGVAR(Aimbot_Hitscan_Scan_Head, true);
+	CFGVAR(Aimbot_Hitscan_Scan_Body, true);
+	CFGVAR(Aimbot_Hitscan_Scan_Arms, false);
+	CFGVAR(Aimbot_Hitscan_Scan_Legs, false);
+	CFGVAR(Aimbot_Hitscan_Scan_Buildings, true);
 #pragma endregion
 #pragma region ESP
 	CFGVAR(ESP_Enable, false);
@@ -35,32 +102,37 @@ namespace CFG
 	CFGVAR(ESP_ChamsBuildOnlyEnemy, false);
 	CFGVAR(ESP_ChamsHideCloaked, false);
 	CFGVAR(ESP_ChamsLocalPlayer, false);
+	CFGVAR(ESP_ChamsPickups, false); // Adicionado: Chams para pickups
+	CFGVAR(ESP_ChamsCaptureFlag, false);
 	CFGVAR(ESP_HideCloaked, false);
 	CFGVAR(ESP_LocalPlayer, false);
 	CFGVAR(ESP_Offscreen, false);
 	CFGVAR(ESP_Pickups, false);
 	CFGVAR(ESP_PickupsBox, false);
 	CFGVAR(ESP_PickupsName, false);
+	CFGVAR(Aimbot_DrawFOV, false);
 	CFGVAR(ESP_SkeletonBuild, false);
 	CFGVAR(ESP_SkeletonBuildOnlyEnemy, false);
 	CFGVAR(ESP_SkeletonHideCloaked, false);
 	CFGVAR(ESP_SkeletonLocalPlayer, false);
+	CFGVAR(ESP_SkeletonPickups, false); // Adicionado: Skeleton para pickups
 	CFGVAR(ESP_SkeletonTeam, false);
-	// Radio options
-	CFGVAR(Radio, false);
-	CFGVAR(Radio_LocalMusic, false);
-	CFGVAR(Radio_Internacional, false);
-	CFGVAR(Radio_Country, 0);
+	CFGVAR(ESP_SkeletonCaptureFlag, false);
 	// Bullet Tracer options
 	CFGVAR(BulletTracer, false);
 	CFGVAR(BulletTracer_Type, 0); // 0=line, 1=line+box, 2=box
 	CFGVAR(ESP_BoxCapture, false);
 	CFGVAR(ESP_NameCapture, false);
-	CFGVAR(ESP_ChamsCaptureFlag, false);
-	CFGVAR(ESP_SkeletonCaptureFlag, false);
+	CFGVAR(Visuals_Draw_Movement_Path_Style, 0);
 #pragma endregion
 #pragma region Misc
-	CFGVAR(Misc_AutoJump, true);
+	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization
+	CFGVAR(Misc_SetupBones_Optimization, false);
+	CFGVAR(Radio, false);
+	CFGVAR(Radio_LocalMusic, false);
+	CFGVAR(Radio_Internacional, false);
+	CFGVAR(Radio_Country, 0);
+	CFGVAR(Misc_AccuracyImprovements, true);
 #pragma endregion
 #pragma region TEST
 	CFGVAR(Important_checkbox, true);

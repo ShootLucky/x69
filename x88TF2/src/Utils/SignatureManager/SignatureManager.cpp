@@ -4,7 +4,7 @@
 #include <string>
 #include <format>
 
-CSignature::CSignature(const char *sDLLName, const char *sSignature, int nOffset, const char *sName)
+CSignature::CSignature(const char* sDLLName, const char* sSignature, int nOffset, const char* sName)
 {
 	m_pszDLLName = sDLLName;
 	m_pszSignature = sSignature;

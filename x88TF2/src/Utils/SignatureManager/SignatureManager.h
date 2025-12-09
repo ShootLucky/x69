@@ -8,13 +8,13 @@ class CSignature
 {
 private:
 	std::uintptr_t m_dwVal = 0x0;
-	const char *m_pszDLLName = {};
-	const char *m_pszSignature = {};
+	const char* m_pszDLLName = {};
+	const char* m_pszSignature = {};
 	int m_nOffset = 0;
-	const char *m_pszName = {};
+	const char* m_pszName = {};
 
 public:
-	CSignature(const char *sDLLName, const char *sSignature, int nOffset, const char *sName);
+	CSignature(const char* sDLLName, const char* sSignature, int nOffset, const char* sName);
 
 	void Initialize();
 
@@ -29,12 +29,12 @@ public:
 class CSignatureManager
 {
 private:
-	std::vector<CSignature *> m_vecSignatures = {};
+	std::vector<CSignature*> m_vecSignatures = {};
 
 public:
 	void InitializeAllSignatures();
 
-	inline void AddSignature(CSignature *pSignature)
+	inline void AddSignature(CSignature* pSignature)
 	{
 		m_vecSignatures.push_back(pSignature);
 	}

@@ -35,6 +35,11 @@
     <ClCompile Include="src\Features\Aimbot\AimbotHitscan\AimbotHitscan.cpp" />
     <ClCompile Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.cpp" />
     <ClCompile Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
+    <ClCompile Include="src\Features\LagRecords\Backtrack.cpp" />
+    <ClCompile Include="src\Features\Predict\Predict.cpp" />
+    <ClCompile Include="src\Features\ProjectileSim\ProjectileSim.cpp" />
+    <ClCompile Include="src\SDK\TF2\c_tf_player.cpp" />
+    <ClCompile Include="src\Features\PlayersList\PlayersList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -195,5 +200,9 @@
     <ClInclude Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.h" />
     <ClInclude Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.h" />
     <ClInclude Include="src\Features\Aimbot\AimbotCommon\AimbotCommon.h" />
+    <ClInclude Include="src\Features\LagRecords\Backtrack.h" />
+    <ClInclude Include="src\Features\Predict\Predict.h" />
+    <ClInclude Include="src\Features\ProjectileSim\ProjectileSim.h" />
+    <ClInclude Include="src\Features\PlayersList\PlayersList.h" />
   </ItemGroup>
 </Project>

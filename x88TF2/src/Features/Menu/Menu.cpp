@@ -9,9 +9,11 @@
 #include <string>
 #include <filesystem> // For directory iteration
 #include "../src/SDK/SDK.h" // Assuming this includes necessary SDK headers for IGameEventListener2 and related
-static int item_count = 1;
-static int item_countx3 = 12;
-const int EVENT_DEBUG_ID_INIT = 42; // Define the missing constant, common placeholder value
+#include "../../Features/PlayersList/PlayersList.h" // Added for Playerlist
+namespace menu {
+    static int item_count = 1;
+    static int item_countx3 = 12;
+}
 // Helper para obter nome legível de uma virtual-key
 static std::string GetKeyName(int vk)
 {
@@ -65,7 +67,7 @@ void text(int x, int* y, std::string text, text_type type, int alpha = 255) {
     H::Draw->String(H::Fonts->Get(EFonts::Menu), x, *y, text_color, POS_DEFAULT, text.c_str());
     *y += 15;
 }
-void checkbox(int x, int* y, std::string text, bool* option, bool special = false, int alpha = 255, int item_counts = 1) {
+void checkbox(int x, int* y, std::string text, bool* option, bool special = false, int alpha = 255, int item_counts = 1, int entindex = 0, PlayerPriority* pri = nullptr) {
     if (menu::menu_locked)
         alpha = static_cast<int>(alpha * 0.f);
     int text_width = 0, text_height = 0;
@@ -74,12 +76,54 @@ void checkbox(int x, int* y, std::string text, bool* option, bool special = fals
     MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
-    if (item_counts == item_count && !menu::menu_locked) {
-        if (GetAsyncKeyState(VK_RETURN) & 1)
+    if (item_counts == menu::item_count && !menu::menu_locked) {
+        if (GetAsyncKeyState(VK_LEFT) & 1 || GetAsyncKeyState(VK_RIGHT) & 1) {
             *option = !*option;
+            if (entindex > 0 && pri != nullptr) {
+                F::Players->Mark(entindex, *pri);
+            }
+        }
     }
     int value_x = x + text_width + 10; // Dynamic position: after the text width + padding
     H::Draw->String(font, value_x, *y, *option ? (special ? Color_t(255, 10, 10, 255) : Color_t(31, 144, 217, 255)) : Color_t(255, 255, 255, 255), POS_DEFAULT, (*option ? "ON" : "OFF"));
+    *y += 15;
+}
+void checkbox_with_key(int x, int* y, std::string text, bool* option, int* key, bool special = false, int alpha = 255, int item_counts = 1) {
+    if (menu::menu_locked)
+        alpha = static_cast<int>(alpha * 0.f);
+    int text_width = 0, text_height = 0;
+    const CFont& font = H::Fonts->Get(EFonts::Menu);
+    wchar_t wtext[1024] = {};
+    MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
+    I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
+    H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
+    static bool waiting_for_key[256] = {}; // Support multiple keybinds
+    if (item_counts == menu::item_count && !menu::menu_locked) {
+        if (GetAsyncKeyState(VK_LEFT) & 1 || GetAsyncKeyState(VK_RIGHT) & 1)
+            *option = !*option;
+        if (GetAsyncKeyState(VK_RETURN) & 1) {
+            waiting_for_key[item_counts] = true;
+        }
+    }
+    std::string display = waiting_for_key[item_counts] ? "Press any key..." : GetKeyName(*key);
+    std::string key_str = " [" + display + "]";
+    int key_x = x + text_width + 10;
+    H::Draw->String(font, key_x, *y, Color_t(180, 240, 255, 255), POS_DEFAULT, key_str.c_str());
+    wchar_t wkey[1024] = {};
+    MultiByteToWideChar(CP_UTF8, 0, key_str.c_str(), -1, wkey, 1024);
+    int key_width = 0, key_height = 0;
+    I::MatSystemSurface->GetTextSize(font.m_dwFont, wkey, key_width, key_height);
+    int value_x = key_x + key_width + 10;
+    H::Draw->String(font, value_x, *y, *option ? (special ? Color_t(255, 10, 10, 255) : Color_t(31, 144, 217, 255)) : Color_t(255, 255, 255, 255), POS_DEFAULT, (*option ? "ON" : "OFF"));
+    if (waiting_for_key[item_counts] && !menu::menu_locked) {
+        for (int vk = 1; vk <= 254; ++vk) {
+            if (GetAsyncKeyState(vk) & 0x8000) {
+                *key = vk;
+                waiting_for_key[item_counts] = false;
+                break;
+            }
+        }
+    }
     *y += 15;
 }
 void combo(int x, int* y, std::string text, int* option, std::vector<std::string> aliases, bool special = false, int alpha = 255, int item_counts = 1) {
@@ -91,15 +135,21 @@ void combo(int x, int* y, std::string text, int* option, std::vector<std::string
     MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
-    if (item_counts == item_count && !menu::menu_locked) {
-        if ((GetAsyncKeyState(VK_RIGHT) & 1))
-            *option = (*option + 1) % static_cast<int>(aliases.size());
-        if ((GetAsyncKeyState(VK_LEFT) & 1))
-            *option = (*option - 1 + static_cast<int>(aliases.size())) % static_cast<int>(aliases.size());
+    static bool editing_combo[256] = {}; // Support multiple combos
+    if (item_counts == menu::item_count && !menu::menu_locked) {
+        if (GetAsyncKeyState(VK_RETURN) & 1) {
+            editing_combo[item_counts] = !editing_combo[item_counts];
+        }
+        if (editing_combo[item_counts]) {
+            if ((GetAsyncKeyState(VK_RIGHT) & 1))
+                *option = (*option + 1) % static_cast<int>(aliases.size());
+            if ((GetAsyncKeyState(VK_LEFT) & 1))
+                *option = (*option - 1 + static_cast<int>(aliases.size())) % static_cast<int>(aliases.size());
+        }
     }
     int value_x = x + text_width + 10; // Dynamic position: after the text width + padding
     std::string display = "< " + aliases.at(*option) + " >";
-    H::Draw->String(font, value_x, *y, (*option != 0 ? (special ? Color_t(255, 10, 10, 255) : Color_t(31, 144, 217, 255)) : Color_t(255, 255, 255, 255)), POS_DEFAULT, display.c_str());
+    H::Draw->String(font, value_x, *y, Color_t(31, 144, 217, 255), POS_DEFAULT, display.c_str());
     *y += 15;
 }
 void int_slider(int x, int* y, std::string text, int& option, int min_value = 0, int max_value = 0, int item_counts = 1) {
@@ -112,7 +162,7 @@ void int_slider(int x, int* y, std::string text, int& option, int min_value = 0,
     MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
-    if (item_counts == item_count && !menu::menu_locked) {
+    if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_LEFT) & 1)
             option -= 1;
         else if (GetAsyncKeyState(VK_RIGHT) & 1)
@@ -135,7 +185,7 @@ void float_slider(int x, int* y, std::string text, float& option, float min_valu
     MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
-    if (item_counts == item_count && !menu::menu_locked) {
+    if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_LEFT) & 1)
             option -= 0.1f;
         else if (GetAsyncKeyState(VK_RIGHT) & 1)
@@ -160,24 +210,21 @@ void key_selector(int x, int* y, int* key, int item_counts = 1) {
     MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
-    static bool waitingForKey = false;
-    static int waitingItemIndex = -1;
-    if (item_counts == item_count && !menu::menu_locked) {
+    static bool waiting_for_key[256] = {}; // Support multiple
+    if (item_counts == menu::item_count && !menu::menu_locked) {
         if ((GetAsyncKeyState(VK_RETURN) & 1) || (GetAsyncKeyState(VK_RIGHT) & 1)) {
-            waitingForKey = true;
-            waitingItemIndex = item_counts;
+            waiting_for_key[item_counts] = true;
         }
     }
-    std::string display = (waitingForKey && waitingItemIndex == item_counts) ? "Press any key..." : GetKeyName(*key);
+    std::string display = waiting_for_key[item_counts] ? "Press any key..." : GetKeyName(*key);
     std::string value_str = "[" + display + "]";
     int value_x = x + text_width + 10;
     H::Draw->String(font, value_x, *y, Color_t(180, 240, 255, 255), POS_DEFAULT, value_str.c_str());
-    if (waitingForKey && waitingItemIndex == item_counts && !menu::menu_locked) {
+    if (waiting_for_key[item_counts] && !menu::menu_locked) {
         for (int vk = 1; vk <= 254; ++vk) {
             if (GetAsyncKeyState(vk) & 0x8000) {
                 *key = vk;
-                waitingForKey = false;
-                waitingItemIndex = -1;
+                waiting_for_key[item_counts] = false;
                 break;
             }
         }
@@ -185,9 +232,10 @@ void key_selector(int x, int* y, int* key, int item_counts = 1) {
     *y += 15;
 }
 // Simple text input function (basic, allows alphanumeric input)
-static std::string config_name = "default"; // Default config name
-static bool editing_config_name = false;
-static int editing_item_index = -1;
+namespace menu {
+    static std::string config_name = "default"; // Default config name
+    static bool editing_config_name[256] = {}; // Support multiple
+}
 void text_input(int x, int* y, std::string text_label, std::string& input_str, int item_counts = 1) {
     int alpha = 255;
     if (menu::menu_locked)
@@ -198,16 +246,15 @@ void text_input(int x, int* y, std::string text_label, std::string& input_str, i
     MultiByteToWideChar(CP_UTF8, 0, text_label.c_str(), -1, wtext, 1024);
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text_label.c_str());
-    if (item_counts == item_count && !menu::menu_locked) {
+    if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_RETURN) & 1) {
-            editing_config_name = !editing_config_name;
-            editing_item_index = editing_config_name ? item_counts : -1;
+            menu::editing_config_name[item_counts] = !menu::editing_config_name[item_counts];
         }
     }
-    std::string display = (editing_config_name && editing_item_index == item_counts) ? input_str + "_" : input_str;
+    std::string display = menu::editing_config_name[item_counts] ? input_str + "*" : input_str;
     int value_x = x + text_width + 10;
     H::Draw->String(font, value_x, *y, Color_t(180, 240, 255, 255), POS_DEFAULT, display.c_str());
-    if (editing_config_name && editing_item_index == item_counts && !menu::menu_locked) {
+    if (menu::editing_config_name[item_counts] && !menu::menu_locked) {
         for (int vk = 'A'; vk <= 'Z'; ++vk) {
             if (GetAsyncKeyState(vk) & 1) {
                 input_str += static_cast<char>(vk);
@@ -238,7 +285,7 @@ void button(int x, int* y, std::string text, void (*action)(), int item_counts =
     MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
-    if (item_counts == item_count && !menu::menu_locked) {
+    if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_RIGHT) & 1) {
             action();
         }
@@ -262,29 +309,32 @@ static std::vector<std::string> RefreshConfigFiles() {
     return files;
 }
 // Config functions implementation
-static std::vector<std::string> config_files;
-static int current_config_index = 0;
+namespace menu {
+    static std::vector<std::string> config_files;
+    static int current_config_index = 0;
+}
+// Config functions implementation
 void LoadSelectedConfig() {
-    if (config_files.empty() || current_config_index < 0 || current_config_index >= static_cast<int>(config_files.size())) return;
-    std::string selected_name = config_files[current_config_index];
+    if (menu::config_files.empty() || menu::current_config_index < 0 || menu::current_config_index >= static_cast<int>(menu::config_files.size())) return;
+    std::string selected_name = menu::config_files[menu::current_config_index];
     std::filesystem::path config_path = U::Storage->GetConfigFolder() / (selected_name + ".json");
     Config::Load(config_path);
 }
 void CreateConfig() {
-    if (config_name.empty()) return;
-    std::filesystem::path config_path = U::Storage->GetConfigFolder() / (config_name + ".json");
+    if (menu::config_name.empty()) return;
+    std::filesystem::path config_path = U::Storage->GetConfigFolder() / (menu::config_name + ".json");
     Config::Save(config_path);
     // Refresh and select the new config
-    config_files = RefreshConfigFiles();
-    auto it = std::find(config_files.begin(), config_files.end(), config_name);
-    if (it != config_files.end()) {
-        current_config_index = static_cast<int>(std::distance(config_files.begin(), it));
+    menu::config_files = ::RefreshConfigFiles();
+    auto it = std::find(menu::config_files.begin(), menu::config_files.end(), menu::config_name);
+    if (it != menu::config_files.end()) {
+        menu::current_config_index = static_cast<int>(std::distance(menu::config_files.begin(), it));
     }
-    config_name.clear(); // Clear after create
+    menu::config_name.clear(); // Clear after create
 }
 void SaveConfig() {
-    if (config_files.empty() || current_config_index < 0 || current_config_index >= static_cast<int>(config_files.size())) return;
-    std::string selected_name = config_files[current_config_index];
+    if (menu::config_files.empty() || menu::current_config_index < 0 || menu::current_config_index >= static_cast<int>(menu::config_files.size())) return;
+    std::string selected_name = menu::config_files[menu::current_config_index];
     std::filesystem::path config_path = U::Storage->GetConfigFolder() / (selected_name + ".json");
     Config::Save(config_path);
 }
@@ -345,7 +395,7 @@ void menu::render() {
             first_time = false;
         }
         else {
-            animated_hello = full_hello.substr(0, char_count) + "_";
+            animated_hello = full_hello.substr(0, char_count) + "*";
         }
         text(x, &y, animated_hello, text_type::info);
     }
@@ -359,76 +409,324 @@ void menu::render() {
         return; // Skip the rest, only hello is already drawn
     }
     int menu_start_y = 40; // Start menu below the hello texts to avoid overlap
-    static bool showAimbotKeyOptions = false;
     static bool showHitboxOptions = false;
     const CFont& font = H::Fonts->Get(EFonts::Menu);
     if (!menu::menu_locked)
     {
-        if (GetAsyncKeyState(VK_DOWN) & 1) item_count += 1;
-        if (GetAsyncKeyState(VK_UP) & 1) item_count -= 1;
+        if (GetAsyncKeyState(VK_DOWN) & 1) menu::item_count += 1;
+        if (GetAsyncKeyState(VK_UP) & 1) menu::item_count -= 1;
     }
     y = menu_start_y;
     int current_item = 1;
-    if (!menu_locked && item_count == current_item) {
+    if (!menu_locked && menu::item_count == current_item) {
         H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
     }
-    combo(x, &y, "Section", &CFG::CurrentSection, std::vector<std::string>{ "Legit", "Visual", "Misc" }, false, 255, current_item++);
+    combo(x, &y, "Section", &CFG::CurrentSection, std::vector<std::string>{ "Legit", "Visual", "Playerlist", "Misc" }, false, 255, current_item++);
     int max_items = current_item - 1;
     if (CFG::CurrentSection == 0) {
-        // LEGIT / AIMBOT: show only the requested options
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        // LEGIT / AIMBOT: divided into columns - Aimbot on left, Project Aimbot on center, Aimbot Combat on right
+        int x_left = 150;
+        int x_center = 350;
+        int x_right = 550;
+        int start_y = y;
+        y = start_y;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x, &y, "Aimbot (master)", &CFG::Aimbot_Enable, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        checkbox_with_key(x_left, &y, "Aimbot", &CFG::Aimbot_Enable, &CFG::Aimbot_Key, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x, &y, "Aimlock", &CFG::Aimbot_Aimlock, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        combo(x_left, &y, "Key Mode", &CFG::Aimbot_KeyMode, std::vector<std::string>{"Hold", "Toggle"}, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        float_slider(x, &y, "Aimbot FOV", CFG::Aimbot_FOV, 0.f, 180.f, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        checkbox(x_left, &y, "Visible Check", &CFG::Aimbot_VisibleCheck, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        float_slider(x, &y, "Smooth (smaller = faster)", CFG::Aimbot_Hitscan_Smoothing, 1.f, 50.f, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        checkbox(x_left, &y, "Team Check", &CFG::Aimbot_TeamCheck, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x, &y, "Hitbox Options (press LEFT/RIGHT)", &showHitboxOptions, false, 255, current_item++);
+        checkbox(x_left, &y, "Silent Aim", &CFG::Aimbot_SilentAim, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Aimlock", &CFG::Aimbot_Aimlock, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Target Lag Records", &CFG::Aimbot_TargetLagRecords, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Target Stickies", &CFG::Aimbot_TargetStickies, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Smooth Auto Shoot", &CFG::Aimbot_SmoothAutoShoot, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Wait For Headshot", &CFG::Aimbot_WaitForHeadshot, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Wait For Charge", &CFG::Aimbot_WaitForCharge, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Minigun Tapfire", &CFG::Aimbot_MinigunTapfire, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_left, &y, "Aim Type", &CFG::Aimbot_Hitscan_Mode, std::vector<std::string>{ "Aimlock", "Silent" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_left, &y, "Hitbox Sort", &CFG::Aimbot_Hitbox_Sort, std::vector<std::string>{ "Auto", "Damage", "Accuracy" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_left, &y, "Preferred Hitbox", &CFG::Aimbot_Hitscan_Hitbox, std::vector<std::string>{ "Head", "Pelvis", "Auto" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_left, &y, "Sort", &CFG::Aimbot_Hitscan_Sort, std::vector<std::string>{ "Distance", "FOV", "Health" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Hitbox options", &showHitboxOptions, false, 255, current_item++);
         if (showHitboxOptions) {
-            if (!menu_locked && item_count == current_item) {
-                H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x, &y, "Head", &CFG::Aimbot_Hitbox_Head, false, 255, current_item++);
-            if (!menu_locked && item_count == current_item) {
-                H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            checkbox(x_left, &y, "Head", &CFG::Aimbot_Hitbox_Head, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x, &y, "Neck", &CFG::Aimbot_Hitbox_Neck, false, 255, current_item++);
-            if (!menu_locked && item_count == current_item) {
-                H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            checkbox(x_left, &y, "Neck", &CFG::Aimbot_Hitbox_Neck, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x, &y, "Chest", &CFG::Aimbot_Hitbox_Chest, false, 255, current_item++);
-            if (!menu_locked && item_count == current_item) {
-                H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            checkbox(x_left, &y, "Chest", &CFG::Aimbot_Hitbox_Chest, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x, &y, "Pelvis", &CFG::Aimbot_Hitbox_Pelvis, false, 255, current_item++);
+            checkbox(x_left, &y, "Pelvis", &CFG::Aimbot_Hitbox_Pelvis, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Body", &CFG::Aimbot_Hitbox_Body, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Buildings", &CFG::Aimbot_Hitbox_Buildings, false, 255, current_item++);
         }
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        static bool showScanOptions = false;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x, &y, "Keybind Options (press LEFT/RIGHT)", &showAimbotKeyOptions, false, 255, current_item++);
-        if (showAimbotKeyOptions) {
-            if (!menu_locked && item_count == current_item) {
-                H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        checkbox(x_left, &y, "Scan options", &showScanOptions, false, 255, current_item++);
+        if (showScanOptions) {
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            combo(x, &y, "Key Mode", &CFG::Aimbot_KeyMode, std::vector<std::string>{ "Hold", "Toggle", "Always" }, false, 255, current_item++);
-            if (!menu_locked && item_count == current_item) {
-                H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            checkbox(x_left, &y, "Scan Head", &CFG::Aimbot_Hitscan_Scan_Head, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            key_selector(x, &y, &CFG::Aimbot_Key, current_item++);
-            text(x, &y, "Tip: set 0 to use mouse click (IN_ATTACK)", text_type::extra);
+            checkbox(x_left, &y, "Scan Body", &CFG::Aimbot_Hitscan_Scan_Body, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Scan Arms", &CFG::Aimbot_Hitscan_Scan_Arms, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Scan Legs", &CFG::Aimbot_Hitscan_Scan_Legs, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Scan Buildings", &CFG::Aimbot_Hitscan_Scan_Buildings, false, 255, current_item++);
         }
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_left, &y, "FOV", CFG::Aimbot_FOV, 0.f, 180.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_left, &y, "Smoothing", CFG::Aimbot_Hitscan_Smoothing, 0.f, 20.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Ignore Invisible", &CFG::Aimbot_Ignore_Invisible, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Ignore Taunting", &CFG::Aimbot_Ignore_Taunting, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Active Shoot", &CFG::Aimbot_ActiveShoot, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Active Lag Records", &CFG::Aimbot_ActiveLagRecords, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Auto Shoot", &CFG::Aimbot_AutoShoot, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Auto Scope", &CFG::Aimbot_AutoScope, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Target Players", &CFG::Aimbot_Target_Players, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Target Buildings", &CFG::Aimbot_Target_Buildings, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Ignore Friends", &CFG::Aimbot_Ignore_Friends, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Ignore Invulnerable", &CFG::Aimbot_Ignore_Invulnerable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Whitelist Teammates", &CFG::Aimbot_WhitelistTeammates, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        int_slider(x_left, &y, "Baim After Shots", CFG::Aimbot_BaimAfterShots, 0, 20, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_left, &y, "Baim After Health", CFG::Aimbot_BaimAfterHealth, 0.f, 1.f, current_item++);
+        // Project Aimbot (center column)
+        y = start_y;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox_with_key(x_center, &y, "Projectile Aimbot", &CFG::Aimbot_Projectile_Enable, &CFG::Aimbot_Projectile_Key, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "No Spread", &CFG::Aimbot_Projectile_NoSpread, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "Auto Double Donk", &CFG::Aimbot_Projectile_AutoDoubleDonk, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "Advanced Air Strafe", &CFG::Aimbot_Projectile_AdvancedAirStrafe, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "Ground Strafe Prediction", &CFG::Aimbot_Projectile_GroundStrafePrediction, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "BBox Multipoint", &CFG::Aimbot_Projectile_BBox_Multipoint, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "Rocket Splash Preferred", &CFG::Aimbot_Projectile_RocketSplashPoint, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_center, &y, "Aim Type", &CFG::Aimbot_Projectile_Mode, std::vector<std::string>{ "Aimlock", "Silent" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_center, &y, "Aim Position", &CFG::Aimbot_Projectile_AimPosition, std::vector<std::string>{ "Auto" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_center, &y, "Sort", &CFG::Aimbot_Projectile_Sort, std::vector<std::string>{ "Auto", "Distance", "FOV" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_center, &y, "Method", &CFG::Aimbot_Projectile_PredictionMethod, std::vector<std::string>{ "Full Acceleration", "Velocity" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        int_slider(x_center, &y, "Ticks Predict", CFG::Aimbot_Projectile_TicksPredict, 0, 128, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "Team Check", &CFG::Aimbot_Projectile_TeamCheck, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_center, &y, "FOV", CFG::Aimbot_Projectile_FOV, 0.f, 180.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_center, &y, "Smoothing", CFG::Aimbot_Projectile_Smoothing, 0.f, 20.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_center, &y, "Max Simulation Time", CFG::Aimbot_Projectile_MaxSimulationTime, 0.f, 5.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        int_slider(x_center, &y, "Max Targets", CFG::Aimbot_Projectile_MaxTargets, 1, 10, current_item++);
+        // Melee (right column)
+        y = start_y;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox_with_key(x_right, &y, "Melee Aimbot", &CFG::Aimbot_Melee_Active, &CFG::Aimbot_Melee_Key, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right, &y, "Always Active", &CFG::Aimbot_Melee_AlwaysActive, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right, &y, "Target Lag Records", &CFG::Aimbot_Melee_TargetLagRecords, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right, &y, "Predict Swing", &CFG::Aimbot_Melee_PredictSwing, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right, &y, "Walk To Target", &CFG::Aimbot_Melee_WalkToTarget, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right, &y, "Whip Teammates", &CFG::Aimbot_Melee_WhipTeammates, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_right, &y, "Aim Type", &CFG::Aimbot_Melee_Mode, std::vector<std::string>{ "Aimlock", "Silent" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_right, &y, "Sort", &CFG::Aimbot_Melee_Sort, std::vector<std::string>{ "Distance", "FOV", "Health" }, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_right, &y, "FOV", CFG::Aimbot_Melee_FOV, 0.f, 180.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_right, &y, "Smoothing", CFG::Aimbot_Melee_Smoothing, 0.f, 20.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_right, &y, "Predict Swing Time", CFG::Aimbot_Melee_PredictSwingTime, 0.f, 1.f, current_item++);
         max_items = current_item - 1;
     }
     else if (CFG::CurrentSection == 1) {
@@ -439,86 +737,226 @@ void menu::render() {
         int start_y = y;
         // ESP column (left)
         y = start_y;
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "ESP", &CFG::ESP_Enable, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "ESP Team", &CFG::ESP_Team, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Box", &CFG::ESP_Box, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Name", &CFG::ESP_Name, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Health", &CFG::ESP_Health, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Pickups", &CFG::ESP_Pickups, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Pickups Box", &CFG::ESP_PickupsBox, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Pickups Name", &CFG::ESP_PickupsName, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "ESP Build", &CFG::ESP_Build, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "ESP Build Only Enemy", &CFG::ESP_BuildOnlyEnemy, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "ESP Capture Flag", &CFG::ESP_CaptureFlag, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Box Capture", &CFG::ESP_BoxCapture, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Name Capture", &CFG::ESP_NameCapture, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "ESP Local Player", &CFG::ESP_LocalPlayer, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "ESP Offscreen", &CFG::ESP_Offscreen, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "ESP Hide Cloaked", &CFG::ESP_HideCloaked, false, 255, current_item++);
-        // Add spacing before Radio options
+        // Add spacing before Aimbot FOV
         y += 30; // Increased spacing for better distance
-        // Radio options under ESP
-        if (!menu_locked && item_count == current_item) {
+        // Aimbot FOV option
+        if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_esp, &y, "Radio", &CFG::Radio, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        checkbox(x_esp, &y, "Aimbot FOV", &CFG::Aimbot_DrawFOV, false, 255, current_item++);
+        // Chams column (middle)
+        y = start_y;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_esp, &y, "local music", &CFG::Radio_LocalMusic, false, 255, current_item++);
+        checkbox(x_chams, &y, "Chams Box", &CFG::ESP_ChamsBox, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Chams Team", &CFG::ESP_ChamsTeam, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Chams Pickups", &CFG::ESP_ChamsPickups, false, 255, current_item++); // Adicionado
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Chams Build", &CFG::ESP_ChamsBuild, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Chams Build Only Enemy", &CFG::ESP_ChamsBuildOnlyEnemy, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Chams Capture Flag", &CFG::ESP_ChamsCaptureFlag, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Chams Local Player", &CFG::ESP_ChamsLocalPlayer, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Chams Hide Cloaked", &CFG::ESP_ChamsHideCloaked, false, 255, current_item++);
+        // Add spacing before Bullet Tracer options
+        y += 30; // Increased spacing for better distance
+        // Bullet Tracer options under Chams
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Bullet tracer", &CFG::BulletTracer, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_chams, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "line", "line+box", "box" }, false, 255, current_item++);
+        // Skeleton column (right)
+        y = start_y;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Skeleton ESP", &CFG::ESP_Skeleton, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Skeleton Team", &CFG::ESP_SkeletonTeam, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Skeleton Pickups", &CFG::ESP_SkeletonPickups, false, 255, current_item++); // Adicionado
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Skeleton Build", &CFG::ESP_SkeletonBuild, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Skeleton Build Only Enemy", &CFG::ESP_SkeletonBuildOnlyEnemy, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Skeleton Capture Flag", &CFG::ESP_SkeletonCaptureFlag, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Skeleton Local Player", &CFG::ESP_SkeletonLocalPlayer, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Skeleton Hide Cloaked", &CFG::ESP_SkeletonHideCloaked, false, 255, current_item++);
+        y += 30; // Distancia de y para nao ficar grudado
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_skel, &y, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted" }, false, 255, current_item++);
+        max_items = current_item - 1;
+    }
+    else if (CFG::CurrentSection == 2) { // Playerlist section
+        int x = 150;
+        int start_y = y;
+        y = start_y;
+        std::vector<int> ent_indices;
+        std::vector<PlayerPriority> priorities;
+        std::vector<std::pair<int, std::string>> player_list;
+        for (int i = 1; i <= 64; ++i) {
+            if (i == I::EngineClient->GetLocalPlayer()) continue;
+            player_info_t info{};
+            if (I::EngineClient->GetPlayerInfo(i, &info) && !info.fakeplayer) {
+                player_list.emplace_back(i, info.name);
+            }
+        }
+        // Sort by name
+        std::sort(player_list.begin(), player_list.end(), [](const auto& a, const auto& b) {
+            return a.second < b.second;
+            });
+        for (const auto& [entindex, name] : player_list) {
+            PlayerPriority pri{};
+            F::Players->GetInfo(entindex, pri);
+            ent_indices.push_back(entindex);
+            priorities.push_back(pri);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            text(x, &y, name, regular); // Non-interactive name
+            current_item++; // Increment for name (but no action)
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x + 20 - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x + 20, &y, "Ignored", &priorities.back().Ignored, false, 255, current_item++, ent_indices.back(), &priorities.back());
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x + 20 - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x + 20, &y, "Cheater", &priorities.back().Cheater, false, 255, current_item++, ent_indices.back(), &priorities.back());
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x + 20 - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x + 20, &y, "RetardLegit", &priorities.back().RetardLegit, false, 255, current_item++, ent_indices.back(), &priorities.back());
+        }
+        max_items = current_item - 1;
+    }
+    else if (CFG::CurrentSection == 3) {
+        // Misc section
+        int x_left = 150;
+        int x_center = 350;
+        int start_y = y;
+        // Radio on left
+        y = start_y;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Radio", &CFG::Radio, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "local music", &CFG::Radio_LocalMusic, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "internacional", &CFG::Radio_Internacional, false, 255, current_item++);
         static bool prev_internacional = false;
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "internacional", &CFG::Radio_Internacional, false, 255, current_item++);
         if (!prev_internacional && CFG::Radio_Internacional) {
             CFG::Radio_LocalMusic = false;
         }
@@ -526,123 +964,54 @@ void menu::render() {
         static int country_index = 0;
         static std::vector<std::string> countries = { "Russia", "Polonia" };
         if (CFG::Radio_Internacional) {
-            if (!menu_locked && item_count == current_item) {
-                H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            combo(x_esp, &y, "Country", &country_index, countries, false, 255, current_item++);
+            combo(x_left, &y, "Country", &country_index, countries, false, 255, current_item++);
             CFG::Radio_Country = country_index;
         }
-        // Chams column (middle)
+        // Auto jump, optimization and cfg in center
         y = start_y;
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_chams, &y, "Chams Box", &CFG::ESP_ChamsBox, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        checkbox(x_center, &y, "Auto Jump", &CFG::Misc_AutoJump, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_chams, &y, "Chams Team", &CFG::ESP_ChamsTeam, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Build", &CFG::ESP_ChamsBuild, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Build Only Enemy", &CFG::ESP_ChamsBuildOnlyEnemy, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Capture Flag", &CFG::ESP_ChamsCaptureFlag, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Local Player", &CFG::ESP_ChamsLocalPlayer, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Hide Cloaked", &CFG::ESP_ChamsHideCloaked, false, 255, current_item++);
-        // Add spacing before Bullet Tracer options
-        y += 30; // Increased spacing for better distance
-        // Bullet Tracer options under Chams
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Bullet tracer", &CFG::BulletTracer, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        combo(x_chams, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "line", "line+box", "box" }, false, 255, current_item++);
-        // Skeleton column (right)
-        y = start_y;
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton ESP", &CFG::ESP_Skeleton, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Team", &CFG::ESP_SkeletonTeam, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Build", &CFG::ESP_SkeletonBuild, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Build Only Enemy", &CFG::ESP_SkeletonBuildOnlyEnemy, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Capture Flag", &CFG::ESP_SkeletonCaptureFlag, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Local Player", &CFG::ESP_SkeletonLocalPlayer, false, 255, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Hide Cloaked", &CFG::ESP_SkeletonHideCloaked, false, 255, current_item++);
-        max_items = current_item - 1;
-    }
-    else if (CFG::CurrentSection == 2) {
-        // Misc section
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x, &y, "Auto Jump", &CFG::Misc_AutoJump, false, 255, current_item++);
+        checkbox(x_center, &y, "Setup Bones Optimization", &CFG::Misc_SetupBones_Optimization, false, 255, current_item++);
         // Refresh config files periodically (e.g., every render in misc)
-        config_files = RefreshConfigFiles();
-        if (config_files.empty()) {
-            config_files.push_back("default"); // Ensure at least one
+        menu::config_files = ::RefreshConfigFiles();
+        if (menu::config_files.empty()) {
+            menu::config_files.push_back("default"); // Ensure at least one
         }
-        if (current_config_index >= static_cast<int>(config_files.size())) {
-            current_config_index = 0;
+        if (menu::current_config_index >= static_cast<int>(menu::config_files.size())) {
+            menu::current_config_index = 0;
         }
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        combo(x, &y, "Config", &current_config_index, config_files, false, 255, current_item++);
+        combo(x_center, &y, "Config", &menu::current_config_index, menu::config_files, false, 255, current_item++);
         // No auto-load on selection change
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        text_input(x, &y, "name:", config_name, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        text_input(x_center, &y, "name:", menu::config_name, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        button(x, &y, "Create config", CreateConfig, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        button(x_center, &y, "Create config", CreateConfig, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        button(x, &y, "Save Config", SaveConfig, current_item++);
-        if (!menu_locked && item_count == current_item) {
-            H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        button(x_center, &y, "Save Config", SaveConfig, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        button(x, &y, "Load Config", LoadConfig, current_item++);
+        button(x_center, &y, "Load Config", LoadConfig, current_item++);
         max_items = current_item - 1;
     }
     // Clamp item_count
-    if (item_count > max_items) item_count = 1;
-    if (item_count < 1) item_count = max_items;
+    if (menu::item_count > max_items) menu::item_count = 1;
+    if (menu::item_count < 1) menu::item_count = max_items;
 }
