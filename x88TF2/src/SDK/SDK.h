@@ -278,11 +278,6 @@ namespace G
 	inline bool bSilentAngles = false;
 	inline bool bPSilentAngles = false;
 	inline int nTargetIndex = -1;
-	inline int ShiftedTicks = 0;
-	inline float Lerp = 0.015f;
-	inline int MaxShift = 24;
-	inline int CurItemDefIndex = 0;
-	inline bool FakeMatrixBuilt = false;
 	inline float flAimbotFOV = 0.0f;
 	inline bool bCanPrimaryAttack = false;
 	inline bool bCanSecondaryAttack = false;
@@ -298,7 +293,6 @@ namespace G
 	};
 
 	inline std::map<C_BasePlayer*, VelFixRecord_t> mapVelFixRecords = {};
-	inline std::unordered_map<int, float> WarpTimeStamps = {};
 
 	inline bool bFiring = false;
 	inline int nTicksTargetSame = 0;

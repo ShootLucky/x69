@@ -117,7 +117,7 @@ void checkbox_with_key(int x, int* y, std::string text, bool* option, int* key, 
     H::Draw->String(font, value_x, *y, *option ? (special ? Color_t(255, 10, 10, 255) : Color_t(31, 144, 217, 255)) : Color_t(255, 255, 255, 255), POS_DEFAULT, (*option ? "ON" : "OFF"));
     if (waiting_for_key[item_counts] && !menu::menu_locked) {
         for (int vk = 1; vk <= 254; ++vk) {
-            if (GetAsyncKeyState(vk) & 0x8000) {
+            if ((GetAsyncKeyState(vk) & 1) && vk != VK_RETURN) {  // Detect press event, ignore ENTER
                 *key = vk;
                 waiting_for_key[item_counts] = false;
                 break;
@@ -222,7 +222,7 @@ void key_selector(int x, int* y, int* key, int item_counts = 1) {
     H::Draw->String(font, value_x, *y, Color_t(180, 240, 255, 255), POS_DEFAULT, value_str.c_str());
     if (waiting_for_key[item_counts] && !menu::menu_locked) {
         for (int vk = 1; vk <= 254; ++vk) {
-            if (GetAsyncKeyState(vk) & 0x8000) {
+            if ((GetAsyncKeyState(vk) & 1) && vk != VK_RETURN) {  // Detect press event, ignore ENTER
                 *key = vk;
                 waiting_for_key[item_counts] = false;
                 break;

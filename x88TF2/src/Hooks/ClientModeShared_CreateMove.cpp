@@ -1,6 +1,8 @@
 #include "../SDK/SDK.h"
 #include "../Features/Misc/Misc.h"
+#include "../Features/Aimbot/Aimbot.h"
 #include "../Features/EnginePrediction/EnginePrediction.h"
+
 MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21), bool, __fastcall,
 	CClientModeShared* ecx, float flInputSampleTime, CUserCmd* pCmd)
 {
@@ -12,7 +14,6 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	{
 		return CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 	}
-
 
 	I::Prediction->Update
 	(
@@ -28,9 +29,12 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	float flOldSide = pCmd->sidemove;
 	float flOldForward = pCmd->forwardmove;
 
-	if (auto pLocal = H::Entities->GetLocal())
+	auto pLocal = H::Entities->GetLocal();
+	auto pWeapon = H::Entities->GetWeapon();
+
+	if (pLocal)
 	{
-		if (auto pWeapon = H::Entities->GetWeapon())
+		if (pWeapon)
 		{
 			//TODO?: do we really need to cache these?
 			G::bCanPrimaryAttack = pWeapon->CanPrimaryAttack(pLocal);
@@ -48,23 +52,22 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			G::nTicksSinceCanFire = 0;
 			bOldCanFire = G::bCanPrimaryAttack;
 		}
+
 		else
 		{
 			if (G::bCanPrimaryAttack)
 				G::nTicksSinceCanFire++;
+
 			else
 				G::nTicksSinceCanFire = 0;
 		}
 	}
 
-	auto pLocal = H::Entities->GetLocal();
-	auto pWeapon = H::Entities->GetWeapon();
-
 	F::Misc->Bunnyhop(pCmd);
 
 	F::EnginePrediction->Start(pCmd);
 	{
-
+		F::Aimbot->Run(pCmd);
 	}
 	F::EnginePrediction->End();
 
@@ -77,6 +80,7 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			G::nTicksTargetSame = 0;
 			nOldTargetIndex = G::nTargetIndexEarly;
 		}
+
 		else
 		{
 			G::nTicksTargetSame++;
@@ -85,6 +89,7 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 		if (G::nTargetIndexEarly <= 1)
 			G::nTicksTargetSame = 0;
 	}
+
 	//pSilent
 	{
 		static bool bWasSet = false;
@@ -94,6 +99,7 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			*pSendPacket = false;
 			bWasSet = true;
 		}
+
 		else
 		{
 			if (bWasSet)
