@@ -121,6 +121,9 @@ namespace CFG
 	// Bullet Tracer options
 	CFGVAR(BulletTracer, false);
 	CFGVAR(BulletTracer_Type, 0); // 0=line, 1=line+box, 2=box
+	CFGVAR(BulletTracer_Width, 1.0f);
+	CFGVAR(BulletTracer_Speed, 0.0f);
+	CFGVAR(BulletTracer_Length, 3.0f);
 	CFGVAR(ESP_BoxCapture, false);
 	CFGVAR(ESP_NameCapture, false);
 	CFGVAR(Visuals_Draw_Movement_Path_Style, 0);

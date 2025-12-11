@@ -12,6 +12,9 @@ C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Features\Menu\Men
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Features\Misc\Misc.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\Misc.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Features\ProjectileSim\ProjectileSim.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\ProjectileSim.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\ClientModeShared_CreateMove.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\ClientModeShared_CreateMove.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFPlayer_FireBullet.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CTFPlayer_FireBullet.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CTFPlayer_MaybeDrawRailgunBeam.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFWeaponBase_GetTracerType.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CTFWeaponBase_GetTracerType.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\IEngineVGuiInternal_Paint.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\IEngineVGuiInternal_Paint.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\SDK\TF2\bitbuf.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\bitbuf.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\SDK\TF2\c_tf_player.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\c_tf_player.obj

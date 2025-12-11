@@ -40,6 +40,8 @@
     <ClCompile Include="src\Features\ProjectileSim\ProjectileSim.cpp" />
     <ClCompile Include="src\SDK\TF2\c_tf_player.cpp" />
     <ClCompile Include="src\Features\PlayersList\PlayersList.cpp" />
+    <ClCompile Include="src\Hooks\CTFWeaponBase_GetTracerType.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />

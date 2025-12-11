@@ -369,6 +369,8 @@
     <ClCompile Include="src\Features\Misc\Misc.cpp" />
     <ClCompile Include="src\Features\ProjectileSim\ProjectileSim.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_CreateMove.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp" />
+    <ClCompile Include="src\Hooks\CTFWeaponBase_GetTracerType.cpp" />
     <ClCompile Include="src\Hooks\IEngineVGuiInternal_Paint.cpp" />
     <ClCompile Include="src\SDK\TF2\bitbuf.cpp" />
     <ClCompile Include="src\SDK\TF2\c_tf_player.cpp" />

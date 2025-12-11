@@ -848,11 +848,11 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_chams, &y, "Bullet tracer", &CFG::BulletTracer, false, 255, current_item++);
+        checkbox(x_chams, &y, "Tracer Effects", &CFG::BulletTracer, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        combo(x_chams, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "line", "line+box", "box" }, false, 255, current_item++);
+        combo(x_chams, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)", "Player List Info" }, false, 255, current_item++);
         // Skeleton column (right)
         y = start_y;
         if (!menu_locked && menu::item_count == current_item) {

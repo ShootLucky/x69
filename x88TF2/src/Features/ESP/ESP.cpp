@@ -10,140 +10,22 @@
 #include <cstring> // for strcmp
 #define PI 3.14159265358979323846f
 #define TF_COND_STEALTHED 4
-
-struct Tracer {
-    Vec3 start;
-    Vec3 end;
-    float time;
-};
-static std::vector<Tracer> tracers;
 static bool IsFiniteVec(const Vec3& v)
 {
     return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
 }
-class BulletListener : public IGameEventListener2 {
-public:
-    void FireGameEvent(IGameEvent* event) {
-        if (!CFG::BulletTracer) return;
-        const char* name = event->GetName();
-        float curtime = I::GlobalVars->curtime;
-        if (strcmp(name, "bullet_impact") == 0 || strcmp(name, "tf_projectile_pipe") == 0) {
-            int userid = event->GetInt("userid");
-            if (userid == 0) return;
-            int index = I::EngineClient->GetPlayerForUserID(userid);
-            if (index < 1 || index > 32) return;
-            IClientEntity* ent = I::ClientEntityList->GetClientEntity(index);
-            if (!ent) return;
-            C_TFPlayer* shooter = ent->As<C_TFPlayer>();
-            if (!shooter || shooter->m_lifeState() != LIFE_ALIVE) return;
-            Vec3 end(event->GetFloat("x"), event->GetFloat("y"), event->GetFloat("z"));
-            // Get muzzle position
-            Vec3 start = shooter->GetShootPos();
-            // Fixed: Use m_hActiveWeapon() directly (inherited from C_BaseCombatCharacter via C_BasePlayer)
-            EHANDLE hActiveWeapon = shooter->m_hActiveWeapon();
-            if (hActiveWeapon.IsValid()) {
-                IClientEntity* pWeaponEnt = I::ClientEntityList->GetClientEntityFromHandle(hActiveWeapon);
-                if (pWeaponEnt) {
-                    C_TFWeaponBase* weapon = pWeaponEnt->As<C_TFWeaponBase>();
-                    if (weapon) {
-                        Vec3 absOrigin;
-                        QAngle absAngles;
-                        if (weapon->GetAttachment(1, absOrigin, absAngles)) { // Fixed: Pass QAngle reference
-                            start = absOrigin;
-                        }
-                    }
-                }
-            }
-            if (!IsFiniteVec(start) || !IsFiniteVec(end)) return;
-            tracers.emplace_back(Tracer{ start, end, curtime });
-            if (tracers.size() > 50) tracers.erase(tracers.begin());
-        }
-        else if (strcmp(name, "projectile_direct_hit") == 0) {
-            int attacker_idx = event->GetInt("attacker");
-            int victim_idx = event->GetInt("victim");
-            if (attacker_idx <= 0 || victim_idx <= 0) return;
-            IClientEntity* attacker_ent = I::ClientEntityList->GetClientEntity(attacker_idx);
-            if (!attacker_ent) return;
-            C_TFPlayer* shooter = attacker_ent->As<C_TFPlayer>();
-            if (!shooter || shooter->m_lifeState() != LIFE_ALIVE) return;
-            IClientEntity* victim_ent = I::ClientEntityList->GetClientEntity(victim_idx);
-            if (!victim_ent) return;
-            C_BaseEntity* victim_base = victim_ent->As<C_BaseEntity>();
-            if (!victim_base) return;
-            Vec3 end = victim_base->GetAbsOrigin();
-            // Get muzzle for start
-            Vec3 start = shooter->GetShootPos();
-            // Fixed: Use m_hActiveWeapon() directly (inherited from C_BaseCombatCharacter via C_BasePlayer)
-            EHANDLE hActiveWeapon = shooter->m_hActiveWeapon();
-            if (hActiveWeapon.IsValid()) {
-                IClientEntity* pWeaponEnt = I::ClientEntityList->GetClientEntityFromHandle(hActiveWeapon);
-                if (pWeaponEnt) {
-                    C_TFWeaponBase* weapon = pWeaponEnt->As<C_TFWeaponBase>();
-                    if (weapon) {
-                        Vec3 absOrigin;
-                        QAngle absAngles;
-                        if (weapon->GetAttachment(1, absOrigin, absAngles)) { // Fixed: Pass QAngle reference
-                            start = absOrigin;
-                        }
-                    }
-                }
-            }
-            if (!IsFiniteVec(start) || !IsFiniteVec(end)) return;
-            tracers.emplace_back(Tracer{ start, end, curtime });
-            if (tracers.size() > 50) tracers.erase(tracers.begin());
-        }
-        else if (strcmp(name, "arrow_impact") == 0) {
-            int shooter_userid = event->GetInt("shooter");
-            if (shooter_userid == 0) return;
-            int shooter_idx = I::EngineClient->GetPlayerForUserID(shooter_userid);
-            if (shooter_idx < 1 || shooter_idx > 32) return;
-            IClientEntity* shooter_ent = I::ClientEntityList->GetClientEntity(shooter_idx);
-            if (!shooter_ent) return;
-            C_TFPlayer* shooter = shooter_ent->As<C_TFPlayer>();
-            if (!shooter || shooter->m_lifeState() != LIFE_ALIVE) return;
-            Vec3 end(event->GetFloat("bonePositionX"), event->GetFloat("bonePositionY"), event->GetFloat("bonePositionZ"));
-            // Get muzzle for start
-            Vec3 start = shooter->GetShootPos();
-            // Fixed: Use m_hActiveWeapon() directly (inherited from C_BaseCombatCharacter via C_BasePlayer)
-            EHANDLE hActiveWeapon = shooter->m_hActiveWeapon();
-            if (hActiveWeapon.IsValid()) {
-                IClientEntity* pWeaponEnt = I::ClientEntityList->GetClientEntityFromHandle(hActiveWeapon);
-                if (pWeaponEnt) {
-                    C_TFWeaponBase* weapon = pWeaponEnt->As<C_TFWeaponBase>();
-                    if (weapon) {
-                        Vec3 absOrigin;
-                        QAngle absAngles;
-                        if (weapon->GetAttachment(1, absOrigin, absAngles)) { // Fixed: Pass QAngle reference
-                            start = absOrigin;
-                        }
-                    }
-                }
-            }
-            if (!IsFiniteVec(start) || !IsFiniteVec(end)) return;
-            tracers.emplace_back(Tracer{ start, end, curtime });
-            if (tracers.size() > 50) tracers.erase(tracers.begin());
-        }
-    }
-};
-static BulletListener g_BulletListener;
 static bool InCond(C_TFPlayer* pPlayer, int cond)
 {
     return (pPlayer->m_nPlayerCond() & (1 << cond)) != 0;
 }
-
 void CESP::Init()
 {
     if (m_bInitialized) return;
     m_bInitialized = true;
-    I::GameEventManager->AddListener(&g_BulletListener, "bullet_impact", false);
-    I::GameEventManager->AddListener(&g_BulletListener, "tf_projectile_pipe", false);
-    I::GameEventManager->AddListener(&g_BulletListener, "projectile_direct_hit", false);
-    I::GameEventManager->AddListener(&g_BulletListener, "arrow_impact", false);
 }
 void CESP::Shutdown()
 {
     if (!m_bInitialized) return;
-    I::GameEventManager->RemoveListener(&g_BulletListener);
     m_bInitialized = false;
 }
 // Apenas desenha caixa (box ESP) — funções auxiliares simples
@@ -159,7 +41,40 @@ void DrawBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr)
         static_cast<int>(std::round(b.x)), static_cast<int>(std::round(b.y)),
         clr);
 }
-void DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr)
+void DrawThinLine(const Vec3& a, const Vec3& b, const Color_t& clr)
+{
+    if (!H::Draw) return;
+    int ax = static_cast<int>(std::round(a.x));
+    int ay = static_cast<int>(std::round(a.y));
+    int bx = static_cast<int>(std::round(b.x));
+    int by = static_cast<int>(std::round(b.y));
+    // Draw only main line
+    H::Draw->Line(ax, ay, bx, by, clr);
+}
+void DrawOutlinedLine(const Vec3& a, const Vec3& b, const Color_t& clr, const Color_t& outlineClr = Color_t(0, 0, 0, 255))
+{
+    if (!H::Draw) return;
+    int ax = static_cast<int>(std::round(a.x));
+    int ay = static_cast<int>(std::round(a.y));
+    int bx = static_cast<int>(std::round(b.x));
+    int by = static_cast<int>(std::round(b.y));
+    float dx = static_cast<float>(bx - ax);
+    float dy = static_cast<float>(by - ay);
+    int off = 1;
+    if (std::abs(dx) > std::abs(dy)) {
+        // Horizontal-ish line, offset vertically
+        H::Draw->Line(ax, ay - off, bx, by - off, outlineClr);
+        H::Draw->Line(ax, ay + off, bx, by + off, outlineClr);
+    }
+    else {
+        // Vertical-ish line, offset horizontally
+        H::Draw->Line(ax - off, ay, bx - off, by, outlineClr);
+        H::Draw->Line(ax + off, ay, bx + off, by, outlineClr);
+    }
+    // Draw main line
+    H::Draw->Line(ax, ay, bx, by, clr);
+}
+void DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr, bool useAA = true)
 {
     if (!H::Draw) return;
     int ax = static_cast<int>(std::round(a.x));
@@ -168,20 +83,22 @@ void DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr)
     int by = static_cast<int>(std::round(b.y));
     // Draw main line
     H::Draw->Line(ax, ay, bx, by, clr);
-    // Draw offset lines for anti-aliasing effect with lower alpha to make thinner appearance
-    Color_t aaClr = Color_t(clr.r, clr.g, clr.b, 150); // Increased alpha for brighter shine (from 50 to 150)
-    float dx = static_cast<float>(bx - ax);
-    float dy = static_cast<float>(by - ay);
-    int off = 1;
-    if (std::abs(dx) > std::abs(dy)) {
-        // Horizontal-ish line, offset vertically
-        H::Draw->Line(ax, ay - off, bx, by - off, aaClr);
-        H::Draw->Line(ax, ay + off, bx, by + off, aaClr);
-    }
-    else {
-        // Vertical-ish line, offset horizontally
-        H::Draw->Line(ax - off, ay, bx - off, by, aaClr);
-        H::Draw->Line(ax + off, ay, bx + off, by, aaClr);
+    if (useAA) {
+        // Draw offset lines for anti-aliasing effect with lower alpha to make thinner appearance
+        Color_t aaClr = Color_t(clr.r, clr.g, clr.b, 50); // Reduced alpha for weaker AA
+        float dx = static_cast<float>(bx - ax);
+        float dy = static_cast<float>(by - ay);
+        int off = 1;
+        if (std::abs(dx) > std::abs(dy)) {
+            // Horizontal-ish line, offset vertically
+            H::Draw->Line(ax, ay - off, bx, by - off, aaClr);
+            H::Draw->Line(ax, ay + off, bx, by + off, aaClr);
+        }
+        else {
+            // Vertical-ish line, offset horizontally
+            H::Draw->Line(ax - off, ay, bx - off, by, aaClr);
+            H::Draw->Line(ax + off, ay, bx + off, by, aaClr);
+        }
     }
 }
 void DrawScreenLine(const Vec3& a, const Vec3& b, const Color_t& clr)
@@ -211,35 +128,22 @@ static void DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
         }
     }
     if (!projOk) return;
-    // Compute 2D bbox for filled rect
-    float left = scr[0].x, top = scr[0].y, right = scr[0].x, bottom = scr[0].y;
-    for (int i = 1; i < 8; ++i) {
-        left = std::min(left, scr[i].x);
-        right = std::max(right, scr[i].x);
-        top = std::min(top, scr[i].y);
-        bottom = std::max(bottom, scr[i].y);
-    }
-    int w = static_cast<int>(std::round(right - left));
-    int h = static_cast<int>(std::round(bottom - top));
-    if (w > 0 && h > 0) {
-        // Filled with semi-transparent
-        Color_t fillClr(clr.r, clr.g, clr.b, 100);
-        H::Draw->Rect(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), w, h, fillClr);
-        // Outline thin
-        H::Draw->OutlinedRect(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), w, h, clr);
-    }
-    // Optional: Draw 3D wireframe for more 3D feel
+    // Removido: 2D fill e outline para focar apenas no wireframe 3D com outline
+    // Color_t fillClr(clr.r, clr.g, clr.b, 100);
+    // H::Draw->Rect(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), w, h, fillClr);
+    // H::Draw->OutlinedRect(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), w, h, clr);
+    // Draw 3D wireframe
     const std::pair<int, int> edges[] = {
         {0,1},{1,2},{2,3},{3,0},
         {4,5},{5,6},{6,7},{7,4},
         {0,4},{1,5},{2,6},{3,7}
     };
     for (auto& e : edges) {
-        DrawSmoothBoneLine(scr[e.first], scr[e.second], clr);
+        DrawOutlinedLine(scr[e.first], scr[e.second], clr);
     }
 }
 // --- Helper: desenha apenas o wireframe projetado (sem pontos/glow) ---
-static void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool withGlow = false)
+static void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool useAA = true)
 {
     if (!H::Draw) return;
     for (int i = 0; i < 8; ++i)
@@ -252,40 +156,12 @@ static void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool
         {7,6},{6,4},{4,5},{5,7},
         {0,7},{1,6},{2,4},{3,5}
     };
-    if (withGlow)
-    {
-        Color_t glowClr = Color_t(255, 255, 255, 20); // Brighter white glow with higher alpha
-        for (auto& e : edges)
-        {
-            Vec3 A = proj[e.first];
-            Vec3 B = proj[e.second];
-            float dx = B.x - A.x;
-            float dy = B.y - A.y;
-            int off = 1;
-            if (std::abs(dx) > std::abs(dy)) {
-                H::Draw->Line(static_cast<int>(std::round(A.x)), static_cast<int>(std::round(A.y - off)),
-                    static_cast<int>(std::round(B.x)), static_cast<int>(std::round(B.y - off)),
-                    glowClr);
-                H::Draw->Line(static_cast<int>(std::round(A.x)), static_cast<int>(std::round(A.y + off)),
-                    static_cast<int>(std::round(B.x)), static_cast<int>(std::round(B.y + off)),
-                    glowClr);
-            }
-            else {
-                H::Draw->Line(static_cast<int>(std::round(A.x - off)), static_cast<int>(std::round(A.y)),
-                    static_cast<int>(std::round(B.x - off)), static_cast<int>(std::round(B.y)),
-                    glowClr);
-                H::Draw->Line(static_cast<int>(std::round(A.x + off)), static_cast<int>(std::round(A.y)),
-                    static_cast<int>(std::round(B.x + off)), static_cast<int>(std::round(B.y)),
-                    glowClr);
-            }
-        }
-    }
     for (auto& e : edges)
     {
         const Vec3& A = proj[e.first];
         const Vec3& B = proj[e.second];
-        // Thinner: Draw only main line without full offsets, or reduce off to 0 (but for smoothness, keep but lower alpha)
-        DrawSmoothBoneLine(A, B, clr); // Already smoother; for thinner, could draw single line but keep for now
+        // Use DrawSmoothBoneLine with useAA
+        DrawSmoothBoneLine(A, B, clr, useAA);
     }
 }
 static void DrawOffscreenArrow(const Vec3& origin, const Color_t& clr)
@@ -342,25 +218,6 @@ void CESP::Run()
     auto pLocal = H::Entities->GetLocal();
     if (!pLocal) return;
     // Bullet Tracers drawing
-    if (CFG::BulletTracer) {
-        float curtime = I::GlobalVars->curtime;
-        // Clean old tracers
-        tracers.erase(std::remove_if(tracers.begin(), tracers.end(), [curtime](const Tracer& tr) {
-            return (curtime - tr.time) > 3.0f;
-            }), tracers.end());
-        Color_t tracerClr(255, 255, 255, 255); // White
-        for (const auto& tr : tracers) {
-            Vec3 startScr, endScr;
-            if (!H::Draw->W2S(tr.start, startScr) || !H::Draw->W2S(tr.end, endScr)) continue;
-            int type = CFG::BulletTracer_Type; // Assume 0=line, 1=line+box, 2=box
-            if (type == 0 || type == 1) { // line or line+box
-                DrawSmoothBoneLine(startScr, endScr, tracerClr);
-            }
-            if (type == 1 || type == 2) { // line+box or box
-                DrawImpactBox(tr.end, tracerClr);
-            }
-        }
-    }
     const int maxClients = I::EngineClient->GetMaxClients();
     const int highestIndex = I::ClientEntityList->GetHighestEntityIndex();
     const int end = std::max(maxClients, highestIndex);
@@ -767,6 +624,8 @@ void CESP::Run()
                     static_cast<unsigned char>(std::min(255.0f, clr.b * pulse)),
                     clr.a
                 );
+                float dist = (pLocal->GetShootPos() - origin).Length();
+                bool useAA = dist < 1500.0f; // Use AA only when close
                 for (int hb = 0; hb < hitboxCount; ++hb)
                 {
                     auto pBox = pHDR->pHitbox(hb, hitboxSet);
@@ -803,7 +662,7 @@ void CESP::Run()
                         }
                     }
                     if (fail) continue;
-                    DrawProjectedHitboxWire(scr, wireColor, false); // Desativado glow/outiline branco para estilo limpo e moderno
+                    DrawProjectedHitboxWire(scr, wireColor, useAA);
                 }
             }
         }
