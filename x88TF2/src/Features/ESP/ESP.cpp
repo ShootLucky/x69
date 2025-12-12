@@ -1,3 +1,4 @@
+// esp.cpp
 #include "ESP.h"
 #include "../src/SDK/TF2/interface.h"
 #include "../src/SDK/Helpers/Entities/Entities.h"
@@ -38,9 +39,9 @@ void CESP::DrawBox2D(int left, int top, int w, int h, const Color_t& clr)
 {
     DrawBox(left, top, w, h, clr);
 }
-void CESP::DrawBox3D(Vec3 scr[8], const Color_t& clr)
+void CESP::DrawBox3D(Vec3 scr[8], const Color_t& clr, bool useAA)
 {
-    DrawProjectedHitboxWire(scr, clr);
+    DrawProjectedHitboxWire(scr, clr, useAA);
 }
 void CESP::DrawBoxCorner(int left, int top, int w, int h, const Color_t& clr)
 {
@@ -290,6 +291,16 @@ void CESP::Run()
             drawESP = (isLocal ? CFG::ESP_LocalPlayer : true) && !(CFG::ESP_Team && isTeammate) && !(isCloaked && CFG::ESP_HideCloaked);
             drawSkeleton = (isLocal ? CFG::ESP_SkeletonLocalPlayer : CFG::ESP_Skeleton) && !(CFG::ESP_SkeletonTeam && isTeammate) && !(isCloaked && CFG::ESP_SkeletonHideCloaked);
             drawChamsBox = (isLocal ? CFG::ESP_ChamsLocalPlayer : CFG::ESP_ChamsBox) && !(CFG::ESP_ChamsTeam && isTeammate) && !(isCloaked && CFG::ESP_ChamsHideCloaked);
+            // Check for thirdperson for local player
+            if (isLocal) {
+                ConVar* tp = I::CVar->FindVar("c_thirdpersonshoulder");
+                bool inThirdPerson = (tp && tp->GetBool());
+                if (!inThirdPerson) {
+                    drawESP = false;
+                    drawSkeleton = false;
+                    drawChamsBox = false;
+                }
+            }
             player_info_t info{};
             if (I::EngineClient->GetPlayerInfo(i, &info)) name = info.name ? info.name : "unknown";
             if (pResource) {
@@ -327,7 +338,7 @@ void CESP::Run()
         {
             // Skip se for debris de building (ex: sentry broken -> debris model similar a ammo, mas class != CTFAmmoPack e sem strstr)
             if (strstr(networkName, "debris") && !strstr(networkName, "item_")) continue;
-            if (!CFG::ESP_Pickups && !CFG::ESP_ChamsPickups && !CFG::ESP_SkeletonPickups) continue; // Assumindo CFGs para chams/skeleton em pickups
+            if (!CFG::ESP_Pickups && !CFG::ESP_ChamsPickups) continue; // Removed skeleton
             isPickup = true;
             bool isAmmo = (strcmp(networkName, "CTFAmmoPack") == 0 ||
                 strstr(networkName, "ammopack") ||
@@ -341,8 +352,8 @@ void CESP::Run()
                 clr = Color_t(0, 255, 0, 255); // green
             }
             drawESP = CFG::ESP_Pickups;
-            drawSkeleton = CFG::ESP_SkeletonPickups; // Nova CFG assumida
-            drawChamsBox = CFG::ESP_ChamsPickups; // Nova CFG assumida
+            drawSkeleton = false;
+            drawChamsBox = CFG::ESP_ChamsPickups;
         }
         else if (strcmp(networkName, "CCaptureFlag") == 0 ||
             strcmp(networkName, "CTFItemTeamFlag") == 0 ||
@@ -359,11 +370,12 @@ void CESP::Run()
             drawESP = CFG::ESP_CaptureFlag;
             // Chams e Skeleton independentes de drawESP
             drawChamsBox = CFG::ESP_ChamsCaptureFlag;
-            drawSkeleton = CFG::ESP_SkeletonCaptureFlag;
+            drawSkeleton = false;
             clr = Color_t(255, 255, 0, 255); // yellow
         }
         else continue;
         Vec3 origin = pBase->GetAbsOrigin();
+        float dist = (pLocal->GetShootPos() - origin).Length();
         Vec3 mins = pBase->m_vecMins();
         Vec3 maxs = pBase->m_vecMaxs();
         if (!IsFiniteVec(mins) || !IsFiniteVec(maxs) || !IsFiniteVec(origin)) continue;
@@ -447,12 +459,13 @@ void CESP::Run()
                 int boxTop = static_cast<int>(std::round(top));
                 int boxW = width;
                 int boxH = height;
+                bool useAA = (dist < 1500.0f);
                 switch (CFG::ESP_BoxType) {
                 case 0: // 2D
                     DrawBox2D(boxLeft, boxTop, boxW, boxH, clr);
                     break;
                 case 1: // 3D
-                    DrawBox3D(screenPts, clr);
+                    DrawBox3D(screenPts, clr, useAA);
                     break;
                 case 2: // Corner
                     DrawBoxCorner(boxLeft, boxTop, boxW, boxH, clr);
@@ -489,7 +502,7 @@ void CESP::Run()
         if (CFG::ESP_Offscreen && isEnemy && anyFailed && isPlayer) {
             DrawOffscreenArrow(origin, clr);
         }
-        if ((drawSkeleton || drawChamsBox) && (isPlayer || isBuilding || isFlag || isPickup)) // Adicionado isPickup
+        if ((drawSkeleton || drawChamsBox) && (isPlayer || isBuilding)) // Removed isFlag and isPickup
         {
             matrix3x4_t boneMatrix[128] = {};
             const int maxBones = 128;
@@ -504,6 +517,7 @@ void CESP::Run()
             int numBones = std::min(pHDR->numbones, maxBones);
             int hitboxSet = pAnimating->m_nHitboxSet();
             int hitboxCount = pHDR->iHitboxCount(hitboxSet);
+            bool useAA = (dist < 1500.0f);
             if (drawSkeleton)
             {
                 std::map<std::string, Vec3> keyBoneScreens;
@@ -565,7 +579,7 @@ void CESP::Run()
                         auto it2 = keyBoneScreens.find(chain[idx + 1]);
                         if (it1 != keyBoneScreens.end() && it2 != keyBoneScreens.end())
                         {
-                            DrawSmoothBoneLine(it1->second, it2->second, boneColor); // Use smooth lines with adjusted alpha
+                            DrawSmoothBoneLine(it1->second, it2->second, boneColor, useAA); // Use smooth lines with adjusted alpha
                         }
                     }
                 }
@@ -631,7 +645,7 @@ void CESP::Run()
                         float py = screenHead.y + r * std::sin(theta);
                         Vec3 p(px, py, 0);
                         if (!first)
-                            DrawSmoothBoneLine(lastP, p, circleClr); // Use smooth lines with adjusted alpha
+                            DrawSmoothBoneLine(lastP, p, circleClr, useAA); // Use smooth lines with adjusted alpha
                         lastP = p;
                         first = false;
                     }
@@ -644,16 +658,16 @@ void CESP::Run()
                     Vec3 leftEarBaseL(screenHead.x + r * std::cos(leftBaseLTheta), screenHead.y + r * std::sin(leftBaseLTheta), 0);
                     Vec3 leftEarBaseR(screenHead.x + r * std::cos(leftBaseRTheta), screenHead.y + r * std::sin(leftBaseRTheta), 0);
                     Vec3 leftEarTip(screenHead.x + r * std::cos(3 * PI / 2 - earBaseAngle * 0.75f), screenHead.y + r * std::sin(3 * PI / 2 - earBaseAngle * 0.75f) - earH, 0);
-                    DrawSmoothBoneLine(leftEarBaseL, leftEarTip, circleClr); // Use smooth lines with adjusted alpha
-                    DrawSmoothBoneLine(leftEarTip, leftEarBaseR, circleClr); // Use smooth lines with adjusted alpha
+                    DrawSmoothBoneLine(leftEarBaseL, leftEarTip, circleClr, useAA); // Use smooth lines with adjusted alpha
+                    DrawSmoothBoneLine(leftEarTip, leftEarBaseR, circleClr, useAA); // Use smooth lines with adjusted alpha
                     // Right ear symmetric
                     float rightBaseLTheta = 3 * PI / 2 + earBaseAngle / 2;
                     float rightBaseRTheta = 3 * PI / 2 + earBaseAngle;
                     Vec3 rightEarBaseL(screenHead.x + r * std::cos(rightBaseLTheta), screenHead.y + r * std::sin(rightBaseLTheta), 0);
                     Vec3 rightEarBaseR(screenHead.x + r * std::cos(rightBaseRTheta), screenHead.y + r * std::sin(rightBaseRTheta), 0);
                     Vec3 rightEarTip(screenHead.x + r * std::cos(3 * PI / 2 + earBaseAngle * 0.75f), screenHead.y + r * std::sin(3 * PI / 2 + earBaseAngle * 0.75f) - earH, 0);
-                    DrawSmoothBoneLine(rightEarBaseL, rightEarTip, circleClr); // Use smooth lines with adjusted alpha
-                    DrawSmoothBoneLine(rightEarTip, rightEarBaseR, circleClr); // Use smooth lines with adjusted alpha
+                    DrawSmoothBoneLine(rightEarBaseL, rightEarTip, circleClr, useAA); // Use smooth lines with adjusted alpha
+                    DrawSmoothBoneLine(rightEarTip, rightEarBaseR, circleClr, useAA); // Use smooth lines with adjusted alpha
                 }
             }
             if (drawChamsBox)
@@ -666,8 +680,6 @@ void CESP::Run()
                     static_cast<unsigned char>(std::min(255.0f, clr.b * pulse)),
                     clr.a
                 );
-                float dist = (pLocal->GetShootPos() - origin).Length();
-                bool useAA = dist < 1500.0f; // Use AA only when close
                 for (int hb = 0; hb < hitboxCount; ++hb)
                 {
                     auto pBox = pHDR->pHitbox(hb, hitboxSet);

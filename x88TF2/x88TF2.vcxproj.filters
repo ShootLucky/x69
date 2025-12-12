@@ -45,6 +45,9 @@
     <ClCompile Include="src\Hooks\CTFWeapon_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_SetAbsVelocity.cpp" />
+    <ClCompile Include="src\Hooks\IInput_GetUserCmd.cpp" />
+    <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
+    <ClCompile Include="src\Features\Radio\Radio.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -209,5 +212,6 @@
     <ClInclude Include="src\Features\Predict\Predict.h" />
     <ClInclude Include="src\Features\ProjectileSim\ProjectileSim.h" />
     <ClInclude Include="src\Features\PlayersList\PlayersList.h" />
+    <ClInclude Include="src\Features\Radio\Radio.h" />
   </ItemGroup>
 </Project>

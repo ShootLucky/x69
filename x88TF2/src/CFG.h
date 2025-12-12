@@ -134,8 +134,11 @@ namespace CFG
 	CFGVAR(Misc_SetupBones_Optimization, false);
 	CFGVAR(Radio, false);
 	CFGVAR(Radio_LocalMusic, false);
-	CFGVAR(Radio_Internacional, false);
-	CFGVAR(Radio_Country, 0);
+	CFGVAR(Radio_Pause, false);
+	CFGVAR(Radio_Next, false);
+	CFGVAR(Radio_Prev, false);
+	CFGVAR(Radio_VolUp, false);
+	CFGVAR(Radio_VolDown, false);
 	CFGVAR(Misc_AccuracyImprovements, true);
 #pragma endregion
 #pragma region TEST

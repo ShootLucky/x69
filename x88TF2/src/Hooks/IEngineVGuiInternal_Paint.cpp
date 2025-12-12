@@ -1,7 +1,9 @@
 #include "../SDK/SDK.h"
 #include "../Features/Menu/Menu.h"
 #include "../Features/ESP/ESP.h"
-#include "../src/Features/Aimbot/AimbotHitscan/AimbotHitscan.h"  // Added include for AimbotHitscan
+#include "../src/Features/Aimbot/AimbotHitscan/AimbotHitscan.h" // Added include for AimbotHitscan
+#include "../Features/Radio/Radio.h" // Added include for Radio
+
 MAKE_HOOK(IEngineVGuiInternal_Paint, Memory::GetVFunc(I::EngineVGui, 14), void, __fastcall,
 	void* ecx, int mode)
 {
@@ -14,6 +16,8 @@ MAKE_HOOK(IEngineVGuiInternal_Paint, Memory::GetVFunc(I::EngineVGui, 14), void, 
 		{
 			// ESP global definido em ESP.h/ESP.cpp
 			gESP.Run();
+			// desenha o radio
+			F::Radio->Run();
 			// desenha o menu (ou outra UI)
 			menu::render();
 		}

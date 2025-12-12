@@ -368,6 +368,8 @@
     <ClCompile Include="src\Features\Menu\Menu.cpp" />
     <ClCompile Include="src\Features\Misc\Misc.cpp" />
     <ClCompile Include="src\Features\ProjectileSim\ProjectileSim.cpp" />
+    <ClCompile Include="src\Features\Radio\Radio.cpp" />
+    <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_SetAbsVelocity.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_CreateMove.cpp" />
     <ClCompile Include="src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp" />
@@ -375,6 +377,7 @@
     <ClCompile Include="src\Hooks\CTFWeaponBase_GetTracerType.cpp" />
     <ClCompile Include="src\Hooks\IEngineVGuiInternal_Paint.cpp" />
     <ClCompile Include="src\Hooks\CTFWeapon_ShouldDraw.cpp" />
+    <ClCompile Include="src\Hooks\IInput_GetUserCmd.cpp" />
     <ClCompile Include="src\SDK\TF2\bitbuf.cpp" />
     <ClCompile Include="src\SDK\TF2\c_tf_player.cpp" />
     <ClCompile Include="src\SDK\TF2\netmessages.cpp" />
@@ -417,6 +420,7 @@
     <ClInclude Include="src\Features\Menu\Menu.h" />
     <ClInclude Include="src\Features\Misc\Misc.h" />
     <ClInclude Include="src\Features\ProjectileSim\ProjectileSim.h" />
+    <ClInclude Include="src\Features\Radio\Radio.h" />
     <ClInclude Include="src\SDK\TF2\iviewrender.h" />
     <ClInclude Include="src\SDK\TF2\renderutils.h" />
     <ClInclude Include="src\Utils\Storage\Storage.h" />

@@ -843,19 +843,11 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_skel, &y, "Skeleton Pickups", &CFG::ESP_SkeletonPickups, false, 255, current_item++); // Adicionado
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
         checkbox(x_skel, &y, "Skeleton Build", &CFG::ESP_SkeletonBuild, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_skel, &y, "Skeleton Build Only Enemy", &CFG::ESP_SkeletonBuildOnlyEnemy, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Capture Flag", &CFG::ESP_SkeletonCaptureFlag, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -932,20 +924,27 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_left, &y, "internacional", &CFG::Radio_Internacional, false, 255, current_item++);
-        static bool prev_internacional = false;
-        if (!prev_internacional && CFG::Radio_Internacional) {
-            CFG::Radio_LocalMusic = false;
-        }
-        prev_internacional = CFG::Radio_Internacional;
-        static int country_index = 0;
-        static std::vector<std::string> countries = { "Russia", "Polonia" };
-        if (CFG::Radio_Internacional) {
+        if (CFG::Radio_LocalMusic) {
+            checkbox(x_left, &y, "Pause", &CFG::Radio_Pause, false, 255, current_item++);
             if (!menu_locked && menu::item_count == current_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            combo(x_left, &y, "Country", &country_index, countries, false, 255, current_item++);
-            CFG::Radio_Country = country_index;
+            checkbox(x_left, &y, "Next", &CFG::Radio_Next, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Previous", &CFG::Radio_Prev, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Volume Up", &CFG::Radio_VolUp, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Volume Down", &CFG::Radio_VolDown, false, 255, current_item++);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
         }
         // Auto jump, optimization and cfg in center
         y = start_y;

@@ -1,3 +1,4 @@
+// esp.h
 #pragma once
 #include "../src/SDK/SDK.h"
 #include "../src/SDK/Helpers/Draw/Draw.h"
@@ -17,7 +18,7 @@ private:
 	// Helpers de desenho — implementados em ESP.cpp
 	void DrawBox(int left, int top, int w, int h, const Color_t& clr);
 	void DrawBox2D(int left, int top, int w, int h, const Color_t& clr);
-	void DrawBox3D(Vec3 scr[8], const Color_t& clr);
+	void DrawBox3D(Vec3 scr[8], const Color_t& clr, bool useAA = true);
 	void DrawBoxCorner(int left, int top, int w, int h, const Color_t& clr);
 	void DrawName(int x, int y, const std::string& name, const Color_t& clr);
 	void DrawHealthBar(int left, int top, int h, int health, int maxHealth);
