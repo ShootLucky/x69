@@ -42,6 +42,9 @@
     <ClCompile Include="src\Features\PlayersList\PlayersList.cpp" />
     <ClCompile Include="src\Hooks\CTFWeaponBase_GetTracerType.cpp" />
     <ClCompile Include="src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp" />
+    <ClCompile Include="src\Hooks\CTFWeapon_ShouldDraw.cpp" />
+    <ClCompile Include="src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp" />
+    <ClCompile Include="src\Hooks\CBaseEntity_SetAbsVelocity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />

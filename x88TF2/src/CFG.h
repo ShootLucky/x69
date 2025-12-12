@@ -87,7 +87,8 @@ namespace CFG
 #pragma endregion
 #pragma region ESP
 	CFGVAR(ESP_Enable, false);
-	CFGVAR(ESP_Box, false);
+	CFGVAR(ESP_Box, false);//ESP_BoxType
+	CFGVAR(ESP_BoxType, 0);
 	CFGVAR(ESP_Name, false);
 	CFGVAR(ESP_Health, false);
 	CFGVAR(ESP_Team, false);

@@ -34,14 +34,39 @@ void CESP::DrawBox(int left, int top, int w, int h, const Color_t& clr)
     if (w <= 0 || h <= 0) return;
     H::Draw->OutlinedRect(left, top, w, h, clr);
 }
-void DrawBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr)
+void CESP::DrawBox2D(int left, int top, int w, int h, const Color_t& clr)
+{
+    DrawBox(left, top, w, h, clr);
+}
+void CESP::DrawBox3D(Vec3 scr[8], const Color_t& clr)
+{
+    DrawProjectedHitboxWire(scr, clr);
+}
+void CESP::DrawBoxCorner(int left, int top, int w, int h, const Color_t& clr)
+{
+    int cornerLen = std::min(w, h) / 5;
+    if (cornerLen < 1) return;
+    // Top-left
+    H::Draw->Line(left, top, left + cornerLen, top, clr);
+    H::Draw->Line(left, top, left, top + cornerLen, clr);
+    // Top-right
+    H::Draw->Line(left + w - cornerLen, top, left + w, top, clr);
+    H::Draw->Line(left + w, top, left + w, top + cornerLen, clr);
+    // Bottom-left
+    H::Draw->Line(left, top + h - cornerLen, left, top + h, clr);
+    H::Draw->Line(left, top + h, left + cornerLen, top + h, clr);
+    // Bottom-right
+    H::Draw->Line(left + w - cornerLen, top + h, left + w, top + h, clr);
+    H::Draw->Line(left + w, top + h - cornerLen, left + w, top + h, clr);
+}
+void CESP::DrawBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr)
 {
     if (!H::Draw) return;
     H::Draw->Line(static_cast<int>(std::round(a.x)), static_cast<int>(std::round(a.y)),
         static_cast<int>(std::round(b.x)), static_cast<int>(std::round(b.y)),
         clr);
 }
-void DrawThinLine(const Vec3& a, const Vec3& b, const Color_t& clr)
+void CESP::DrawThinLine(const Vec3& a, const Vec3& b, const Color_t& clr)
 {
     if (!H::Draw) return;
     int ax = static_cast<int>(std::round(a.x));
@@ -51,7 +76,7 @@ void DrawThinLine(const Vec3& a, const Vec3& b, const Color_t& clr)
     // Draw only main line
     H::Draw->Line(ax, ay, bx, by, clr);
 }
-void DrawOutlinedLine(const Vec3& a, const Vec3& b, const Color_t& clr, const Color_t& outlineClr = Color_t(0, 0, 0, 255))
+void CESP::DrawOutlinedLine(const Vec3& a, const Vec3& b, const Color_t& clr, const Color_t& outlineClr)
 {
     if (!H::Draw) return;
     int ax = static_cast<int>(std::round(a.x));
@@ -74,7 +99,7 @@ void DrawOutlinedLine(const Vec3& a, const Vec3& b, const Color_t& clr, const Co
     // Draw main line
     H::Draw->Line(ax, ay, bx, by, clr);
 }
-void DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr, bool useAA = true)
+void CESP::DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr, bool useAA)
 {
     if (!H::Draw) return;
     int ax = static_cast<int>(std::round(a.x));
@@ -101,11 +126,11 @@ void DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr, bool u
         }
     }
 }
-void DrawScreenLine(const Vec3& a, const Vec3& b, const Color_t& clr)
+void CESP::DrawScreenLine(const Vec3& a, const Vec3& b, const Color_t& clr)
 {
     DrawSmoothBoneLine(a, b, clr);
 }
-static void DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
+void CESP::DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
     if (!H::Draw) return;
     Vec3 mins(-4.0f, -4.0f, -4.0f);
     Vec3 maxs(4.0f, 4.0f, 4.0f);
@@ -143,7 +168,7 @@ static void DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
     }
 }
 // --- Helper: desenha apenas o wireframe projetado (sem pontos/glow) ---
-static void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool useAA = true)
+void CESP::DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool useAA)
 {
     if (!H::Draw) return;
     for (int i = 0; i < 8; ++i)
@@ -164,7 +189,7 @@ static void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool
         DrawSmoothBoneLine(A, B, clr, useAA);
     }
 }
-static void DrawOffscreenArrow(const Vec3& origin, const Color_t& clr)
+void CESP::DrawOffscreenArrow(const Vec3& origin, const Color_t& clr)
 {
     auto pLocal = H::Entities->GetLocal();
     if (!pLocal) return;
@@ -195,7 +220,7 @@ static void DrawOffscreenArrow(const Vec3& origin, const Color_t& clr)
     DrawSmoothBoneLine(arrowTip, side2, clr);
     DrawSmoothBoneLine(side1, side2, clr);
 }
-static void DrawFOVCircle(float fov, const Color_t& color) {
+void CESP::DrawFOVCircle(float fov, const Color_t& color) {
     if (fov <= 0.0f) return;
     int w, h;
     I::EngineClient->GetScreenSize(w, h);
@@ -417,8 +442,25 @@ void CESP::Run()
                 draw_box = CFG::ESP_BoxCapture;
                 draw_name = CFG::ESP_NameCapture;
             }
-            if (draw_box && drawESP) // Box só se drawESP
-                DrawBox(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), width, height, clr);
+            if (draw_box && drawESP) { // Box só se drawESP
+                int boxLeft = static_cast<int>(std::round(left));
+                int boxTop = static_cast<int>(std::round(top));
+                int boxW = width;
+                int boxH = height;
+                switch (CFG::ESP_BoxType) {
+                case 0: // 2D
+                    DrawBox2D(boxLeft, boxTop, boxW, boxH, clr);
+                    break;
+                case 1: // 3D
+                    DrawBox3D(screenPts, clr);
+                    break;
+                case 2: // Corner
+                    DrawBoxCorner(boxLeft, boxTop, boxW, boxH, clr);
+                    break;
+                default:
+                    break;
+                }
+            }
             if (draw_name && !name.empty())
             {
                 const CFont& font = H::Fonts->Get(EFonts::ESP);

@@ -117,7 +117,7 @@ void checkbox_with_key(int x, int* y, std::string text, bool* option, int* key, 
     H::Draw->String(font, value_x, *y, *option ? (special ? Color_t(255, 10, 10, 255) : Color_t(31, 144, 217, 255)) : Color_t(255, 255, 255, 255), POS_DEFAULT, (*option ? "ON" : "OFF"));
     if (waiting_for_key[item_counts] && !menu::menu_locked) {
         for (int vk = 1; vk <= 254; ++vk) {
-            if ((GetAsyncKeyState(vk) & 1) && vk != VK_RETURN) {  // Detect press event, ignore ENTER
+            if ((GetAsyncKeyState(vk) & 1) && vk != VK_RETURN) { // Detect press event, ignore ENTER
                 *key = vk;
                 waiting_for_key[item_counts] = false;
                 break;
@@ -136,20 +136,29 @@ void combo(int x, int* y, std::string text, int* option, std::vector<std::string
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
     static bool editing_combo[256] = {}; // Support multiple combos
+    static int pending_option[256] = {}; // Pending selection for each combo
     if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_RETURN) & 1) {
+            if (!editing_combo[item_counts]) {
+                pending_option[item_counts] = *option;
+            }
+            else {
+                *option = pending_option[item_counts];
+            }
             editing_combo[item_counts] = !editing_combo[item_counts];
         }
         if (editing_combo[item_counts]) {
             if ((GetAsyncKeyState(VK_RIGHT) & 1))
-                *option = (*option + 1) % static_cast<int>(aliases.size());
+                pending_option[item_counts] = (pending_option[item_counts] + 1) % static_cast<int>(aliases.size());
             if ((GetAsyncKeyState(VK_LEFT) & 1))
-                *option = (*option - 1 + static_cast<int>(aliases.size())) % static_cast<int>(aliases.size());
+                pending_option[item_counts] = (pending_option[item_counts] - 1 + static_cast<int>(aliases.size())) % static_cast<int>(aliases.size());
         }
     }
+    int display_value = editing_combo[item_counts] ? pending_option[item_counts] : *option;
+    Color_t display_color = editing_combo[item_counts] ? Color_t(255, 255, 255, 255) : Color_t(31, 144, 217, 255);
     int value_x = x + text_width + 10; // Dynamic position: after the text width + padding
-    std::string display = "< " + aliases.at(*option) + " >";
-    H::Draw->String(font, value_x, *y, Color_t(31, 144, 217, 255), POS_DEFAULT, display.c_str());
+    std::string display = "< " + aliases.at(display_value) + " >";
+    H::Draw->String(font, value_x, *y, display_color, POS_DEFAULT, display.c_str());
     *y += 15;
 }
 void int_slider(int x, int* y, std::string text, int& option, int min_value = 0, int max_value = 0, int item_counts = 1) {
@@ -222,7 +231,7 @@ void key_selector(int x, int* y, int* key, int item_counts = 1) {
     H::Draw->String(font, value_x, *y, Color_t(180, 240, 255, 255), POS_DEFAULT, value_str.c_str());
     if (waiting_for_key[item_counts] && !menu::menu_locked) {
         for (int vk = 1; vk <= 254; ++vk) {
-            if ((GetAsyncKeyState(vk) & 1) && vk != VK_RETURN) {  // Detect press event, ignore ENTER
+            if ((GetAsyncKeyState(vk) & 1) && vk != VK_RETURN) { // Detect press event, ignore ENTER
                 *key = vk;
                 waiting_for_key[item_counts] = false;
                 break;
@@ -449,14 +458,6 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_left, &y, "Silent Aim", &CFG::Aimbot_SilentAim, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_left, &y, "Aimlock", &CFG::Aimbot_Aimlock, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
         checkbox(x_left, &y, "Target Lag Records", &CFG::Aimbot_TargetLagRecords, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -489,41 +490,11 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        combo(x_left, &y, "Preferred Hitbox", &CFG::Aimbot_Hitscan_Hitbox, std::vector<std::string>{ "Head", "Pelvis", "Auto" }, false, 255, current_item++);
+        combo(x_left, &y, "Hitbox Type", &CFG::Aimbot_Hitscan_Hitbox, std::vector<std::string>{ "Head", "Pelvis", "Auto" }, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         combo(x_left, &y, "Sort", &CFG::Aimbot_Hitscan_Sort, std::vector<std::string>{ "Distance", "FOV", "Health" }, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_left, &y, "Hitbox options", &showHitboxOptions, false, 255, current_item++);
-        if (showHitboxOptions) {
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Head", &CFG::Aimbot_Hitbox_Head, false, 255, current_item++);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Neck", &CFG::Aimbot_Hitbox_Neck, false, 255, current_item++);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Chest", &CFG::Aimbot_Hitbox_Chest, false, 255, current_item++);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Pelvis", &CFG::Aimbot_Hitbox_Pelvis, false, 255, current_item++);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Body", &CFG::Aimbot_Hitbox_Body, false, 255, current_item++);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Buildings", &CFG::Aimbot_Hitbox_Buildings, false, 255, current_item++);
-        }
         static bool showScanOptions = false;
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -752,6 +723,10 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
+        combo(x_esp, &y, "Box Type", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"}, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
         checkbox(x_esp, &y, "Name", &CFG::ESP_Name, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -852,7 +827,9 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        combo(x_chams, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)", "Player List Info" }, false, 255, current_item++);
+        if (CFG::BulletTracer) {
+            combo(x_chams, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)" }, false, 255, current_item++);
+        }
         // Skeleton column (right)
         y = start_y;
         if (!menu_locked && menu::item_count == current_item) {
