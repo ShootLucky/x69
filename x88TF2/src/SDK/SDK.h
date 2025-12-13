@@ -51,7 +51,7 @@ MAKE_SIGNATURE(RandomSeed, "client.dll", "0F B6 1D ? ? ? ? 89 9D", 0x0);
 MAKE_SIGNATURE(SharedRandomInt, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 8B FA 41 8B D8", 0x0);
 MAKE_SIGNATURE(BInEndOfMatch, "client.dll", "48 83 EC ? 48 8B 05 ? ? ? ? 48 85 C0 74 ? 83 78 ? ? 75", 0x0);
 MAKE_SIGNATURE(GetClientInterpAmount, "client.dll", "40 53 48 83 EC ? 8B 05 ? ? ? ? A8 ? 75 ? 48 8B 0D ? ? ? ? 48 8D 15", 0x0);
-MAKE_SIGNATURE(LookupSequence, "client.dll", "55 8B EC 83 E4 F8 83 EC 08 56 8B F1 57 8B 7D 08", 0x0);
+MAKE_SIGNATURE(LookupSequence, "client.dll", "48 89 5C 24 ? 55 48 83 EC ? 48 8B EA 48 8B D9 48 85 C9", 0x0);
 
 namespace SDKUtils
 {

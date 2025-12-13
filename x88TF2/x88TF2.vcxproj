@@ -378,6 +378,7 @@
     <ClCompile Include="src\Hooks\IEngineVGuiInternal_Paint.cpp" />
     <ClCompile Include="src\Hooks\CTFWeapon_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\IInput_GetUserCmd.cpp" />
+    <ClCompile Include="src\Hooks\netgraphstringchanger.cpp" />
     <ClCompile Include="src\SDK\TF2\bitbuf.cpp" />
     <ClCompile Include="src\SDK\TF2\c_tf_player.cpp" />
     <ClCompile Include="src\SDK\TF2\netmessages.cpp" />
@@ -423,6 +424,8 @@
     <ClInclude Include="src\Features\Radio\Radio.h" />
     <ClInclude Include="src\SDK\TF2\iviewrender.h" />
     <ClInclude Include="src\SDK\TF2\renderutils.h" />
+    <ClInclude Include="src\SDK\TF2\utlblockmemory.h" />
+    <ClInclude Include="src\SDK\TF2\utlmemory.h" />
     <ClInclude Include="src\Utils\Storage\Storage.h" />
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
     <ClInclude Include="src\SDK\Helpers\Draw\Draw.h" />

@@ -48,6 +48,7 @@
     <ClCompile Include="src\Hooks\IInput_GetUserCmd.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
     <ClCompile Include="src\Features\Radio\Radio.cpp" />
+    <ClCompile Include="src\Hooks\netgraphstringchanger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -213,5 +214,7 @@
     <ClInclude Include="src\Features\ProjectileSim\ProjectileSim.h" />
     <ClInclude Include="src\Features\PlayersList\PlayersList.h" />
     <ClInclude Include="src\Features\Radio\Radio.h" />
+    <ClInclude Include="src\SDK\TF2\utlmemory.h" />
+    <ClInclude Include="src\SDK\TF2\utlblockmemory.h" />
   </ItemGroup>
 </Project>
