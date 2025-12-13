@@ -446,7 +446,7 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        combo(x_left, &y, "Key Mode", &CFG::Aimbot_KeyMode, std::vector<std::string>{"Hold", "Toggle"}, false, 255, current_item++);
+        combo(x_left, &y, "Key Mode", &CFG::Aimbot_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -591,6 +591,10 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
+        combo(x_center, &y, "Key Mode", &CFG::Aimbot_Projectile_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
         checkbox(x_center, &y, "No Spread", &CFG::Aimbot_Projectile_NoSpread, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -658,6 +662,10 @@ void menu::render() {
             H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox_with_key(x_right, &y, "Melee Aimbot", &CFG::Aimbot_Melee_Active, &CFG::Aimbot_Melee_Key, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_right, &y, "Key Mode", &CFG::Aimbot_Melee_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -921,10 +929,10 @@ void menu::render() {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_left, &y, "local music", &CFG::Radio_LocalMusic, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
         if (CFG::Radio_LocalMusic) {
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
             checkbox(x_left, &y, "Pause", &CFG::Radio_Pause, false, 255, current_item++);
             if (!menu_locked && menu::item_count == current_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -942,10 +950,20 @@ void menu::render() {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
             checkbox(x_left, &y, "Volume Down", &CFG::Radio_VolDown, false, 255, current_item++);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
         }
+        y += 30; // Espaço
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox_with_key(x_left, &y, "AutoRocketJump", &CFG::Misc_AutoRocketJump_Enable, &CFG::Misc_AutoRocketJump_Key, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "AutoStrafer", &CFG::Misc_AutoStrafer_Enable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_left, &y, "Strafe Intensity", CFG::Misc_AutoStrafer_Intensity, 0.f, 1.f, current_item++);
         // Auto jump, optimization and cfg in center
         y = start_y;
         if (!menu_locked && menu::item_count == current_item) {

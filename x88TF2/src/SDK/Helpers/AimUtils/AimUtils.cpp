@@ -2,6 +2,22 @@
 
 #include "../../SDK.h"
 
+class CTraceFilterSimple : public CTraceFilter
+{
+public:
+	CTraceFilterSimple(const IHandleEntity* passentity, int collisionGroup)
+		: m_pPassEnt(passentity), m_iCollisionGroup(collisionGroup) {
+	}
+
+	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+	{
+		return pHandleEntity != m_pPassEnt;
+	}
+
+	const IHandleEntity* m_pPassEnt;
+	int m_iCollisionGroup;
+};
+
 void CAimUtils::Trace(const Vec3& start, const Vec3& end, unsigned int mask, CTraceFilter* filter, trace_t* trace)
 {
 	Ray_t ray = {};
@@ -101,6 +117,16 @@ bool CAimUtils::TracePositionWorld(const Vec3& vFrom, const Vec3& vTo)
 	return trace.fraction > 0.99f && !trace.allsolid && !trace.startsolid;
 }
 
+bool CAimUtils::VisPos(C_BaseEntity* pSkip, C_BaseEntity* pEntity, const Vec3& from, const Vec3& to)
+{
+	trace_t trace = {};
+	CTraceFilterSimple filter(pSkip, COLLISION_GROUP_NONE);
+
+	Trace(from, to, MASK_SHOT, &filter, &trace);
+
+	return (trace.m_pEnt == pEntity || trace.fraction > 0.99f);
+}
+
 EWeaponType CAimUtils::GetWeaponType(C_TFWeaponBase* pWeapon)
 {
 	if (!pWeapon)
@@ -119,6 +145,7 @@ EWeaponType CAimUtils::GetWeaponType(C_TFWeaponBase* pWeapon)
 	case TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT:
 	case TF_WEAPON_GRENADELAUNCHER:
 	case TF_WEAPON_PIPEBOMBLAUNCHER:
+	case TF_WEAPON_FLAMETHROWER:
 	case TF_WEAPON_FLAREGUN:
 	case TF_WEAPON_COMPOUND_BOW:
 	case TF_WEAPON_CROSSBOW:
@@ -129,7 +156,7 @@ EWeaponType CAimUtils::GetWeaponType(C_TFWeaponBase* pWeapon)
 	case TF_WEAPON_CANNON:
 	case TF_WEAPON_SYRINGEGUN_MEDIC:
 	case TF_WEAPON_FLAME_BALL:
-	case TF_WEAPON_FLAMETHROWER:
+	case TF_WEAPON_FLAMETHROWER_ROCKET:
 	case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
 	{
 		return EWeaponType::PROJECTILE;

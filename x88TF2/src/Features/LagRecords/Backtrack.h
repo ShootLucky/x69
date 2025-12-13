@@ -15,6 +15,7 @@ struct LagRecord_t
 	Vec3 Center = {};
 	int Flags = 0;
 	float FeetYaw = 0.0f;
+	bool bValid = false;
 };
 
 class CLagRecords

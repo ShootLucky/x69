@@ -24,6 +24,7 @@ public:
 	bool TraceFlames(C_BaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo);
 	bool TraceEntityMelee(C_BaseEntity* pEntity, const Vec3& vFrom, const Vec3& vTo);
 	bool TracePositionWorld(const Vec3& vFrom, const Vec3& vTo);
+	bool VisPos(C_BaseEntity* pSkip, C_BaseEntity* pEntity, const Vec3& from, const Vec3& to);
 	EWeaponType GetWeaponType(C_TFWeaponBase* pWeapon);
 	void FixMovement(CUserCmd* pCmd, const Vec3& vTargetAngle);
 	bool IsWeaponCapableOfHeadshot(C_TFWeaponBase* pWeapon);

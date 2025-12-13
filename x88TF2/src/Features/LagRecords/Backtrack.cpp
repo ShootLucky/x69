@@ -53,6 +53,7 @@ void CLagRecords::AddRecord(C_TFPlayer* pPlayer)
 	newRecord.Velocity = pPlayer->m_vecVelocity();
 	newRecord.Center = pPlayer->GetCenter();
 	newRecord.Flags = pPlayer->m_fFlags();
+	newRecord.bValid = true;
 
 	if (const auto pAnimState = pPlayer->GetAnimState())
 		newRecord.FeetYaw = pAnimState->m_flCurrentFeetYaw;
