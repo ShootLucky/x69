@@ -88,44 +88,6 @@ void checkbox(int x, int* y, std::string text, bool* option, bool special = fals
     H::Draw->String(font, value_x, *y, *option ? (special ? Color_t(255, 10, 10, 255) : Color_t(31, 144, 217, 255)) : Color_t(255, 255, 255, 255), POS_DEFAULT, (*option ? "ON" : "OFF"));
     *y += 15;
 }
-void checkbox_with_key(int x, int* y, std::string text, bool* option, int* key, bool special = false, int alpha = 255, int item_counts = 1) {
-    if (menu::menu_locked)
-        alpha = static_cast<int>(alpha * 0.f);
-    int text_width = 0, text_height = 0;
-    const CFont& font = H::Fonts->Get(EFonts::Menu);
-    wchar_t wtext[1024] = {};
-    MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
-    I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
-    H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
-    static bool waiting_for_key[256] = {}; // Support multiple keybinds
-    if (item_counts == menu::item_count && !menu::menu_locked) {
-        if (GetAsyncKeyState(VK_LEFT) & 1 || GetAsyncKeyState(VK_RIGHT) & 1)
-            *option = !*option;
-        if (GetAsyncKeyState(VK_RETURN) & 1) {
-            waiting_for_key[item_counts] = true;
-        }
-    }
-    std::string display = waiting_for_key[item_counts] ? "Press any key..." : GetKeyName(*key);
-    std::string key_str = " [" + display + "]";
-    int key_x = x + text_width + 10;
-    H::Draw->String(font, key_x, *y, Color_t(180, 240, 255, 255), POS_DEFAULT, key_str.c_str());
-    wchar_t wkey[1024] = {};
-    MultiByteToWideChar(CP_UTF8, 0, key_str.c_str(), -1, wkey, 1024);
-    int key_width = 0, key_height = 0;
-    I::MatSystemSurface->GetTextSize(font.m_dwFont, wkey, key_width, key_height);
-    int value_x = key_x + key_width + 10;
-    H::Draw->String(font, value_x, *y, *option ? (special ? Color_t(255, 10, 10, 255) : Color_t(31, 144, 217, 255)) : Color_t(255, 255, 255, 255), POS_DEFAULT, (*option ? "ON" : "OFF"));
-    if (waiting_for_key[item_counts] && !menu::menu_locked) {
-        for (int vk = 1; vk <= 254; ++vk) {
-            if ((GetAsyncKeyState(vk) & 1) && vk != VK_RETURN) { // Detect press event, ignore ENTER
-                *key = vk;
-                waiting_for_key[item_counts] = false;
-                break;
-            }
-        }
-    }
-    *y += 15;
-}
 void combo(int x, int* y, std::string text, int* option, std::vector<std::string> aliases, bool special = false, int alpha = 255, int item_counts = 1) {
     if (menu::menu_locked)
         alpha = static_cast<int>(alpha * 0.f);
@@ -158,6 +120,61 @@ void combo(int x, int* y, std::string text, int* option, std::vector<std::string
     Color_t display_color = editing_combo[item_counts] ? Color_t(255, 255, 255, 255) : Color_t(31, 144, 217, 255);
     int value_x = x + text_width + 10; // Dynamic position: after the text width + padding
     std::string display = "< " + aliases.at(display_value) + " >";
+    H::Draw->String(font, value_x, *y, display_color, POS_DEFAULT, display.c_str());
+    *y += 15;
+}
+void multi_combo(int x, int* y, std::string text, int* option, std::vector<std::string> aliases, int alpha = 255, int item_counts = 1) {
+    if (menu::menu_locked)
+        alpha = static_cast<int>(alpha * 0.f);
+    int text_width = 0, text_height = 0;
+    const CFont& font = H::Fonts->Get(EFonts::Menu);
+    wchar_t wtext[1024] = {};
+    MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
+    I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
+    H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
+    static bool editing_multi[256] = {};
+    static int pending_bitmask[256] = {};
+    static int pending_index[256] = {};
+    if (item_counts == menu::item_count && !menu::menu_locked) {
+        if (GetAsyncKeyState(VK_RETURN) & 1) {
+            if (!editing_multi[item_counts]) {
+                pending_bitmask[item_counts] = *option;
+                pending_index[item_counts] = 0;
+                editing_multi[item_counts] = true;
+            }
+            else {
+                pending_bitmask[item_counts] ^= (1 << pending_index[item_counts]);
+            }
+        }
+        if (editing_multi[item_counts]) {
+            if (GetAsyncKeyState(VK_LEFT) & 1)
+                pending_index[item_counts] = (pending_index[item_counts] - 1 + static_cast<int>(aliases.size())) % static_cast<int>(aliases.size());
+            if (GetAsyncKeyState(VK_RIGHT) & 1)
+                pending_index[item_counts] = (pending_index[item_counts] + 1) % static_cast<int>(aliases.size());
+            if (GetAsyncKeyState(VK_ESCAPE) & 1) {
+                editing_multi[item_counts] = false;
+                *option = pending_bitmask[item_counts];
+            }
+        }
+    }
+    std::string display;
+    Color_t display_color = Color_t(31, 144, 217, 255);
+    if (editing_multi[item_counts]) {
+        int idx = pending_index[item_counts];
+        display = "< " + aliases.at(idx) + " >";
+        display_color = (pending_bitmask[item_counts] & (1 << idx)) ? Color_t(0, 255, 0, 255) : Color_t(255, 0, 0, 255);
+    }
+    else {
+        for (size_t i = 0; i < aliases.size(); ++i) {
+            if (*option & (1 << i)) {
+                if (!display.empty()) display += ", ";
+                display += aliases[i];
+            }
+        }
+        if (display.empty()) display = "None";
+        display = "< " + display + " >";
+    }
+    int value_x = x + text_width + 10;
     H::Draw->String(font, value_x, *y, display_color, POS_DEFAULT, display.c_str());
     *y += 15;
 }
@@ -444,7 +461,11 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox_with_key(x_left, &y, "Aimbot", &CFG::Aimbot_Enable, &CFG::Aimbot_Key, false, 255, current_item++);
+        checkbox(x_left, &y, "Aimbot", &CFG::Aimbot_Enable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        key_selector(x_left, &y, &CFG::Aimbot_Key, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -589,11 +610,7 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox_with_key(x_center, &y, "Projectile Aimbot", &CFG::Aimbot_Projectile_Enable, &CFG::Aimbot_Projectile_Key, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        combo(x_center, &y, "Key Mode", &CFG::Aimbot_Projectile_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_item++);
+        checkbox(x_center, &y, "Projectile Aimbot", &CFG::Aimbot_Projectile_Enable, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -663,11 +680,7 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox_with_key(x_right, &y, "Melee Aimbot", &CFG::Aimbot_Melee_Active, &CFG::Aimbot_Melee_Key, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        combo(x_right, &y, "Key Mode", &CFG::Aimbot_Melee_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_item++);
+        checkbox(x_right, &y, "Melee Aimbot", &CFG::Aimbot_Melee_Active, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_right - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -742,6 +755,10 @@ void menu::render() {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Health", &CFG::ESP_Health, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_esp, &y, "Health Type", &CFG::ESP_HealthType, std::vector<std::string>{"Health bar", "Health number", "Number + bar"}, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -827,6 +844,14 @@ void menu::render() {
             H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_chams, &y, "Chams Hide Cloaked", &CFG::ESP_ChamsHideCloaked, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Backtrack", &CFG::ESP_Chams_Backtrack, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        multi_combo(x_chams, &y, "Backtrack Type", &CFG::ESP_Chams_BacktrackType, std::vector<std::string>{"Enemies", "Team", "Local Player", "All"}, 255, current_item++);
         // Add spacing before Bullet Tracer options
         y += 30; // Increased spacing for better distance
         // Bullet Tracer options under Chams
@@ -866,11 +891,32 @@ void menu::render() {
             H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_skel, &y, "Skeleton Hide Cloaked", &CFG::ESP_SkeletonHideCloaked, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Backtrack", &CFG::ESP_Skeleton_Backtrack, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        multi_combo(x_skel, &y, "Backtrack Type", &CFG::ESP_Skeleton_BacktrackType, std::vector<std::string>{"Enemies", "Team", "Local Player", "All"}, 255, current_item++);
         y += 30; // Distancia de y para nao ficar grudado
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         combo(x_skel, &y, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted" }, false, 255, current_item++);
+        y += 30;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "Logs", &CFG::Logs_Enable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        multi_combo(x_skel, &y, "Logs Type", &CFG::Logs_Type, std::vector<std::string>{"Chat", "Console", "Screen", "All"}, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        multi_combo(x_skel, &y, "Players Logs Type", &CFG::PlayersLogs_Type, std::vector<std::string>{"Damage", "Respawn", "Enter", "Exit", "Playerlist", "Class"}, 255, current_item++);
         max_items = current_item - 1;
     }
     else if (CFG::CurrentSection == 2) { // Playerlist section
@@ -997,7 +1043,11 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox_with_key(x_left, &y, "AutoRocketJump", &CFG::Misc_AutoRocketJump_Enable, &CFG::Misc_AutoRocketJump_Key, false, 255, current_item++);
+        checkbox(x_left, &y, "AutoRocketJump", &CFG::Misc_AutoRocketJump_Enable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        key_selector(x_left, &y, &CFG::Misc_AutoRocketJump_Key, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -1012,6 +1062,10 @@ void menu::render() {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_center, &y, "Auto Jump", &CFG::Misc_AutoJump, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "Fake Taunt", &CFG::Misc_Fake_Taunt, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }

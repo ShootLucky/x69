@@ -371,13 +371,16 @@
     <ClCompile Include="src\Features\Radio\Radio.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_SetAbsVelocity.cpp" />
+    <ClCompile Include="src\Hooks\CHudTFCrosshair_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_CreateMove.cpp" />
     <ClCompile Include="src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayerShared_IsPlayerDominated.cpp" />
     <ClCompile Include="src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp" />
     <ClCompile Include="src\Hooks\CTFWeaponBase_GetTracerType.cpp" />
     <ClCompile Include="src\Hooks\IEngineVGuiInternal_Paint.cpp" />
     <ClCompile Include="src\Hooks\CTFWeapon_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\IInput_GetUserCmd.cpp" />
+    <ClCompile Include="src\Hooks\IVEngineClient013_ClientCmd.cpp" />
     <ClCompile Include="src\Hooks\netgraphstringchanger.cpp" />
     <ClCompile Include="src\SDK\TF2\bitbuf.cpp" />
     <ClCompile Include="src\SDK\TF2\c_tf_player.cpp" />

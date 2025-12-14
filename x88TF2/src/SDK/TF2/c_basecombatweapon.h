@@ -23,11 +23,6 @@ public:
 	NETVAR(m_hOwner, EHANDLE, "CBaseCombatWeapon", "m_hOwner");
 
 	bool HasAmmo() {
-		return reinterpret_cast<bool(__fastcall *)(void *)>(Signatures::CBaseCombatWeapon_HasAmmo.Get())(this);
-	}
-
-	const char* GetName()
-	{
-		return reinterpret_cast<const char*(__thiscall*)(void*)>(Memory::GetVFunc(this, 333))(this);
+		return reinterpret_cast<bool(__fastcall*)(void*)>(Signatures::CBaseCombatWeapon_HasAmmo.Get())(this);
 	}
 };

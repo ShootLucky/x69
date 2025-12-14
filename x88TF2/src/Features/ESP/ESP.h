@@ -4,6 +4,7 @@
 #include "../src/SDK/Helpers/Draw/Draw.h"
 #include "../src/SDK/Helpers/Entities/Entities.h"
 #include "../src/CFG.h"
+#include "../LagRecords/Backtrack.h" // Adjusted include path if necessary
 class CESP {
 public:
 	// Executa a lógica do ESP e desenha na tela (chamar por frame).

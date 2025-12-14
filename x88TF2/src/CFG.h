@@ -130,12 +130,20 @@ namespace CFG
 	CFGVAR(ESP_BoxCapture, false);
 	CFGVAR(ESP_NameCapture, false);
 	CFGVAR(Visuals_Draw_Movement_Path_Style, 0);
+	CFGVAR(ESP_HealthType, 0);
+	CFGVAR(ESP_Chams_Backtrack, false);
+	CFGVAR(ESP_Chams_BacktrackType, 0);
+	CFGVAR(ESP_Skeleton_Backtrack, false);
+	CFGVAR(ESP_Skeleton_BacktrackType, 0);
+	CFGVAR(Logs_Enable, false);
+	CFGVAR(Logs_Type, 0);
+	CFGVAR(PlayersLogs_Type, 0);
 #pragma endregion
 #pragma region Misc
 	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization
 	CFGVAR(Misc_SetupBones_Optimization, false);
 	CFGVAR(Radio, false)
-	CFGVAR(Misc_AutoStrafer_Enable, false);
+		CFGVAR(Misc_AutoStrafer_Enable, false);
 	CFGVAR(Misc_AutoRocketJump_Enable, false);
 	CFGVAR(Misc_AutoRocketJump_Key, 0);
 	CFGVAR(Misc_AutoStrafer_Intensity, 45.f);
@@ -146,6 +154,7 @@ namespace CFG
 	CFGVAR(Radio_VolUp, false);
 	CFGVAR(Radio_VolDown, false);
 	CFGVAR(Misc_AccuracyImprovements, true);
+	CFGVAR(Misc_Fake_Taunt, false);
 #pragma endregion
 #pragma region TEST
 	CFGVAR(Important_checkbox, true);

@@ -49,6 +49,9 @@
     <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
     <ClCompile Include="src\Features\Radio\Radio.cpp" />
     <ClCompile Include="src\Hooks\netgraphstringchanger.cpp" />
+    <ClCompile Include="src\Hooks\CHudTFCrosshair_ShouldDraw.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayerShared_IsPlayerDominated.cpp" />
+    <ClCompile Include="src\Hooks\IVEngineClient013_ClientCmd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />

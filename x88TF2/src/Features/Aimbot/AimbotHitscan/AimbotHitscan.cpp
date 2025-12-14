@@ -393,8 +393,8 @@ bool CAimbotHitscan::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWea
     if (CFG::Aimbot_KeyMode == 2) // Always On
         return true;
 
-    if (CFG::Aimbot_KeyMode == 0) // Hold
-        return bDown;
+    if (GetAsyncKeyState(CFG::Aimbot_Key))
+        return true;
 
     if (CFG::Aimbot_KeyMode == 1) // Toggle
     {
@@ -421,11 +421,13 @@ void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles
 
     if (CFG::Aimbot_Hitscan_Mode == 1)
     {
+        QAngle oldAngles = vOldAngles;
+        I::EngineClient->SetViewAngles(oldAngles);
         G::bSilentAngles = true;
     }
 }
 
-bool CAimbotHitscan::ShouldFire(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const HitscanTarget_t& target)
+bool CAimbotHitscan::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const HitscanTarget_t& target)
 {
     if (!CFG::Aimbot_AutoShoot)
         return false;
@@ -443,6 +445,12 @@ bool CAimbotHitscan::ShouldFire(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWe
     if (CFG::Aimbot_WaitForHeadshot && H::AimUtils->IsWeaponCapableOfHeadshot(pWeapon))
     {
         if (!G::bCanHeadshot)
+            return false;
+    }
+
+    if (CFG::Aimbot_WaitForCharge && pWeapon->GetWeaponID() == TF_WEAPON_SNIPERRIFLE) {
+        auto sniper = reinterpret_cast<C_TFSniperRifle*>(pWeapon);
+        if (sniper->m_flChargedDamage() < 50.0f) // Adjust threshold as needed
             return false;
     }
 
@@ -548,7 +556,7 @@ void CAimbotHitscan::HandleFire(CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
     }
 }
 
-bool CAimbotHitscan::IsFiring(const CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
+bool CAimbotHitscan::IsFiring(CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
 {
     if (!pWeapon->HasPrimaryAmmoForShot())
         return false;
@@ -564,10 +572,11 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
     if (!CFG::Aimbot_Enable)
         return;
 
-    if (CFG::Aimbot_Hitscan_Sort == 0)
-        G::flAimbotFOV = CFG::Aimbot_FOV;
-
     if (Shifting::bShifting && !Shifting::bShiftingWarp)
+        return;
+
+    int weaponID = pWeapon->GetWeaponID();
+    if (weaponID == TF_WEAPON_COMPOUND_BOW || weaponID == TF_WEAPON_PIPEBOMBLAUNCHER || weaponID == TF_WEAPON_CANNON || weaponID == TF_WEAPON_GRENADELAUNCHER || weaponID == TF_WEAPON_SYRINGEGUN_MEDIC || weaponID == TF_WEAPON_SHOTGUN_BUILDING_RESCUE || weaponID == TF_WEAPON_FLAMETHROWER || weaponID == TF_WEAPON_FLAME_BALL || weaponID == TF_WEAPON_FLAREGUN || weaponID == TF_WEAPON_CROSSBOW || weaponID == TF_WEAPON_ROCKETLAUNCHER || weaponID == TF_WEAPON_PARTICLE_CANNON || weaponID == TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT || weaponID == TF_WEAPON_FLAREGUN_REVENGE)
         return;
 
     const bool isFiring = IsFiring(pCmd, pWeapon);
@@ -586,7 +595,7 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
 
             // Auto Scope
             if (CFG::Aimbot_AutoScope
-                && !pLocal->IsZoomed() && pLocal->m_iClass() == TF_CLASS_SNIPER && pWeapon->GetSlot() == WEAPON_SLOT_PRIMARY && G::bCanPrimaryAttack)
+                && !pLocal->IsZoomed() && pLocal->m_iClass() == TF_CLASS_SNIPER && pWeapon->GetSlot() == WEAPON_SLOT_PRIMARY && G::bCanPrimaryAttack && bShouldAim)
             {
                 pCmd->buttons |= IN_ATTACK2;
                 return;
@@ -624,7 +633,7 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
                 {
                     if (bIsFiring && target.LagRecord)
                     {
-                        pCmd->tick_count = TIME_TO_TICKS(target.SimulationTime + GetClientInterpAmount());
+                        pCmd->tick_count = TIME_TO_TICKS(target.SimulationTime + SDKUtils::GetLerp());
                     }
                 }
             }

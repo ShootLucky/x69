@@ -12,6 +12,8 @@ public:
     void Draw();
 
 private:
+    const char* g_SubText = nullptr;
+    bool g_SubTextChosen = false;
     bool bUnload = false;
     bool bBlackScreen = false;
     DWORD ulBlackStart = 0;

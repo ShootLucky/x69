@@ -264,6 +264,7 @@ void CESP::Run()
         int team = pBase->m_iTeamNum();
         bool isTeammate = (localTeam != -1 && team == localTeam);
         bool isEnemy = !isTeammate && team > 1; // >1 to exclude spec
+        bool isLocal = (i == localIndex);
         bool drawESP = false;
         bool drawSkeleton = false;
         bool drawChamsBox = false;
@@ -275,14 +276,15 @@ void CESP::Run()
         int health = 0;
         int max_health = 100;
         Color_t clr = Color_t(255, 255, 255, 255);
+        bool drawBacktrackChams = false;
+        bool drawBacktrackSkeleton = false;
+        C_TFPlayer* pPlayer = nullptr;
         if (strcmp(networkName, "CTFPlayer") == 0)
         {
-            C_TFPlayer* pPlayer = static_cast<C_TFPlayer*>(pBase);
+            pPlayer = static_cast<C_TFPlayer*>(pBase);
             if (!pPlayer) continue;
             if (pPlayer->m_lifeState() != LIFE_ALIVE) continue;
             isPlayer = true;
-            bool isLocal = (i == localIndex);
-            if (isLocal && !CFG::ESP_LocalPlayer && !CFG::ESP_ChamsLocalPlayer && !CFG::ESP_SkeletonLocalPlayer) continue;
             bool isCloaked = InCond(pPlayer, TF_COND_STEALTHED);
             if (isCloaked && (CFG::ESP_HideCloaked || CFG::ESP_ChamsHideCloaked || CFG::ESP_SkeletonHideCloaked)) {
                 if ((CFG::ESP_HideCloaked && CFG::ESP_ChamsHideCloaked && CFG::ESP_SkeletonHideCloaked) || (!CFG::ESP_ChamsLocalPlayer && !CFG::ESP_SkeletonLocalPlayer)) continue;
@@ -312,6 +314,17 @@ void CESP::Run()
             if (max_health <= 0) max_health = pPlayer->GetMaxHealth();
             if (max_health <= 0) max_health = 100;
             health = std::clamp(health, 0, max_health);
+            // Backtrack check
+            int backtrackType = CFG::ESP_Chams_BacktrackType | CFG::ESP_Skeleton_BacktrackType; // Combined
+            bool backtrackCondition = false;
+            if (backtrackType & (1 << 3)) backtrackCondition = true; // All
+            else {
+                if (isEnemy && (backtrackType & (1 << 0))) backtrackCondition = true;
+                if (isTeammate && (backtrackType & (1 << 1))) backtrackCondition = true;
+                if (isLocal && (backtrackType & (1 << 2))) backtrackCondition = true;
+            }
+            drawBacktrackChams = CFG::ESP_Chams_Backtrack && backtrackCondition;
+            drawBacktrackSkeleton = CFG::ESP_Skeleton_Backtrack && backtrackCondition;
         }
         else if (strcmp(networkName, "CObjectSentrygun") == 0 || strcmp(networkName, "CObjectDispenser") == 0 || strcmp(networkName, "CObjectTeleporter") == 0)
         {
@@ -486,23 +499,33 @@ void CESP::Run()
                 int barY = static_cast<int>(std::round(top)) - 1;
                 int barW = 4;
                 int barH = height + 2;
-                H::Draw->Rect(barX, barY, barW, barH, Color_t(0, 0, 0, 200));
-                if (barH > 2 && health > 0)
-                {
-                    float ratio = static_cast<float>(health) / static_cast<float>(max_health);
-                    int fillH = static_cast<int>(std::round((barH - 2) * ratio));
-                    int fillY = barY + (barH - 1) - fillH;
-                    int red = static_cast<int>(255 * (1.0f - ratio));
-                    int green = static_cast<int>(255 * ratio);
-                    Color_t c(static_cast<unsigned char>(red), static_cast<unsigned char>(green), 0, 255);
-                    H::Draw->Rect(barX + 1, fillY, 2, fillH, c);
+                int healthType = CFG::ESP_HealthType;
+                if (healthType == 0 || healthType == 2) { // bar or both
+                    H::Draw->Rect(barX, barY, barW, barH, Color_t(0, 0, 0, 200));
+                    if (barH > 2 && health > 0)
+                    {
+                        float ratio = static_cast<float>(health) / static_cast<float>(max_health);
+                        int fillH = static_cast<int>(std::round((barH - 2) * ratio));
+                        int fillY = barY + (barH - 1) - fillH;
+                        int red = static_cast<int>(255 * (1.0f - ratio));
+                        int green = static_cast<int>(255 * ratio);
+                        Color_t c(static_cast<unsigned char>(red), static_cast<unsigned char>(green), 0, 255);
+                        H::Draw->Rect(barX + 1, fillY, 2, fillH, c);
+                    }
+                }
+                if (healthType == 1 || healthType == 2) { // number or both
+                    const CFont& font = H::Fonts->Get(EFonts::ESP);
+                    std::string healthStr = std::to_string(health);
+                    int textX = barX + barW / 2;
+                    int textY = barY + barH / 2;
+                    H::Draw->String(font, textX, textY, Color_t(255, 255, 255, 255), POS_CENTERXY, healthStr.c_str());
                 }
             }
         }
         if (CFG::ESP_Offscreen && isEnemy && anyFailed && isPlayer) {
             DrawOffscreenArrow(origin, clr);
         }
-        if ((drawSkeleton || drawChamsBox) && (isPlayer || isBuilding)) // Removed isFlag and isPickup
+        if ((drawSkeleton || drawChamsBox || drawBacktrackSkeleton || drawBacktrackChams) && (isPlayer || isBuilding)) // Removed isFlag and isPickup
         {
             matrix3x4_t boneMatrix[128] = {};
             const int maxBones = 128;
@@ -717,6 +740,174 @@ void CESP::Run()
                     }
                     if (fail) continue;
                     DrawProjectedHitboxWire(scr, wireColor, useAA);
+                }
+            }
+            // Backtrack drawing
+            if (isPlayer && (drawBacktrackChams || drawBacktrackSkeleton)) {
+                int totalRecords = 0;
+                if (F::LagRecords->HasRecords(pPlayer, &totalRecords)) {
+                    for (int n = 1; n <= totalRecords; ++n) { // start from 1 to skip current
+                        auto pRecord = F::LagRecords->GetRecord(pPlayer, n);
+                        if (!pRecord || !pRecord->bValid) continue;
+                        F::LagRecordMatrixHelper->Set(pRecord);
+                        float alphaFactor = 1.0f - static_cast<float>(n) / static_cast<float>(totalRecords + 1);
+                        Color_t fadedClr = clr;
+                        fadedClr.a = static_cast<unsigned char>(clr.a * alphaFactor);
+                        // Draw backtrack skeleton
+                        if (drawBacktrackSkeleton) {
+                            std::map<std::string, Vec3> keyBoneScreens;
+                            std::map<std::string, int> keyBoneIndices = {
+                                {"bip_head", -1},
+                                {"bip_neck", -1},
+                                {"bip_spine_3", -1},
+                                {"bip_spine_2", -1},
+                                {"bip_spine_1", -1},
+                                {"bip_spine_0", -1},
+                                {"bip_pelvis", -1},
+                                {"bip_hip_L", -1},
+                                {"bip_knee_L", -1},
+                                {"bip_foot_L", -1},
+                                {"bip_hip_R", -1},
+                                {"bip_knee_R", -1},
+                                {"bip_foot_R", -1},
+                                {"bip_upperArm_L", -1},
+                                {"bip_lowerArm_L", -1},
+                                {"bip_hand_L", -1},
+                                {"bip_upperArm_R", -1},
+                                {"bip_lowerArm_R", -1},
+                                {"bip_hand_R", -1}
+                            };
+                            for (int b = 0; b < numBones; ++b)
+                            {
+                                mstudiobone_t* pBone = pHDR->pBone(b);
+                                if (!pBone) continue;
+                                std::string boneName = pBone->pszName();
+                                auto it = keyBoneIndices.find(boneName);
+                                if (it != keyBoneIndices.end())
+                                    it->second = b;
+                            }
+                            for (const auto& kv : keyBoneIndices)
+                            {
+                                int b = kv.second;
+                                if (b == -1) continue;
+                                Vec3 bonePosWorld{};
+                                Math::VectorTransform(Vec3{ 0.0f, 0.0f, 0.0f }, boneMatrix[b], bonePosWorld);
+                                Vec3 screenPos;
+                                if (H::Draw->W2S(bonePosWorld, screenPos))
+                                {
+                                    keyBoneScreens[kv.first] = screenPos;
+                                }
+                            }
+                            Color_t boneColor = fadedClr;
+                            const std::vector<std::vector<std::string>> chains = {
+                                {"bip_head", "bip_neck", "bip_spine_3", "bip_spine_2", "bip_spine_1", "bip_spine_0", "bip_pelvis"},
+                                {"bip_pelvis", "bip_hip_L", "bip_knee_L", "bip_foot_L"},
+                                {"bip_pelvis", "bip_hip_R", "bip_knee_R", "bip_foot_R"},
+                                {"bip_spine_3", "bip_upperArm_L", "bip_lowerArm_L", "bip_hand_L"},
+                                {"bip_spine_3", "bip_upperArm_R", "bip_lowerArm_R", "bip_hand_R"}
+                            };
+                            for (const auto& chain : chains)
+                            {
+                                for (size_t idx = 0; idx < chain.size() - 1; ++idx)
+                                {
+                                    auto it1 = keyBoneScreens.find(chain[idx]);
+                                    auto it2 = keyBoneScreens.find(chain[idx + 1]);
+                                    if (it1 != keyBoneScreens.end() && it2 != keyBoneScreens.end())
+                                    {
+                                        DrawSmoothBoneLine(it1->second, it2->second, boneColor, useAA);
+                                    }
+                                }
+                            }
+                            // Draw cat ears with fadedClr
+                            auto headIt = keyBoneScreens.find("bip_head");
+                            if (headIt != keyBoneScreens.end())
+                            {
+                                float r = 10.0f; // compute r as before
+                                Vec3 screenHead = headIt->second;
+                                Color_t circleClr = boneColor;
+                                int segments = 64;
+                                Vec3 lastP;
+                                bool first = true;
+                                for (int s = 0; s <= segments; s++)
+                                {
+                                    float theta = 2.0f * PI * static_cast<float>(s) / static_cast<float>(segments);
+                                    float px = screenHead.x + r * std::cos(theta);
+                                    float py = screenHead.y + r * std::sin(theta);
+                                    Vec3 p(px, py, 0);
+                                    if (!first)
+                                        DrawSmoothBoneLine(lastP, p, circleClr, useAA);
+                                    lastP = p;
+                                    first = false;
+                                }
+                                // Cat ears code with circleClr = boneColor = fadedClr
+                                float earH = r * 0.6f;
+                                float earBaseAngle = PI / 6.0f;
+                                float leftBaseLTheta = 3 * PI / 2 - earBaseAngle;
+                                float leftBaseRTheta = 3 * PI / 2 - earBaseAngle / 2;
+                                Vec3 leftEarBaseL(screenHead.x + r * std::cos(leftBaseLTheta), screenHead.y + r * std::sin(leftBaseLTheta), 0);
+                                Vec3 leftEarBaseR(screenHead.x + r * std::cos(leftBaseRTheta), screenHead.y + r * std::sin(leftBaseRTheta), 0);
+                                Vec3 leftEarTip(screenHead.x + r * std::cos(3 * PI / 2 - earBaseAngle * 0.75f), screenHead.y + r * std::sin(3 * PI / 2 - earBaseAngle * 0.75f) - earH, 0);
+                                DrawSmoothBoneLine(leftEarBaseL, leftEarTip, circleClr, useAA);
+                                DrawSmoothBoneLine(leftEarTip, leftEarBaseR, circleClr, useAA);
+                                float rightBaseLTheta = 3 * PI / 2 + earBaseAngle / 2;
+                                float rightBaseRTheta = 3 * PI / 2 + earBaseAngle;
+                                Vec3 rightEarBaseL(screenHead.x + r * std::cos(rightBaseLTheta), screenHead.y + r * std::sin(rightBaseLTheta), 0);
+                                Vec3 rightEarBaseR(screenHead.x + r * std::cos(rightBaseRTheta), screenHead.y + r * std::sin(rightBaseRTheta), 0);
+                                Vec3 rightEarTip(screenHead.x + r * std::cos(3 * PI / 2 + earBaseAngle * 0.75f), screenHead.y + r * std::sin(3 * PI / 2 + earBaseAngle * 0.75f) - earH, 0);
+                                DrawSmoothBoneLine(rightEarBaseL, rightEarTip, circleClr, useAA);
+                                DrawSmoothBoneLine(rightEarTip, rightEarBaseR, circleClr, useAA);
+                            }
+                        }
+                        // Draw backtrack chams
+                        if (drawBacktrackChams) {
+                            float pulse = (std::sin(I::GlobalVars->curtime * 4.0f) + 1.0f) * 0.5f * 0.3f + 0.7f;
+                            Color_t wireColor = Color_t(
+                                static_cast<unsigned char>(std::min(255.0f, fadedClr.r * pulse)),
+                                static_cast<unsigned char>(std::min(255.0f, fadedClr.g * pulse)),
+                                static_cast<unsigned char>(std::min(255.0f, fadedClr.b * pulse)),
+                                fadedClr.a
+                            );
+                            for (int hb = 0; hb < hitboxCount; ++hb)
+                            {
+                                auto pBox = pHDR->pHitbox(hb, hitboxSet);
+                                if (!pBox) continue;
+                                int boneIdx = pBox->bone;
+                                if (boneIdx < 0 || boneIdx >= numBones) continue;
+                                Vec3 modelCorners[8] = {
+                                    { pBox->bbmin.x, pBox->bbmin.y, pBox->bbmin.z },
+                                    { pBox->bbmin.x, pBox->bbmax.y, pBox->bbmin.z },
+                                    { pBox->bbmax.x, pBox->bbmax.y, pBox->bbmin.z },
+                                    { pBox->bbmax.x, pBox->bbmin.y, pBox->bbmin.z },
+                                    { pBox->bbmax.x, pBox->bbmax.y, pBox->bbmax.z },
+                                    { pBox->bbmax.x, pBox->bbmin.y, pBox->bbmax.z },
+                                    { pBox->bbmin.x, pBox->bbmax.y, pBox->bbmax.z },
+                                    { pBox->bbmin.x, pBox->bbmin.y, pBox->bbmax.z }
+                                };
+                                Vec3 worldCorners[8];
+                                for (int c = 0; c < 8; ++c)
+                                    Math::VectorTransform(modelCorners[c], boneMatrix[boneIdx], worldCorners[c]);
+                                bool badWorld = false;
+                                for (int c = 0; c < 8; ++c)
+                                {
+                                    if (!IsFiniteVec(worldCorners[c])) { badWorld = true; break; }
+                                }
+                                if (badWorld) continue;
+                                Vec3 scr[8];
+                                bool fail = false;
+                                for (int c = 0; c < 8; ++c)
+                                {
+                                    if (!H::Draw->W2S(worldCorners[c], scr[c]))
+                                    {
+                                        fail = true;
+                                        break;
+                                    }
+                                }
+                                if (fail) continue;
+                                DrawProjectedHitboxWire(scr, wireColor, useAA);
+                            }
+                        }
+                        F::LagRecordMatrixHelper->Restore();
+                    }
                 }
             }
         }

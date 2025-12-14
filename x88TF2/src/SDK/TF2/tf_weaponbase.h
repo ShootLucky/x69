@@ -12,7 +12,7 @@ MAKE_SIGNATURE(CTFWeaponBaseGun_GetWeaponSpread, "client.dll", "48 89 5C 24 ? 57
 class CHudTexture
 {
 public:
-	void *vftp;
+	void* vftp;
 	char szShortName[64];
 	char szTextureFile[64];
 	bool bRenderUsingFont;
@@ -56,7 +56,7 @@ typedef enum
 class FileWeaponInfo_t
 {
 public:
-	void *m_pVtable;
+	void* m_pVtable;
 
 	bool bParsedScript;
 	bool bLoadedHudElements;
@@ -98,15 +98,15 @@ public:
 	// CLIENT DLL
 	// Sprite data, read from the data file
 	int   iSpriteCount;
-	CHudTexture *iconActive;
-	CHudTexture *iconInactive;
-	CHudTexture *iconAmmo;
-	CHudTexture *iconAmmo2;
-	CHudTexture *iconCrosshair;
-	CHudTexture *iconAutoaim;
-	CHudTexture *iconZoomedCrosshair;
-	CHudTexture *iconZoomedAutoaim;
-	CHudTexture *iconSmall;
+	CHudTexture* iconActive;
+	CHudTexture* iconInactive;
+	CHudTexture* iconAmmo;
+	CHudTexture* iconAmmo2;
+	CHudTexture* iconCrosshair;
+	CHudTexture* iconAutoaim;
+	CHudTexture* iconZoomedCrosshair;
+	CHudTexture* iconZoomedAutoaim;
+	CHudTexture* iconSmall;
 
 	// TF2 specific
 	bool bShowUsageHint; // if true, then when you receive the weapon, show a hint about it
@@ -175,7 +175,7 @@ public:
 	char         m_szExplosionWaterEffect[128];      //0x0B11
 	bool         m_bDontDrop;                        //0x0B91
 
-	WeaponData_t const &GetWeaponData(int iWeapon) const { return m_WeaponData[iWeapon]; }
+	WeaponData_t const& GetWeaponData(int iWeapon) const { return m_WeaponData[iWeapon]; }
 };
 
 class C_TFWeaponBase : public C_BaseCombatWeapon
@@ -202,43 +202,98 @@ public:
 	NETVAR(m_iConsecutiveShots, int, "CTFWeaponBase", "m_iConsecutiveShots");
 	NETVAR(m_iItemDefinitionIndex, int, "CEconEntity", "m_iItemDefinitionIndex");
 
+	// Crit bucket tracking - offset-based netvars from Amalgam
+	float& m_flCritTokenBucket() {
+		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_iReloadMode") + -244;
+		return *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+	}
+
+	int& m_nCritChecks() {
+		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_iReloadMode") + -240;
+		return *reinterpret_cast<int*>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+	}
+
+	int& m_nCritSeedRequests() {
+		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_iReloadMode") + -236;
+		return *reinterpret_cast<int*>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+	}
+
+	float& m_flCritTime() {
+		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_flLastCritCheckTime") + -4;
+		return *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+	}
+
+	int& m_iCurrentSeed() {
+		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_flLastCritCheckTime") + 8;
+		return *reinterpret_cast<int*>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+	}
+
+	float& m_flLastRapidFireCritCheckTime() {
+		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_flLastCritCheckTime") + 12;
+		return *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+	}
+
+	// Helper functions for crit calculation (from Amalgam)
+	bool IsRapidFire() {
+		int weaponID = GetWeaponID();
+		return weaponID == TF_WEAPON_MINIGUN || weaponID == TF_WEAPON_FLAMETHROWER;
+	}
+
+	float GetFireRate() {
+		if (auto pWeaponInfo = GetWeaponInfo())
+			return pWeaponInfo->GetWeaponData(0).m_flTimeFireDelay; // TF_WEAPON_PRIMARY_MODE = 0
+		return 0.5f;
+	}
+
+	float GetDamage() {
+		if (auto pWeaponInfo = GetWeaponInfo())
+			return static_cast<float>(pWeaponInfo->GetWeaponData(0).m_nDamage); // TF_WEAPON_PRIMARY_MODE = 0
+		return 100.0f;
+	}
+
+	int GetBulletsPerShot() {
+		if (auto pWeaponInfo = GetWeaponInfo())
+			return pWeaponInfo->GetWeaponData(0).m_nBulletsPerShot; // TF_WEAPON_PRIMARY_MODE = 0
+		return 1;
+	}
+
 	int GetSlot() {
-		return reinterpret_cast<int(__fastcall *)(void *)>(Memory::GetVFunc(this, 331))(this);
+		return reinterpret_cast<int(__fastcall*)(void*)>(Memory::GetVFunc(this, 331))(this);
 	}
 
 	int GetWeaponID() {
-		return reinterpret_cast<int(__fastcall *)(void *)>(Memory::GetVFunc(this, 382))(this);
+		return reinterpret_cast<int(__fastcall*)(void*)>(Memory::GetVFunc(this, 383))(this);
 	}
 
 	int GetDamageType() {
-		return reinterpret_cast<int(__fastcall *)(void *)>(Memory::GetVFunc(this, 383))(this);
+		return reinterpret_cast<int(__fastcall*)(void*)>(Memory::GetVFunc(this, 384))(this);
 	}
 
 	float GetSwingRange() {
 		return GetWeaponID() == TF_WEAPON_SWORD ? 72.0f : 48.0f;
 	}
 
-	float &m_flSmackTime() {
+	float& m_flSmackTime() {
 		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_nInspectStage") + 28;
-		return *reinterpret_cast<float *>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+		return *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
 	}
 
-	bool CanFireCriticalShot(C_BasePlayer *pOwner, bool bIsHeadshot = false)
+	bool CanFireCriticalShot(C_BasePlayer* pOwner, bool bIsHeadshot = false)
 	{
 		bool bOut = false;
 
 		if (pOwner)
 		{
-			int &iFOV = pOwner->m_iFOV(), nFovBackup = iFOV;
+			int& iFOV = pOwner->m_iFOV(), nFovBackup = iFOV;
 			iFOV = 70;
-			bOut = reinterpret_cast<bool(__fastcall *)(void *, bool, void *)>(Memory::GetVFunc(this, 425))(this, bIsHeadshot, nullptr);
+			bOut = reinterpret_cast<bool(__fastcall*)(void*, bool, void*)>(Memory::GetVFunc(this, 428))(this, bIsHeadshot, nullptr);
 			iFOV = nFovBackup;
 		}
 
 		return bOut;
 	}
 
-	bool CanHeadShot(C_BasePlayer *pOwner)
+	bool CanHeadShot(C_BasePlayer* pOwner)
 	{
 		bool bOut = false;
 
@@ -248,7 +303,7 @@ public:
 		return bOut;
 	}
 
-	bool CanPrimaryAttack(C_BasePlayer *pOwner)
+	bool CanPrimaryAttack(C_BasePlayer* pOwner)
 	{
 		bool bOut = false;
 
@@ -260,7 +315,7 @@ public:
 		return bOut;
 	}
 
-	bool CanSecondaryAttack(C_BasePlayer *pOwner)
+	bool CanSecondaryAttack(C_BasePlayer* pOwner)
 	{
 		bool bOut = false;
 
@@ -272,13 +327,13 @@ public:
 		return bOut;
 	}
 
-	CTFWeaponInfo *GetWeaponInfo() {
+	CTFWeaponInfo* GetWeaponInfo() {
 		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_flEffectBarRegenTime") + 16;
-		return *reinterpret_cast<CTFWeaponInfo **>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+		return *reinterpret_cast<CTFWeaponInfo**>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
 	}
-	
+
 	bool IsEnergyWeapon() {
-		return reinterpret_cast<bool(__fastcall *)(void *)>(Memory::GetVFunc(this, 433))(this);
+		return reinterpret_cast<bool(__fastcall*)(void*)>(Memory::GetVFunc(this, 435))(this);
 	}
 
 	bool HasPrimaryAmmoForShot()
@@ -296,7 +351,7 @@ public:
 
 				if (m_iItemDefinitionIndex() == Engi_m_TheWidowmaker)
 					return nAmmoCount > 29;
-				
+
 				return nAmmoCount > 0;
 			}
 		}
@@ -304,43 +359,38 @@ public:
 		return nClip1 > 0;
 	}
 
-	int &m_iCurrentSeed() {
-		static int nOffset = NetVars::GetNetVar("CTFWeaponBase", "m_flLastCritCheckTime") + 8;
-		return *reinterpret_cast<int *>(reinterpret_cast<std::uintptr_t>(this) + nOffset);
+	void GetProjectileFireSetup(void* pPlayer, Vector vecOffset, Vector* vecSrc, QAngle* angForward, bool bHitTeammates = true, float flEndDist = 2000.0f) {
+		using fn = void(__fastcall*)(C_TFWeaponBase*, void*, Vector, Vector*, QAngle*, bool, float);
+		reinterpret_cast<fn>(Memory::GetVFunc(this, 402))(this, pPlayer, vecOffset, vecSrc, angForward, bHitTeammates, flEndDist);
 	}
 
-	void GetProjectileFireSetup(void *pPlayer, Vector vecOffset, Vector *vecSrc, QAngle *angForward, bool bHitTeammates = true, float flEndDist = 2000.0f) {
-		using fn = void(__fastcall *)(C_TFWeaponBase *, void *, Vector, Vector *, QAngle *, bool, float);
-		reinterpret_cast<fn>(Memory::GetVFunc(this, 400))(this, pPlayer, vecOffset, vecSrc, angForward, bHitTeammates, flEndDist);
-	}
-
-	void GetSpreadAngles(Vec3 &out) {
-		reinterpret_cast<void(__fastcall *)(void *, Vec3 &)>(Signatures::CTFWeaponBase_GetSpreadAngles.Get())(this, out);
+	void GetSpreadAngles(Vec3& out) {
+		reinterpret_cast<void(__fastcall*)(void*, Vec3&)>(Signatures::CTFWeaponBase_GetSpreadAngles.Get())(this, out);
 	}
 
 	void UpdateAllViewmodelAddons() {
-		return reinterpret_cast<void(__fastcall *)(void *)>(Signatures::CTFWeaponBase_UpdateAllViewmodelAddons.Get())(this);
+		return reinterpret_cast<void(__fastcall*)(void*)>(Signatures::CTFWeaponBase_UpdateAllViewmodelAddons.Get())(this);
 	}
 
 	float ApplyFireDelay(float flDelay) {
-		return reinterpret_cast<float(__fastcall *)(void *, float)>(Memory::GetVFunc(this, 408))(this, flDelay);
+		return reinterpret_cast<float(__fastcall*)(void*, float)>(Memory::GetVFunc(this, 410))(this, flDelay);
 	}
 
 	bool CalcIsAttackCriticalHelperMelee() {
-		return reinterpret_cast<bool(__fastcall *)(void *)>(Signatures::CTFWeaponBaseMelee_CalcIsAttackCriticalHelper.Get())(this);
+		return reinterpret_cast<bool(__fastcall*)(void*)>(Signatures::CTFWeaponBaseMelee_CalcIsAttackCriticalHelper.Get())(this);
 	}
 
 	bool CalcIsAttackCriticalHelper() {
-		return reinterpret_cast<bool(__fastcall *)(void *)>(Signatures::CTFWeaponBase_CalcIsAttackCriticalHelper.Get())(this);
+		return reinterpret_cast<bool(__fastcall*)(void*)>(Signatures::CTFWeaponBase_CalcIsAttackCriticalHelper.Get())(this);
 	}
 
-	C_BaseAnimating *GetAppropriateWorldOrViewModel() {
-		return reinterpret_cast<C_BaseAnimating * (__fastcall *)(void *)>(Signatures::CTFWeaponBase_GetAppropriateWorldOrViewModel.Get())(this);
+	C_BaseAnimating* GetAppropriateWorldOrViewModel() {
+		return reinterpret_cast<C_BaseAnimating * (__fastcall*)(void*)>(Signatures::CTFWeaponBase_GetAppropriateWorldOrViewModel.Get())(this);
 	}
 
 	float GetWeaponSpread()
 	{
-		return reinterpret_cast<float(__fastcall *)(void *)>(Signatures::CTFWeaponBaseGun_GetWeaponSpread.Get())(this);
+		return reinterpret_cast<float(__fastcall*)(void*)>(Signatures::CTFWeaponBaseGun_GetWeaponSpread.Get())(this);
 	}
 };
 
@@ -404,7 +454,7 @@ public:
 	NETVAR(m_iPipebombCount, int, "CTFPipebombLauncher", "m_iPipebombCount");
 	NETVAR(m_flChargeBeginTime, float, "CTFPipebombLauncher", "m_flChargeBeginTime");
 
-	CUtlVector<CHandle<C_TFGrenadePipebombProjectile>> &m_Pipebombs()
+	CUtlVector<CHandle<C_TFGrenadePipebombProjectile>>& m_Pipebombs()
 	{
 		static int nOffset = NetVars::GetNetVar("CTFPipebombLauncher", "m_flChargeBeginTime") - 28;
 		return *reinterpret_cast<CUtlVector<CHandle<C_TFGrenadePipebombProjectile>> *>(reinterpret_cast<std::uintptr_t>(this) + nOffset);

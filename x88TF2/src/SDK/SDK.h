@@ -284,6 +284,7 @@ namespace G
 	inline bool bCanHeadshot = false;
 	inline int nOldButtons = 0;
 	inline Vec3 vUserCmdAngles = {};
+	inline CUserCmd* CurrentUserCmd = nullptr;
 
 	struct VelFixRecord_t
 	{
@@ -300,6 +301,7 @@ namespace G
 	inline int nTicksSinceCanFire = 0;
 
 	inline bool bUpdatingAnims = false;
+	inline bool bSimulatingProjectile = false;
 
 	inline bool bStartedFakeTaunt = false;
 	inline float flFakeTauntStartYaw = 0.0f;
