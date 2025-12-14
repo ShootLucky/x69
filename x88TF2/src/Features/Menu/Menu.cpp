@@ -67,7 +67,7 @@ void text(int x, int* y, std::string text, text_type type, int alpha = 255) {
     H::Draw->String(H::Fonts->Get(EFonts::Menu), x, *y, text_color, POS_DEFAULT, text.c_str());
     *y += 15;
 }
-void checkbox(int x, int* y, std::string text, bool* option, bool special = false, int alpha = 255, int item_counts = 1, int entindex = 0, PlayerPriority* pri = nullptr) {
+void checkbox(int x, int* y, std::string text, bool* option, bool special = false, int alpha = 255, int item_counts = 1, int entindex = 0, PlayerPriority* pri = nullptr, bool use_return = false) {
     if (menu::menu_locked)
         alpha = static_cast<int>(alpha * 0.f);
     int text_width = 0, text_height = 0;
@@ -77,7 +77,7 @@ void checkbox(int x, int* y, std::string text, bool* option, bool special = fals
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
     if (item_counts == menu::item_count && !menu::menu_locked) {
-        if (GetAsyncKeyState(VK_LEFT) & 1 || GetAsyncKeyState(VK_RIGHT) & 1) {
+        if (use_return ? (GetAsyncKeyState(VK_RETURN) & 1) : (GetAsyncKeyState(VK_LEFT) & 1 || GetAsyncKeyState(VK_RIGHT) & 1)) {
             *option = !*option;
             if (entindex > 0 && pri != nullptr) {
                 F::Players->Mark(entindex, *pri);
@@ -422,8 +422,10 @@ void menu::render() {
     const CFont& font = H::Fonts->Get(EFonts::Menu);
     if (!menu::menu_locked)
     {
-        if (GetAsyncKeyState(VK_DOWN) & 1) menu::item_count += 1;
-        if (GetAsyncKeyState(VK_UP) & 1) menu::item_count -= 1;
+        if (CFG::CurrentSection != 2) {
+            if (GetAsyncKeyState(VK_DOWN) & 1) menu::item_count += 1;
+            if (GetAsyncKeyState(VK_UP) & 1) menu::item_count -= 1;
+        }
     }
     y = menu_start_y;
     int current_item = 1;
@@ -872,47 +874,87 @@ void menu::render() {
         max_items = current_item - 1;
     }
     else if (CFG::CurrentSection == 2) { // Playerlist section
-        int x = 150;
+        int base_x = 150;
+        int name_x = base_x;
+        int ignored_x = base_x + 200;
+        int cheater_x = base_x + 350;
+        int retard_x = base_x + 500;
         int start_y = y;
+        int header_y = start_y;
         y = start_y;
+        // Headers
+        H::Draw->String(font, name_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Name");
+        H::Draw->String(font, ignored_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Ignored");
+        H::Draw->String(font, cheater_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Cheater");
+        H::Draw->String(font, retard_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "RetardLegit");
+        y += 15;
+        // Horizontal line under headers
+        H::Draw->Line(name_x, y, retard_x + 100, y, Color_t(255, 255, 255, 255));
+        y += 15;
+        std::vector<std::pair<int, std::string>> player_list;
         std::vector<int> ent_indices;
         std::vector<PlayerPriority> priorities;
-        std::vector<std::pair<int, std::string>> player_list;
         for (int i = 1; i <= 64; ++i) {
             if (i == I::EngineClient->GetLocalPlayer()) continue;
             player_info_t info{};
             if (I::EngineClient->GetPlayerInfo(i, &info) && !info.fakeplayer) {
                 player_list.emplace_back(i, info.name);
+                ent_indices.push_back(i);
+                PlayerPriority pri{};
+                F::Players->GetInfo(i, pri);
+                priorities.push_back(pri);
             }
         }
         // Sort by name
         std::sort(player_list.begin(), player_list.end(), [](const auto& a, const auto& b) {
             return a.second < b.second;
             });
-        for (const auto& [entindex, name] : player_list) {
-            PlayerPriority pri{};
-            F::Players->GetInfo(entindex, pri);
-            ent_indices.push_back(entindex);
-            priorities.push_back(pri);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        int num_players = player_list.size();
+        int num_columns = 3;
+        int total_items = num_players * num_columns;
+        int player_item_offset = 1; // Section is 1, players start from 2
+        int max_player_item = total_items + player_item_offset;
+        if (!menu::menu_locked) {
+            int delta = 0;
+            bool vertical = false;
+            if (GetAsyncKeyState(VK_DOWN) & 1) { delta += num_columns; vertical = true; }
+            if (GetAsyncKeyState(VK_UP) & 1) { delta -= num_columns; vertical = true; }
+            if (GetAsyncKeyState(VK_RIGHT) & 1) delta += 1;
+            if (GetAsyncKeyState(VK_LEFT) & 1) delta -= 1;
+            int new_count = menu::item_count + delta;
+            if (new_count > max_player_item) {
+                if (vertical) new_count = menu::item_count; // Stay for vertical beyond
+                else new_count = max_player_item;
             }
-            text(x, &y, name, regular); // Non-interactive name
-            current_item++; // Increment for name (but no action)
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x + 20 - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            if (new_count < 1) {
+                if (vertical) new_count = menu::item_count;
+                else new_count = 1;
             }
-            checkbox(x + 20, &y, "Ignored", &priorities.back().Ignored, false, 255, current_item++, ent_indices.back(), &priorities.back());
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x + 20 - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x + 20, &y, "Cheater", &priorities.back().Cheater, false, 255, current_item++, ent_indices.back(), &priorities.back());
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, x + 20 - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x + 20, &y, "RetardLegit", &priorities.back().RetardLegit, false, 255, current_item++, ent_indices.back(), &priorities.back());
+            menu::item_count = new_count;
         }
-        max_items = current_item - 1;
+        for (int row = 0; row < num_players; ++row) {
+            int player_y = y;
+            // Draw name (non-interactive)
+            H::Draw->String(font, name_x, player_y, Color_t(255, 255, 255, 255), POS_DEFAULT, player_list[row].second.c_str());
+            for (int col = 0; col < num_columns; ++col) {
+                int item_id = row * num_columns + col + player_item_offset + 1;
+                int col_x;
+                if (col == 0) col_x = ignored_x;
+                else if (col == 1) col_x = cheater_x;
+                else col_x = retard_x;
+                if (!menu_locked && menu::item_count == item_id) {
+                    H::Draw->String(font, col_x - 25, player_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                }
+                int temp_y = player_y;
+                bool* opt;
+                if (col == 0) opt = &priorities[row].Ignored;
+                else if (col == 1) opt = &priorities[row].Cheater;
+                else opt = &priorities[row].RetardLegit;
+                checkbox(col_x, &temp_y, "", opt, false, 255, item_id, ent_indices[row], &priorities[row], true);
+            }
+            y += 15; // Move to next row
+        }
+        max_items = max_player_item;
     }
     else if (CFG::CurrentSection == 3) {
         // Misc section
