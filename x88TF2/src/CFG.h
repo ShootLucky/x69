@@ -148,6 +148,8 @@ namespace CFG
 	CFGVAR(Misc_AutoRocketJump_Key, 0);
 	CFGVAR(Misc_AutoStrafer_Intensity, 45.f);
 	CFGVAR(Radio_LocalMusic, false);
+	CFGVAR(Misc_FakeLatencyfloat_Enable, 45.f);
+	CFGVAR(Misc_FakeLatency_Enable, false);
 	CFGVAR(Radio_Pause, false);
 	CFGVAR(Radio_Next, false);
 	CFGVAR(Radio_Prev, false);

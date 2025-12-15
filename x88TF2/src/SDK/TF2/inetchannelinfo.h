@@ -25,8 +25,8 @@ enum
 class INetChannelInfo
 {
 public:
-	virtual const char *GetName(void) const = 0;
-	virtual const char *GetAddress(void) const = 0; 
+	virtual const char* GetName(void) const = 0;
+	virtual const char* GetAddress(void) const = 0;
 	virtual float GetTime(void) const = 0;
 	virtual float GetTimeConnected(void) const = 0;
 	virtual int GetBufferSize(void) const = 0;
@@ -45,10 +45,10 @@ public:
 	virtual bool IsValidPacket(int flow, int frame_number) const = 0;
 	virtual float GetPacketTime(int flow, int frame_number) const = 0;
 	virtual int GetPacketBytes(int flow, int frame_number, int group) const = 0;
-	virtual bool GetStreamProgress(int flow, int *received, int *total) const = 0;
+	virtual bool GetStreamProgress(int flow, int* received, int* total) const = 0;
 	virtual float GetTimeSinceLastReceived(void) const = 0;
 	virtual	float GetCommandInterpolationAmount(int flow, int frame_number) const = 0;
-	virtual void GetPacketResponseLatency(int flow, int frame_number, int *pnLatencyMsecs, int *pnChoke) const = 0;
-	virtual void GetRemoteFramerate(float *pflFrameTime, float *pflFrameTimeStdDeviation) const = 0;
+	virtual void GetPacketResponseLatency(int flow, int frame_number, int* pnLatencyMsecs, int* pnChoke) const = 0;
+	virtual void GetRemoteFramerate(float* pflFrameTime, float* pflFrameTimeStdDeviation) const = 0;
 	virtual float GetTimeoutSeconds() const = 0;
 };

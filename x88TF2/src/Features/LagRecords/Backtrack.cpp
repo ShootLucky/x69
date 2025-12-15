@@ -1,29 +1,21 @@
 #include "Backtrack.h"
-
 #include <ranges>
-
 #include "CFG.h"
-
+#include "../Misc/Misc.h"
 bool CLagRecords::IsSimulationTimeValid(float flCurSimTime, float flCmprSimTime)
 {
-	return flCurSimTime - flCmprSimTime < 0.2f;
+	return flCurSimTime - flCmprSimTime < 0.2f + F::Misc->GetFakeLatency();
 }
-
 void CLagRecords::AddRecord(C_TFPlayer* pPlayer)
 {
 	LagRecord_t newRecord = {};
-
 	m_bSettingUpBones = true;
-
 	const auto setup_bones_optimization{ CFG::Misc_SetupBones_Optimization };
-
 	if (setup_bones_optimization)
 	{
 		pPlayer->InvalidateBoneCache();
 	}
-
 	const auto result = pPlayer->SetupBones(newRecord.BoneMatrix, 128, BONE_USED_BY_ANYTHING, I::GlobalVars->curtime);
-
 	if (setup_bones_optimization)
 	{
 		auto attach = pPlayer->FirstMoveChild();
@@ -34,16 +26,12 @@ void CLagRecords::AddRecord(C_TFPlayer* pPlayer)
 				attach->InvalidateBoneCache();
 				attach->SetupBones(nullptr, -1, BONE_USED_BY_ANYTHING, I::GlobalVars->curtime);
 			}
-
 			attach = attach->NextMovePeer();
 		}
 	}
-
 	m_bSettingUpBones = false;
-
 	if (!result)
 		return;
-
 	newRecord.Player = pPlayer;
 	newRecord.SimulationTime = pPlayer->m_flSimulationTime();
 	newRecord.AbsOrigin = pPlayer->GetAbsOrigin();
@@ -54,59 +42,45 @@ void CLagRecords::AddRecord(C_TFPlayer* pPlayer)
 	newRecord.Center = pPlayer->GetCenter();
 	newRecord.Flags = pPlayer->m_fFlags();
 	newRecord.bValid = true;
-
 	if (const auto pAnimState = pPlayer->GetAnimState())
 		newRecord.FeetYaw = pAnimState->m_flCurrentFeetYaw;
-
 	m_LagRecords[pPlayer].emplace_front(newRecord);
 }
-
 const LagRecord_t* CLagRecords::GetRecord(C_TFPlayer* pPlayer, int nRecord, bool bSafe)
 {
 	if (!bSafe)
 	{
 		if (!m_LagRecords.contains(pPlayer))
 			return nullptr;
-
 		if (nRecord < 0 || nRecord > static_cast<int>(m_LagRecords[pPlayer].size() - 1))
 			return nullptr;
 	}
-
 	return &m_LagRecords[pPlayer][nRecord];
 }
-
 bool CLagRecords::HasRecords(C_TFPlayer* pPlayer, int* pTotalRecords)
 {
 	if (m_LagRecords.contains(pPlayer))
 	{
 		const size_t nSize = m_LagRecords[pPlayer].size();
-
 		if (nSize <= 0)
 			return false;
-
 		if (pTotalRecords)
 			*pTotalRecords = static_cast<int>(nSize - 1);
-
 		return true;
 	}
-
 	return false;
 }
-
 void CLagRecords::UpdateRecords()
 {
 	const auto pLocal = H::Entities->GetLocal();
-
 	if (!pLocal || pLocal->deadflag() || pLocal->InCond(TF_COND_HALLOWEEN_GHOST_MODE) || pLocal->InCond(TF_COND_HALLOWEEN_KART))
 	{
 		if (!m_LagRecords.empty())
 		{
 			m_LagRecords.clear();
 		}
-
 		return;
 	}
-
 	// Remove invalid players
 	for (const auto pEntity : H::Entities->GetGroup(CFG::Misc_SetupBones_Optimization ? EEntGroup::PLAYERS_ALL : EEntGroup::PLAYERS_ENEMIES))
 	{
@@ -114,15 +88,12 @@ void CLagRecords::UpdateRecords()
 		{
 			continue;
 		}
-
 		const auto pPlayer = pEntity->As<C_TFPlayer>();
-
 		if (pPlayer->deadflag())
 		{
 			m_LagRecords[pPlayer].clear();
 		}
 	}
-
 	// Remove invalid records
 	for (auto& records : m_LagRecords | std::views::values)
 	{
@@ -140,77 +111,97 @@ void CLagRecords::UpdateRecords()
 		}
 	}
 }
-
 bool CLagRecords::DiffersFromCurrent(const LagRecord_t* pRecord)
 {
 	const auto pPlayer = pRecord->Player;
-
 	if (!pPlayer)
 		return false;
-
 	if (static_cast<int>((pPlayer->m_vecOrigin() - pRecord->AbsOrigin).Length()) != 0)
 		return true;
-
 	if (static_cast<int>((pPlayer->GetEyeAngles() - pRecord->EyeAngles).Length()) != 0)
 		return true;
-
 	if (pPlayer->m_fFlags() != pRecord->Flags)
 		return true;
-
 	if (const auto pAnimState = pPlayer->GetAnimState())
 	{
 		if (fabsf(pAnimState->m_flCurrentFeetYaw - pRecord->FeetYaw) > 0.0f)
 			return true;
 	}
-
 	return false;
 }
-
 void CLagRecordMatrixHelper::Set(const LagRecord_t* pRecord)
 {
 	if (!pRecord)
 		return;
-
 	const auto pPlayer = pRecord->Player;
-
 	if (!pPlayer || pPlayer->deadflag())
 		return;
-
 	const auto pCachedBoneData = pPlayer->GetCachedBoneData();
-
 	if (!pCachedBoneData)
 		return;
-
 	m_pPlayer = pPlayer;
 	m_vAbsOrigin = pPlayer->GetAbsOrigin();
 	m_vAbsAngles = pPlayer->GetAbsAngles();
 	memcpy(m_BoneMatrix, pCachedBoneData->Base(), sizeof(matrix3x4_t) * pCachedBoneData->Count());
-
 	memcpy(pCachedBoneData->Base(), pRecord->BoneMatrix, sizeof(matrix3x4_t) * pCachedBoneData->Count());
-
 	pPlayer->SetAbsOrigin(pRecord->AbsOrigin);
 	pPlayer->SetAbsAngles(pRecord->AbsAngles);
-
 	m_bSuccessfullyStored = true;
 }
-
 void CLagRecordMatrixHelper::Restore()
 {
 	if (!m_bSuccessfullyStored || !m_pPlayer)
 		return;
-
 	const auto pCachedBoneData = m_pPlayer->GetCachedBoneData();
-
 	if (!pCachedBoneData)
 		return;
-
 	m_pPlayer->SetAbsOrigin(m_vAbsOrigin);
 	m_pPlayer->SetAbsAngles(m_vAbsAngles);
 	memcpy(pCachedBoneData->Base(), m_BoneMatrix, sizeof(matrix3x4_t) * pCachedBoneData->Count());
-
 	m_pPlayer = nullptr;
 	m_vAbsOrigin = {};
 	m_vAbsAngles = {};
 	std::memset(m_BoneMatrix, 0, sizeof(matrix3x4_t) * 128);
 	m_bSuccessfullyStored = false;
+}
+float CLagRecords::GetFakeLatency() const
+{
+	return CFG::Misc_FakeLatency_Enable ? CFG::Misc_FakeLatencyfloat_Enable : 0.0f;
+}
+void CLagRecords::RecordIncomingSequence(CNetChannel* pNetChan)
+{
+	if (!pNetChan || !CFG::Misc_FakeLatency_Enable) return;
+
+	if (pNetChan->m_nInSequenceNr > m_lastincomingsequencenumber)
+	{
+		m_lastincomingsequencenumber = pNetChan->m_nInSequenceNr;
+
+		IncomingSequence_t seq;
+		seq.inreliablestate = pNetChan->m_nInReliableState;
+		seq.sequencenr = pNetChan->m_nInSequenceNr;
+		seq.curtime = I::GlobalVars->realtime;
+
+		m_Sequences.push_front(seq);
+
+		if (m_Sequences.size() > 2048)
+			m_Sequences.pop_back();
+	}
+}
+void CLagRecords::AdjustPing(CNetChannel* pNetChan)
+{
+	if (!pNetChan || !CFG::Misc_FakeLatency_Enable) return;
+
+	for (auto it = m_Sequences.begin(); it != m_Sequences.end(); )
+	{
+		if (I::GlobalVars->realtime - it->curtime >= GetFakeLatency())
+		{
+			pNetChan->m_nInReliableState = it->inreliablestate;
+			pNetChan->m_nInSequenceNr = it->sequencenr;
+			it = m_Sequences.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
 }

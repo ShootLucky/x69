@@ -33,24 +33,24 @@ struct NetworkEvent_t
 
 struct NetworkConnectionEvent_t : public NetworkEvent_t
 {
-	void *m_pChannel;
+	void* m_pChannel;
 };
 
 struct NetworkDisconnectionEvent_t : public NetworkEvent_t
 {
-	void *m_pChannel;
+	void* m_pChannel;
 };
 
 struct NetworkMessageReceivedEvent_t : public NetworkEvent_t
 {
-	void *m_pChannel;
-	INetworkMessage *m_pNetworkMessage;
+	void* m_pChannel;
+	INetworkMessage* m_pNetworkMessage;
 };
 
 class INetworkSystem : public IAppSystem
 {
 public:
-	virtual bool RegisterMessage(INetworkMessage *msg) = 0;
+	virtual bool RegisterMessage(INetworkMessage* msg) = 0;
 	virtual bool StartServer(unsigned short nServerListenPort = NETWORKSYSTEM_DEFAULT_SERVER_PORT) = 0;
 	virtual void ShutdownServer() = 0;
 	virtual void ServerReceiveMessages() = 0;
@@ -59,10 +59,10 @@ public:
 	virtual void ShutdownClient() = 0;
 	virtual void ClientSendMessages() = 0;
 	virtual void ClientReceiveMessages() = 0;
-	virtual void *ConnectClientToServer(const char *pServer, int nServerListenPort = NETWORKSYSTEM_DEFAULT_SERVER_PORT) = 0;
-	virtual void DisconnectClientFromServer(void *pChan) = 0;
-	virtual NetworkEvent_t *FirstNetworkEvent() = 0;
-	virtual NetworkEvent_t *NextNetworkEvent() = 0;
-	virtual const char *GetLocalHostName(void) const = 0;
-	virtual const char *GetLocalAddress(void) const = 0;
+	virtual void* ConnectClientToServer(const char* pServer, int nServerListenPort = NETWORKSYSTEM_DEFAULT_SERVER_PORT) = 0;
+	virtual void DisconnectClientFromServer(void* pChan) = 0;
+	virtual NetworkEvent_t* FirstNetworkEvent() = 0;
+	virtual NetworkEvent_t* NextNetworkEvent() = 0;
+	virtual const char* GetLocalHostName(void) const = 0;
+	virtual const char* GetLocalAddress(void) const = 0;
 };

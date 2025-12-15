@@ -1,5 +1,7 @@
-#include "Predict.h"
-#include "../src/Features/LagRecords/Backtrack.h"
+#include "MovementSimulation.h"
+
+#include "../LagRecords/Backtrack.h"
+
 #include "CFG.h"
 
 void CMovementSimulation::CPlayerDataBackup::Store(C_TFPlayer* pPlayer)
@@ -38,7 +40,7 @@ void CMovementSimulation::CPlayerDataBackup::Store(C_TFPlayer* pPlayer)
     m_chTextureType = pPlayer->m_chTextureType();
     m_vecPunchAngle = pPlayer->m_vecPunchAngle();
     m_vecPunchAngleVel = pPlayer->m_vecPunchAngleVel();
-    m_flJumpTime = pPlayer->m_flJumpTime();
+    m_flJumpTime = pPlayer->m_flJumpTime();  // Added: Missing in original Store
     m_MoveType = pPlayer->m_MoveType();
     m_MoveCollide = pPlayer->m_MoveCollide();
     m_vecLadderNormal = pPlayer->m_vecLadderNormal();
@@ -122,9 +124,10 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
         pMoveData->m_flMaxSpeed *= 0.3333f;
 
     pMoveData->m_flClientMaxSpeed = pMoveData->m_flMaxSpeed;
+
     pMoveData->m_vecViewAngles = { 0.0f, Math::VelocityToAngles(pMoveData->m_vecVelocity).y, 0.0f };
 
-    if (CFG::Aimbot_Projectile_AimPosition == 0)
+    if (CFG::Aimbot_Projectile_PredictionMethod == 0)
     {
         pMoveData->m_flForwardMove = 450.0f;
         pMoveData->m_flSideMove = 0.0f;
@@ -133,11 +136,13 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
     {
         Vec3 vForward = {}, vRight = {};
         Math::AngleVectors(pMoveData->m_vecViewAngles, &vForward, &vRight, nullptr);
+
         pMoveData->m_flForwardMove = (pMoveData->m_vecVelocity.y - vRight.y / vRight.x * pMoveData->m_vecVelocity.x) / (vForward.y - vRight.y / vRight.x * vForward.x);
         pMoveData->m_flSideMove = (pMoveData->m_vecVelocity.x - vForward.x * pMoveData->m_flForwardMove) / vRight.x;
     }
 
     const float flSpeed = pPlayer->m_vecVelocity().Length2D();
+
     if (flSpeed <= pMoveData->m_flMaxSpeed * 0.1f)
         pMoveData->m_flForwardMove = pMoveData->m_flSideMove = 0.0f;
 
@@ -154,84 +159,106 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
 
     m_flYawTurnRate = 0.0f;
 
+    // Ground strafe prediction - enhanced from Amalgam
     if (CFG::Aimbot_Projectile_GroundStrafePrediction && (m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && F::LagRecords->HasRecords(pPlayer))
     {
-        if (m_MoveData.m_vecVelocity.Length2D() < (m_MoveData.m_flMaxSpeed * 0.85f))
+        // Don't predict if moving too slowly (likely standing still or minimal movement)
+        const float flMinSpeed = m_MoveData.m_flMaxSpeed * 0.4f;
+        if (m_MoveData.m_vecVelocity.Length2D() < flMinSpeed)
         {
             return;
         }
 
+        // Use 8 samples for more robust detection (Amalgam uses configurable samples)
         const auto pRecord0 = F::LagRecords->GetRecord(pPlayer, 0);
         const auto pRecord1 = F::LagRecords->GetRecord(pPlayer, 1);
         const auto pRecord2 = F::LagRecords->GetRecord(pPlayer, 2);
         const auto pRecord3 = F::LagRecords->GetRecord(pPlayer, 3);
         const auto pRecord4 = F::LagRecords->GetRecord(pPlayer, 4);
+        const auto pRecord5 = F::LagRecords->GetRecord(pPlayer, 5);
+        const auto pRecord6 = F::LagRecords->GetRecord(pPlayer, 6);
+        const auto pRecord7 = F::LagRecords->GetRecord(pPlayer, 7);
 
-        if (pRecord0 && pRecord1 && pRecord2 && pRecord3 && pRecord4)
+        if (pRecord0 && pRecord1 && pRecord2 && pRecord3 && pRecord4 && pRecord5 && pRecord6 && pRecord7)
         {
-            const float flYaw0 = Math::VelocityToAngles(pRecord0->Velocity).y;
-            const float flYaw1 = Math::VelocityToAngles(pRecord1->Velocity).y;
-            const float flYaw2 = Math::VelocityToAngles(pRecord2->Velocity).y;
-            const float flYaw3 = Math::VelocityToAngles(pRecord3->Velocity).y;
-            const float flYaw4 = Math::VelocityToAngles(pRecord4->Velocity).y;
+            // Use vector-based rotation calculation (inspired by jvnkbinv1)
+            // This avoids angle normalization issues and is more mathematically robust
+            auto CalculateRotationAngle = [](const Vec3& v1, const Vec3& v2) -> float
+                {
+                    const float len1 = v1.Length2D();
+                    const float len2 = v2.Length2D();
 
-            const auto inc{ flYaw4 > flYaw3 && flYaw3 > flYaw2 && flYaw2 > flYaw1 && flYaw1 > flYaw0 };
-            const auto dec{ flYaw4 < flYaw3 && flYaw3 < flYaw2 && flYaw2 < flYaw1 && flYaw1 < flYaw0 };
+                    // Avoid division by zero
+                    if (len1 < 0.01f || len2 < 0.01f)
+                        return 0.0f;
 
-            if (!inc && !dec)
+                    // Normalize to unit vectors
+                    const float nx1 = v1.x / len1;
+                    const float ny1 = v1.y / len1;
+                    const float nx2 = v2.x / len2;
+                    const float ny2 = v2.y / len2;
+
+                    // Calculate rotation using cross product (sin) and dot product (cos)
+                    const float sin_theta = nx1 * ny2 - ny1 * nx2; // 2D cross product (z-component)
+                    const float cos_theta = nx1 * nx2 + ny1 * ny2; // dot product
+
+                    // atan2 gives us the signed angle in radians, convert to degrees
+                    return atan2f(sin_theta, cos_theta) * (180.0f / 3.14159265f);
+                };
+
+            // Calculate rotation deltas between consecutive velocity samples
+            const float delta0 = CalculateRotationAngle(pRecord1->Velocity, pRecord0->Velocity);
+            const float delta1 = CalculateRotationAngle(pRecord2->Velocity, pRecord1->Velocity);
+            const float delta2 = CalculateRotationAngle(pRecord3->Velocity, pRecord2->Velocity);
+            const float delta3 = CalculateRotationAngle(pRecord4->Velocity, pRecord3->Velocity);
+            const float delta4 = CalculateRotationAngle(pRecord5->Velocity, pRecord4->Velocity);
+            const float delta5 = CalculateRotationAngle(pRecord6->Velocity, pRecord5->Velocity);
+            const float delta6 = CalculateRotationAngle(pRecord7->Velocity, pRecord6->Velocity);
+
+            // Reject if any delta is too large (likely direction change)
+            if (fabsf(delta0) > 45.0f || fabsf(delta1) > 45.0f || fabsf(delta2) > 45.0f ||
+                fabsf(delta3) > 45.0f || fabsf(delta4) > 45.0f || fabsf(delta5) > 45.0f || fabsf(delta6) > 45.0f)
             {
                 return;
             }
 
-            const float flYawRate = (((flYaw0 - flYaw1) + (flYaw2 - flYaw3) + (flYaw3 - flYaw4)) / 3) / (TICK_INTERVAL * 50.0f);
+            // Check for consistent air strafe direction (allow up to 3 changes for air)
+            int iDirectionChanges = 0;
+            int iLastSign = delta0 > 0.0f ? 1 : (delta0 < 0.0f ? -1 : 0);
 
-            if (fabsf(flYawRate) < 1.0f)
+            const float deltas[] = { delta1, delta2, delta3, delta4, delta5, delta6 };
+            for (const float delta : deltas)
+            {
+                const int iCurrSign = delta > 0.0f ? 1 : (delta < 0.0f ? -1 : 0);
+                if (iCurrSign != 0 && iLastSign != 0 && iCurrSign != iLastSign)
+                {
+                    iDirectionChanges++;
+                }
+                if (iCurrSign != 0)
+                {
+                    iLastSign = iCurrSign;
+                }
+            }
+
+            // Air strafing can have more direction changes than ground
+            if (iDirectionChanges > 3)
             {
                 return;
             }
 
-            m_flYawTurnRate = std::clamp(flYawRate, -4.3f, 4.3f);
-        }
-    }
+            // Calculate weighted average (air strafing benefits from recent data)
+            const float flWeightedAvg = (delta0 * 3.0f + delta1 * 2.5f + delta2 * 2.0f +
+                delta3 * 1.5f + delta4 * 1.2f + delta5 * 1.0f + delta6 * 0.8f) / 12.0f;
 
-    if (CFG::Aimbot_Projectile_AdvancedAirStrafe && !(m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && F::LagRecords->HasRecords(pPlayer))
-    {
-        const LagRecord_t* rec0{ F::LagRecords->GetRecord(pPlayer, 0) };
-        const LagRecord_t* rec1{ F::LagRecords->GetRecord(pPlayer, 1) };
-        const LagRecord_t* rec2{ F::LagRecords->GetRecord(pPlayer, 2) };
-        const LagRecord_t* rec3{ F::LagRecords->GetRecord(pPlayer, 3) };
-        //const LagRecord_t* rec4{F::LagRecords->GetRecord(pPlayer, 4)};
-
-        if (rec0 && rec1 && rec2 && rec3 /*&& rec4*/)
-        {
-            const float yaw0{ Math::VelocityToAngles(rec0->Velocity).y };
-            const float yaw1{ Math::VelocityToAngles(rec1->Velocity).y };
-            const float yaw2{ Math::VelocityToAngles(rec2->Velocity).y };
-            const float yaw3{ Math::VelocityToAngles(rec3->Velocity).y };
-            //float yaw4{Math::VelocityToAngles(rec4->m_vVelocity).y};
-
-            const bool inc{/*yaw4 > yaw3 &&*/ yaw3 > yaw2 && yaw2 > yaw1 && yaw1 > yaw0 };
-            const bool dec{/*yaw4 < yaw3 &&*/ yaw3 < yaw2 && yaw2 < yaw1 && yaw1 < yaw0 };
-
-            if (!inc && !dec)
+            // Minimum threshold for air strafing (lower than ground, Amalgam uses 0.36)
+            if (fabsf(flWeightedAvg) < 0.35f)
             {
                 return;
             }
 
-            const float delta{ (((yaw0 - yaw1) + (yaw2 - yaw3) /*+ (yaw3 - yaw4)*/) / 2) };
-            m_flYawTurnRate = delta;
-
-            if (m_flYawTurnRate > 0.0f)
-            {
-                m_MoveData.m_flSideMove = -450.0f;
-            }
-
-            if (m_flYawTurnRate < 0.0f)
-            {
-                m_MoveData.m_flSideMove = 450.0f;
-            }
-
-            m_MoveData.m_flForwardMove = 0.0f;
+            // Air strafing: no speed scaling needed (air control is consistent)
+            // Store the turn rate for use in RunTick
+            m_flYawTurnRate = std::clamp(flWeightedAvg, -25.0f, 25.0f);
         }
     }
 }
@@ -241,12 +268,21 @@ bool CMovementSimulation::Initialize(C_TFPlayer* pPlayer)
     if (!pPlayer || pPlayer->deadflag())
         return false;
 
+    // Add validity check for I::MoveHelper
+    if (!I::MoveHelper)
+        return false;
+
+    uintptr_t* vtbl = *(uintptr_t**)I::MoveHelper;
+    if (!vtbl || (uintptr_t)vtbl[0] == 0 || (uintptr_t)vtbl[0] == 0xFFFFFFFFFFFFFFFFULL)
+        return false;  // Invalid vtable (uninitialized or corrupted)
+
     //set player
     m_pPlayer = pPlayer;
 
     //set current command
     //we'll use this to set current player's command, without it CGameMovement::CheckInterval will try to access a nullptr
     static CUserCmd dummyCmd = {};
+
     I::MoveHelper->SetHost(m_pPlayer);
     m_pPlayer->SetCurrentCommand(&dummyCmd);
 
@@ -302,15 +338,27 @@ void CMovementSimulation::Restore()
     if (!m_pPlayer)
         return;
 
-    I::MoveHelper->SetHost(nullptr);
+    // Add validity check for I::MoveHelper (same as in Initialize)
+    if (I::MoveHelper)
+    {
+        uintptr_t* vtbl = *(uintptr_t**)I::MoveHelper;
+        if (vtbl && (uintptr_t)vtbl[0] != 0 && (uintptr_t)vtbl[0] != 0xFFFFFFFFFFFFFFFFULL)
+        {
+            I::MoveHelper->SetHost(nullptr);
+        }
+    }
+
     m_pPlayer->SetCurrentCommand(nullptr);
+
     m_PlayerDataBackup.Restore(m_pPlayer);
+
     I::Prediction->m_bInPrediction = m_bOldInPrediction;
     I::Prediction->m_bFirstTimePredicted = m_bOldFirstTimePredicted;
     I::GlobalVars->frametime = m_flOldFrametime;
 
     m_pPlayer = nullptr;
     m_flYawTurnRate = 0.0f;
+
     std::memset(&m_MoveData, 0, sizeof(CMoveData));
     std::memset(&m_PlayerDataBackup, 0, sizeof(CPlayerDataBackup));
 }
@@ -327,22 +375,52 @@ void CMovementSimulation::RunTick(float flTimeToTarget)
     I::Prediction->m_bFirstTimePredicted = false;
     I::GlobalVars->frametime = I::Prediction->m_bEnginePaused ? 0.0f : TICK_INTERVAL;
 
+    // Early exit for stationary grounded players (performance optimization)
     if (m_MoveData.m_vecVelocity.Length() < 15.0f && (m_pPlayer->m_fFlags() & FL_ONGROUND))
     {
         return;
     }
 
-    if (CFG::Aimbot_Projectile_GroundStrafePrediction && (m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && (m_pPlayer->m_fFlags() & FL_ONGROUND))
+    // Apply strafe prediction with Amalgam-style corrections
+    float flCorrection = 0.0f;
+    const bool bIsGrounded = (m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && (m_pPlayer->m_fFlags() & FL_ONGROUND);
+    const bool bIsAirborne = !(m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && !(m_pPlayer->m_fFlags() & FL_ONGROUND);
+
+    if (m_flYawTurnRate != 0.0f)
     {
-        m_MoveData.m_vecViewAngles.y += m_flYawTurnRate * Math::RemapValClamped(flTimeToTarget, 0.0f, 1.0f, 1.0f, 0.5f);
+        if (CFG::Aimbot_Projectile_GroundStrafePrediction && bIsGrounded)
+        {
+            // Ground strafe: Apply with time-based scaling
+            m_MoveData.m_vecViewAngles.y += m_flYawTurnRate * Math::RemapValClamped(flTimeToTarget, 0.0f, 1.0f, 1.0f, 0.5f);
+        }
+        else if (CFG::Aimbot_Projectile_AdvancedAirStrafe && bIsAirborne)
+        {
+            // Air strafe: Apply 90-degree correction (Amalgam technique)
+            // This accounts for the perpendicular relationship between view angle and strafe direction
+            flCorrection = 90.0f * (m_flYawTurnRate > 0.0f ? 1.0f : -1.0f);
+            m_MoveData.m_vecViewAngles.y += m_flYawTurnRate + flCorrection;
+        }
     }
 
-    if (CFG::Aimbot_Projectile_AdvancedAirStrafe && !(m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && !(m_pPlayer->m_fFlags() & FL_ONGROUND))
+    // Duck speed reduction (Amalgam technique)
+    float flOldMaxSpeed = m_MoveData.m_flClientMaxSpeed;
+    if (m_pPlayer->m_bDucked() && (m_pPlayer->m_fFlags() & FL_ONGROUND) && (m_pPlayer->m_nWaterLevel() < 2))
     {
-        m_MoveData.m_vecViewAngles.y += m_flYawTurnRate;
+        m_MoveData.m_flClientMaxSpeed /= 3.0f;
     }
 
     m_bRunning = true;
+
     I::GameMovement->ProcessMovement(m_pPlayer, &m_MoveData);
+
     m_bRunning = false;
+
+    // Restore max speed
+    m_MoveData.m_flClientMaxSpeed = flOldMaxSpeed;
+
+    // Remove air strafe correction after simulation
+    if (flCorrection != 0.0f)
+    {
+        m_MoveData.m_vecViewAngles.y -= flCorrection;
+    }
 }

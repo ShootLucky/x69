@@ -4,52 +4,103 @@ bool CAimbotMelee::CanSee(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, MeleeTarg
 {
 	if (pLocal->GetShootPos().DistTo(target.Position) > 600.0f)
 		return false;
+
 	auto checkPos = [&](const Vec3& vLocalPos) -> bool
 		{
-			const auto vToSee = [&]()
+			const Vec3 vToSee = [&]()
 				{
-					auto vForward = Vec3();
+					Vec3 vForward;
 					Math::AngleVectors(target.AngleTo, &vForward);
 					return vLocalPos + (vForward * pWeapon->GetSwingRange());
 				}();
+
 			if (target.LagRecord)
 				F::LagRecordMatrixHelper->Set(target.LagRecord);
-			const bool bCanSee = H::AimUtils->TraceEntityMelee(target.Entity, vLocalPos, vToSee);
+
+			const bool bCanSee = H::AimUtils->TraceEntityMelee(
+				target.Entity,
+				vLocalPos,
+				vToSee
+			);
+
 			target.MeleeTraceHit = bCanSee;
+
 			if (target.LagRecord)
-			{
 				F::LagRecordMatrixHelper->Restore();
-			}
+
 			return bCanSee;
 		};
+
 	if (checkPos(pLocal->GetShootPos()))
-	{
 		return true;
-	}
-	if (!CFG::Aimbot_Melee_PredictSwing || pLocal->InCond(TF_COND_SHIELD_CHARGE) || pWeapon->GetWeaponID() == TF_WEAPON_KNIFE)
+
+	if (!CFG::Aimbot_Melee_PredictSwing ||
+		pLocal->InCond(TF_COND_SHIELD_CHARGE) ||
+		pWeapon->GetWeaponID() == TF_WEAPON_KNIFE)
 	{
 		return false;
 	}
-	// TODO: move this to movement simulation at some point
-	auto extrapolate = [](Vec3& vPos, const Vec3& vVel, float flTime, bool bGravity) -> void
+
+	// Extrapolação simples de posição (predição de swing)
+	auto extrapolate = [&](Vec3& vPos, const Vec3& vVel, float flTime, bool bGravity) -> void
 		{
 			if (bGravity)
-				vPos += (vVel * flTime) - Vec3(0.0f, 0.0f, SDKUtils::GetGravity()) * 0.5f * flTime * flTime;
-			else vPos += (vVel * flTime);
+			{
+				vPos += (vVel * flTime)
+					- Vec3(0.0f, 0.0f, SDKUtils::GetGravity()) * 0.5f * flTime * flTime;
+			}
+			else
+			{
+				vPos += (vVel * flTime);
+			}
 		};
-	const bool bDoGravity = !(pLocal->m_fFlags() & FL_ONGROUND) && pLocal->GetMoveType() == MOVETYPE_WALK;
-	const auto predictAmount = CFG::Aimbot_Melee_PredictSwingTime;
-	for (float flTime = 0.0f; flTime < predictAmount; flTime += I::GlobalVars->interval_per_tick)
+
+	const bool bDoGravity =
+		!(pLocal->m_fFlags() & FL_ONGROUND) &&
+		pLocal->GetMoveType() == MOVETYPE_WALK;
+
+	const float predictAmount = CFG::Aimbot_Melee_PredictSwingTime;
+
+	for (float flTime = 0.0f;
+		flTime < predictAmount;
+		flTime += I::GlobalVars->interval_per_tick)
 	{
 		Vec3 vLocalPos = pLocal->GetShootPos();
+
 		if (target.Entity->GetClassId() == ETFClassIds::CTFPlayer)
-			extrapolate(vLocalPos, pLocal->m_vecVelocity() + (target.Entity->As<C_TFPlayer>()->m_vecVelocity() * -1.0f), flTime, bDoGravity);
+		{
+			extrapolate(
+				vLocalPos,
+				pLocal->m_vecVelocity() +
+				(target.Entity->As<C_TFPlayer>()->m_vecVelocity() * -1.0f),
+				flTime,
+				bDoGravity
+			);
+		}
 		else if (target.LagRecord)
-			extrapolate(vLocalPos, pLocal->m_vecVelocity() + (target.LagRecord->Velocity * -1.0f), flTime, bDoGravity);
-		else extrapolate(vLocalPos, pLocal->m_vecVelocity(), flTime, bDoGravity);
+		{
+			extrapolate(
+				vLocalPos,
+				pLocal->m_vecVelocity() +
+				(target.LagRecord->Velocity * -1.0f),
+				flTime,
+				bDoGravity
+			);
+		}
+		else
+		{
+			extrapolate(
+				vLocalPos,
+				pLocal->m_vecVelocity(),
+				flTime,
+				bDoGravity
+			);
+		}
+
 		if (checkPos(vLocalPos))
 			return true;
 	}
+
 	return false;
 }
 bool CAimbotMelee::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, MeleeTarget_t& outTarget)
@@ -146,6 +197,24 @@ bool CAimbotMelee::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, MeleeT
 	}
 	return false;
 }
+bool CAimbotMelee::KeyDown(const CUserCmd* pCmd)
+{
+	static bool bToggled = false;
+	static bool bLastDown = false;
+	if (CFG::Aimbot_KeyMode == 2) // Always On
+		return true;
+	bool bDown = (GetAsyncKeyState(CFG::Aimbot_Key) & 0x8000) != 0;
+	if (CFG::Aimbot_KeyMode == 1) // Toggle
+	{
+		if (bDown && !bLastDown)
+		{
+			bToggled = !bToggled;
+		}
+		bLastDown = bDown;
+		return bToggled;
+	}
+	return bDown;
+}
 bool CAimbotMelee::ShouldAim(const CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
 {
 	return CFG::Aimbot_Melee_Mode != 1 || IsFiring(pCmd, pWeapon);
@@ -222,7 +291,7 @@ void CAimbotMelee::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeap
 	MeleeTarget_t target = {};
 	if (GetTarget(pLocal, pWeapon, target) && target.Entity)
 	{
-		const auto aimKeyDown = H::Input->IsDown(CFG::Aimbot_Key) || CFG::Aimbot_Melee_AlwaysActive;
+		const auto aimKeyDown = KeyDown(pCmd) || CFG::Aimbot_Melee_AlwaysActive;
 		if (aimKeyDown || isFiring)
 		{
 			G::nTargetIndex = target.Entity->entindex();

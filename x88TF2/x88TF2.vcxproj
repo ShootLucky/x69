@@ -361,7 +361,7 @@
     <ClCompile Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.cpp" />
     <ClCompile Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
     <ClCompile Include="src\Features\PlayersList\PlayersList.cpp" />
-    <ClCompile Include="src\Features\Predict\Predict.cpp" />
+    <ClCompile Include="src\Features\MovementSimulation\MovementSimulation.cpp" />
     <ClCompile Include="src\Features\EnginePrediction\EnginePrediction.cpp" />
     <ClCompile Include="src\Features\ESP\ESP.cpp" />
     <ClCompile Include="src\Features\LagRecords\Backtrack.cpp" />
@@ -417,7 +417,7 @@
     <ClInclude Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.h" />
     <ClInclude Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.h" />
     <ClInclude Include="src\Features\PlayersList\PlayersList.h" />
-    <ClInclude Include="src\Features\Predict\Predict.h" />
+    <ClInclude Include="src\Features\MovementSimulation\MovementSimulation.h" />
     <ClInclude Include="src\Features\EnginePrediction\EnginePrediction.h" />
     <ClInclude Include="src\Features\ESP\ESP.h" />
     <ClInclude Include="src\Features\LagRecords\Backtrack.h" />

@@ -458,18 +458,23 @@ void menu::render() {
         int x_right = 550;
         int start_y = y;
         y = start_y;
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_left, &y, "Aimbot", &CFG::Aimbot_Enable, false, 255, current_item++);
+        text(x_left, &y, "Aimbot Keybind", regular);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         key_selector(x_left, &y, &CFG::Aimbot_Key, current_item++);
+        text(x_left, &y, "Key Mode", regular);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         combo(x_left, &y, "Key Mode", &CFG::Aimbot_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_item++);
+        y += 15;
+        start_y = y;
+        y = start_y;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Hitscan", &CFG::Aimbot_Enable, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -1070,6 +1075,14 @@ void menu::render() {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_center, &y, "Setup Bones Optimization", &CFG::Misc_SetupBones_Optimization, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "Fake Latency", &CFG::Misc_FakeLatency_Enable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_center, &y, "Latency Amount", CFG::Misc_FakeLatencyfloat_Enable, 0.f, 600.f, current_item++);
         // Refresh config files periodically (e.g., every render in misc)
         menu::config_files = ::RefreshConfigFiles();
         if (menu::config_files.empty()) {
