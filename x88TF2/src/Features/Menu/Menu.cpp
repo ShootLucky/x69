@@ -10,10 +10,12 @@
 #include <filesystem> // For directory iteration
 #include "../src/SDK/SDK.h" // Assuming this includes necessary SDK headers for IGameEventListener2 and related
 #include "../../Features/PlayersList/PlayersList.h" // Added for Playerlist
+
 namespace menu {
     static int item_count = 1;
     static int item_countx3 = 12;
 }
+
 // Helper para obter nome legível de uma virtual-key
 static std::string GetKeyName(int vk)
 {
