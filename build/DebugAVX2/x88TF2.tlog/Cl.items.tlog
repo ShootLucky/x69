@@ -13,6 +13,8 @@ C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Features\Misc\Mis
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Features\ProjectileSim\ProjectileSim.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\ProjectileSim.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Features\Radio\Radio.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\Radio.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CBaseAnimating_SetupBones.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CBaseAnimating_SetupBones.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CBaseEntity_BaseInterpolatePart1.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CBaseEntity_BaseInterpolatePart1.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CBaseEntity_InterpolateServerEntities.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CBaseEntity_InterpolateServerEntities.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CBaseEntity_SetAbsVelocity.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CBaseEntity_SetAbsVelocity.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CHudTFCrosshair_ShouldDraw.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CHudTFCrosshair_ShouldDraw.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\ClientModeShared_CreateMove.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\ClientModeShared_CreateMove.obj
@@ -23,6 +25,7 @@ C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFWeaponBa
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\IEngineVGuiInternal_Paint.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\IEngineVGuiInternal_Paint.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFWeapon_ShouldDraw.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\CTFWeapon_ShouldDraw.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\IInput_GetUserCmd.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\IInput_GetUserCmd.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\INetChannel_SendNetMsg.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\INetChannel_SendNetMsg.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\IVEngineClient013_ClientCmd.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\IVEngineClient013_ClientCmd.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\netgraphstringchanger.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\netgraphstringchanger.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\SDK\TF2\bitbuf.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\DebugAVX2\bitbuf.obj

@@ -1,5 +1,4 @@
 #pragma once
-#include "../../Utils/Vector/Vector.h"
 
 struct inputdata_t;
 
@@ -83,7 +82,7 @@ public:
 struct typedescription_t;
 class ISaveRestoreOps;
 
-typedef void (*inputfunc_t)(inputdata_t &data);
+typedef void (*inputfunc_t)(inputdata_t& data);
 
 struct datamap_t;
 struct typedescription_t;
@@ -98,26 +97,26 @@ enum
 struct typedescription_t
 {
 	fieldtype_t fieldType;
-	const char *fieldName;
+	const char* fieldName;
 	int fieldOffset[TD_OFFSET_COUNT];
 	unsigned short fieldSize;
 	short flags;
-	const char *externalName;
-	ISaveRestoreOps *pSaveRestoreOps;
+	const char* externalName;
+	ISaveRestoreOps* pSaveRestoreOps;
 	inputfunc_t inputFunc;
-	datamap_t *td;
+	datamap_t* td;
 	int fieldSizeInBytes;
-	struct typedescription_t *override_field;
+	struct typedescription_t* override_field;
 	int override_count;
 	float fieldTolerance;
 };
 
 struct datamap_t
 {
-	typedescription_t *dataDesc;
+	typedescription_t* dataDesc;
 	int dataNumFields;
-	char const *dataClassName;
-	datamap_t *baseMap;
+	char const* dataClassName;
+	datamap_t* baseMap;
 	bool chains_validated;
 	bool packed_offsets_computed;
 	int packed_size;

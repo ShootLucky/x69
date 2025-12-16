@@ -51,9 +51,15 @@ void CEnginePrediction::Start(CUserCmd* pCmd)
 
 		I::Prediction->SetLocalViewAngles(pCmd->viewangles);
 
+		// Added for improvement: Track prediction errors for more accurate simulation
+		I::GameMovement->StartTrackPredictionErrors(pLocal);
+
 		I::Prediction->SetupMove(pLocal, pCmd, I::MoveHelper, &m_MoveData);
 		I::GameMovement->ProcessMovement(pLocal, &m_MoveData);
 		I::Prediction->FinishMove(pLocal, pCmd, &m_MoveData);
+
+		// Added for improvement: Finish tracking prediction errors
+		I::GameMovement->FinishTrackPredictionErrors(pLocal);
 
 		pLocal->m_nTickBase() = nOldTickBase;
 

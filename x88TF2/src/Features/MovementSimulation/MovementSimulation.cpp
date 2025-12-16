@@ -507,3 +507,24 @@ void CMovementSimulation::RunTick(float flTimeToTarget)
 		m_MoveData.m_vecViewAngles.y -= flCorrection;
 	}
 }
+
+const Vec3& CMovementSimulation::GetSimulatedVelocity() const
+{
+	return m_MoveData.m_vecVelocity;
+}
+
+const Vec3& CMovementSimulation::GetOrigin() const
+{
+	return m_MoveData.m_vecAbsOrigin;
+}
+
+
+bool CMovementSimulation::IsSimulatedOnGround() const
+{
+	return (m_PlayerDataBackup.m_fFlags & FL_ONGROUND) != 0;
+}
+
+const Vec3& CMovementSimulation::GetSimulatedOrigin() const
+{
+	return m_MoveData.m_vecAbsOrigin;
+}

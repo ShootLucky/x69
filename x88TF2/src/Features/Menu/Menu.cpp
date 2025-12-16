@@ -215,9 +215,9 @@ void float_slider(int x, int* y, std::string text, float& option, float min_valu
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
     if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_LEFT) & 1)
-            option -= 0.1f;
+            option -= 1.0f;
         else if (GetAsyncKeyState(VK_RIGHT) & 1)
-            option += 0.1f;
+            option += 1.f;
     }
     option = std::clamp(option, min_value, max_value);
     std::ostringstream ss;
@@ -682,6 +682,14 @@ void menu::render() {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         int_slider(x_center, &y, "Max Targets", CFG::Aimbot_Projectile_MaxTargets, 1, 10, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center, &y, "Splash Bot", &CFG::Aimbot_Projectile_SplashBot, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_center, &y, "Splash Points", CFG::Aimbot_Projectile_SplashPoints, 10.f, 200.f, current_item++);
         // Melee (right column)
         y = start_y;
         if (!menu_locked && menu::item_count == current_item) {

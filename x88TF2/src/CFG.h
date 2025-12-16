@@ -84,6 +84,8 @@ namespace CFG
 	CFGVAR(Aimbot_Hitscan_Scan_Arms, false);
 	CFGVAR(Aimbot_Hitscan_Scan_Legs, false);
 	CFGVAR(Aimbot_Hitscan_Scan_Buildings, true);
+	CFGVAR(Aimbot_Projectile_SplashBot, false);
+	CFGVAR(Aimbot_Projectile_SplashPoints, 80.0f);
 #pragma endregion
 #pragma region ESP
 	CFGVAR(ESP_Enable, false);

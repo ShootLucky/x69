@@ -4,14 +4,14 @@
 
 bool C_TFPlayer::IsPlayerOnSteamFriendsList()
 {
-	auto result{ reinterpret_cast<bool(__fastcall*)(void*, void*)>(Signatures::CTFPlayer_IsPlayerOnSteamFriendsList.Get())(this, this) };
+    auto result{ reinterpret_cast<bool(__fastcall*)(void*, void*)>(Signatures::CTFPlayer_IsPlayerOnSteamFriendsList.Get())(this, this) };
 
-	if (!result)
-	{
-		PlayerPriority info{};
+    if (!result)
+    {
+        PlayerPriority info{};
 
-		return F::Players->GetInfo(entindex(), info) && info.Ignored;
-	}
+        return F::Players->GetInfo(this->entindex(), info) && info.Ignored;
+    }
 
-	return result;
+    return result;
 }

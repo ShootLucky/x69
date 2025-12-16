@@ -48,49 +48,77 @@ void DrawProjPath(const CUserCmd* pCmd, float time)
 
 void DrawMovePath(const std::vector<Vec3>& vPath)
 {
-    // Line
+    if (vPath.size() < 2)
+        return;
+
+    constexpr float duration = 10.0f;
+
+    auto DrawLineOutlined = [&](const Vec3& a, const Vec3& b)
+        {
+            // Outline (preto)
+            I::DebugOverlay->AddLineOverlay(a, b, 0, 0, 0, false, duration);
+            // Linha principal
+            I::DebugOverlay->AddLineOverlay(a, b, 255, 255, 255, false, duration);
+        };
+
+    // ================= Line =================
     if (CFG::Visuals_Draw_Movement_Path_Style == 1)
     {
         for (size_t n = 1; n < vPath.size(); n++)
         {
-            I::DebugOverlay->AddLineOverlay(vPath[n], vPath[n - 1], 255, 255, 255, false, 10.0f);
+            DrawLineOutlined(vPath[n], vPath[n - 1]);
         }
     }
 
-    // Dashed
+    // ================= Dashed =================
     if (CFG::Visuals_Draw_Movement_Path_Style == 2)
     {
         for (size_t n = 1; n < vPath.size(); n++)
         {
             if (n % 2 == 0)
-            {
                 continue;
-            }
 
-            I::DebugOverlay->AddLineOverlay(vPath[n], vPath[n - 1], 255, 255, 255, false, 10.0f);
+            DrawLineOutlined(vPath[n], vPath[n - 1]);
         }
     }
 
-    // Alternative line
+    // ================= Alternative line + 3D Box =================
     if (CFG::Visuals_Draw_Movement_Path_Style == 3)
     {
         for (size_t n = 1; n < vPath.size(); n++)
         {
-            if (n != 1)
+            // Linha com outline
+            DrawLineOutlined(vPath[n], vPath[n - 1]);
+
+            if (n == vPath.size() - 1)
             {
-                Vec3 right{};
+                // ===== BOX 3D no ponto de impacto =====
+                const Vec3& impactPos = vPath[n];
 
-                Math::AngleVectors(Math::CalcAngle(vPath[n], vPath[n - 1]), nullptr, &right, nullptr);
+                // Bounding box padrão do player TF2
+                const Vec3 mins{ -24.f, -24.f, 0.f };
+                const Vec3 maxs{ 24.f,  24.f, 82.f };
 
-                const Vec3& start{ vPath[n - 1] };
-                const Vec3 endL{ vPath[n - 1] + (right * 5.0f) };
-                const Vec3 endR{ vPath[n - 1] - (right * 5.0f) };
+                // Outline da box
+                I::DebugOverlay->AddBoxOverlay(
+                    impactPos,
+                    mins,
+                    maxs,
+                    Vec3(0.f, 0.f, 0.f),
+                    0, 0, 0, 0,
+                    duration
+                );
 
-                I::DebugOverlay->AddLineOverlay(start, endL, 255, 255, 255, false, 10.0f);
-                I::DebugOverlay->AddLineOverlay(start, endR, 255, 255, 255, false, 10.0f);
+                // Box principal
+                I::DebugOverlay->AddBoxOverlay(
+                    impactPos,
+                    mins,
+                    maxs,
+                    Vec3(0.f, 0.f, 0.f),
+                    255, 255, 255, 0,
+                    duration
+                );
             }
-
-            I::DebugOverlay->AddLineOverlay(vPath[n], vPath[n - 1], 255, 255, 255, false, 10.0f);
         }
     }
 }
@@ -695,20 +723,49 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
         {
             m_TargetPath.push_back(F::MovementSimulation->GetOrigin());
 
-            // Apply ground strafe prediction if enabled
-            if (CFG::Aimbot_Projectile_GroundStrafePrediction && bOnGround) {
-                // Simple assumption: predict strafe by maintaining velocity or something
-                // For now, assume simulation handles, or add logic if needed
-            }
-
-            // Apply advanced air strafe if enabled
-            if (CFG::Aimbot_Projectile_AdvancedAirStrafe && !bOnGround) {
-                // Advanced air control prediction, assume adjust wishdir or something in sim
-            }
-
             F::MovementSimulation->RunTick(TICKS_TO_TIME(nTick));
 
             Vec3 vTarget = F::MovementSimulation->GetOrigin();
+
+            // Amalgamation: combine methods for better prediction
+            const bool bSimOnGround = F::MovementSimulation->IsSimulatedOnGround();
+            const Vec3 vel = F::MovementSimulation->GetSimulatedVelocity();
+
+            if (CFG::Aimbot_Projectile_PredictionMethod == 0 ||
+                CFG::Aimbot_Projectile_GroundStrafePrediction ||
+                CFG::Aimbot_Projectile_AdvancedAirStrafe)
+            {
+                const float speed = vel.Length2D();
+                if (speed > 0.01f)
+                {
+                    Vec3 accel_dir = { vel.x, vel.y, 0.0f };
+
+                    const float len = accel_dir.Length2D();
+                    if (len > 0.0f)
+                        accel_dir /= len; // normalize
+
+                    float accel = 0.0f;
+
+                    if (CFG::Aimbot_Projectile_PredictionMethod == 0)
+                    {
+                        accel = bSimOnGround ? 300.0f : 12.0f;
+                    }
+                    else if (CFG::Aimbot_Projectile_GroundStrafePrediction && bSimOnGround)
+                    {
+                        accel = 300.0f;
+                    }
+                    else if (CFG::Aimbot_Projectile_AdvancedAirStrafe && !bSimOnGround)
+                    {
+                        accel = 12.0f;
+                    }
+
+                    if (accel > 0.0f)
+                    {
+                        const float t = target.TimeToTarget;
+                        vTarget += accel_dir * (0.5f * accel * t * t);
+                    }
+                }
+            }
 
             OffsetPlayerPosition(pWeapon, vTarget, pPlayer, bDucked, bOnGround);
 
@@ -747,6 +804,8 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
             {
                 auto runSplash = [&]()
                     {
+                        if (!CFG::Aimbot_Projectile_SplashBot) return false;
+
                         auto isRocketLauncher{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER };
                         auto isDirectHit{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT };
                         auto isAirStrike{ pWeapon->m_iItemDefinitionIndex() == Soldier_m_TheAirStrike };
@@ -761,7 +820,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
 
                         auto center{ F::MovementSimulation->GetOrigin() + Vec3(0.0f, 0.0f, (mins.z + maxs.z) * 0.5f) };
 
-                        auto numPoints{ 80 };
+                        auto numPoints{ static_cast<int>(CFG::Aimbot_Projectile_SplashPoints) };
                         auto radius{ isRocketLauncher ? 180.0f : 80.0f };
 
                         if (isAirStrike)
@@ -775,7 +834,9 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                             auto a1{ acosf(1.0f - 2.0f * (static_cast<float>(n) / static_cast<float>(numPoints))) };
                             auto a2{ (static_cast<float>(PI) * (3.0f - sqrtf(5.0f))) * static_cast<float>(n) };
 
-                            auto point{ center + Vec3{ sinf(a1) * cosf(a2), sinf(a1) * sinf(a2), cosf(a1) }.Scale(radius) };
+                            Vec3 dir{ sinf(a1) * cosf(a2), sinf(a1) * sinf(a2), cosf(a1) };
+                            dir *= radius;
+                            auto point{ center + dir };
 
                             CTraceFilterWorldCustom filter{};
                             trace_t trace{};
@@ -834,7 +895,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                         return false;
                     };
 
-                if (CFG::Aimbot_Projectile_Rocket_Splash == 2 && runSplash())
+                if (CFG::Aimbot_Projectile_RocketSplashPoint && runSplash())
                 {
                     F::MovementSimulation->Restore();
 
@@ -877,7 +938,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                     }
                 }
 
-                if (CFG::Aimbot_Projectile_Rocket_Splash == 1 && runSplash())
+                if (runSplash())
                 {
                     F::MovementSimulation->Restore();
 
@@ -897,6 +958,8 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
 
         auto runSplash = [&]()
             {
+                if (!CFG::Aimbot_Projectile_SplashBot) return false;
+
                 const auto isRocketLauncher{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER };
                 const auto isDirectHit{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT };
                 const auto isAirStrike{ pWeapon->m_iItemDefinitionIndex() == Soldier_m_TheAirStrike };
@@ -908,7 +971,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
 
                 const auto center{ target.Entity->GetCenter() };
 
-                constexpr auto numPoints{ 80 };
+                auto numPoints{ static_cast<int>(CFG::Aimbot_Projectile_SplashPoints) };
                 auto radius{ isRocketLauncher ? 150.0f : 70.0f };
 
                 if (isAirStrike)
@@ -923,7 +986,9 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                     const auto a1{ acosf(1.0f - 2.0f * (static_cast<float>(n) / static_cast<float>(numPoints))) };
                     const auto a2{ (static_cast<float>(PI) * (3.0f - sqrtf(5.0f))) * static_cast<float>(n) };
 
-                    auto point{ center + Vec3{ sinf(a1) * cosf(a2), sinf(a1) * sinf(a2), cosf(a1) }.Scale(radius) };
+                    Vec3 dir{ sinf(a1) * cosf(a2), sinf(a1) * sinf(a2), cosf(a1) };
+                    dir *= radius;
+                    auto point{ center + dir };
 
                     CTraceFilterWorldCustom filter{};
                     trace_t trace{};
@@ -1000,11 +1065,17 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
 
         if (nTargetTick <= TIME_TO_TICKS(CFG::Aimbot_Projectile_Max_Simulation_Time))
         {
+            if (CFG::Aimbot_Projectile_RocketSplashPoint && runSplash())
+            {
+                return true;
+            }
+
             if (CanSee(pLocal, pWeapon, vLocalPos, vTarget, target, flTimeToTarget))
             {
                 return true;
             }
-            if (CFG::Aimbot_Projectile_Rocket_Splash && runSplash())
+
+            if (runSplash())
             {
                 return true;
             }
@@ -1024,7 +1095,7 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
 
     if (CFG::Aimbot_Target_Players)
     {
-        const auto nGroup = CFG::Aimbot_Projectile_TeamCheck ? EEntGroup::PLAYERS_ENEMIES : EEntGroup::PLAYERS_ALL;
+        const auto nGroup = pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW ? EEntGroup::PLAYERS_ALL : EEntGroup::PLAYERS_ENEMIES;
 
         for (const auto pEntity : H::Entities->GetGroup(nGroup))
         {
@@ -1036,21 +1107,7 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
             if (pPlayer->deadflag() || pPlayer->InCond(TF_COND_HALLOWEEN_GHOST_MODE))
                 continue;
 
-            if (pPlayer->m_iTeamNum() == pLocal->m_iTeamNum())
-            {
-                if (CFG::Aimbot_Projectile_TeamCheck) continue;
-
-                if (pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW)
-                {
-                    if (pPlayer->m_iHealth() >= pPlayer->GetMaxHealth() || pPlayer->IsInvulnerable())
-                    {
-                        continue;
-                    }
-                }
-                else continue;
-            }
-
-            else
+            if (pPlayer->m_iTeamNum() != pLocal->m_iTeamNum())
             {
                 if (CFG::Aimbot_Ignore_Friends && pPlayer->IsPlayerOnSteamFriendsList())
                     continue;
@@ -1063,6 +1120,17 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
 
                 if (CFG::Aimbot_Ignore_Taunting && pPlayer->InCond(TF_COND_TAUNTING))
                     continue;
+            }
+
+            else
+            {
+                if (pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW)
+                {
+                    if (pPlayer->m_iHealth() >= pPlayer->GetMaxHealth() || pPlayer->IsInvulnerable())
+                    {
+                        continue;
+                    }
+                }
             }
 
             Vec3 vPos = pPlayer->GetCenter();
@@ -1080,7 +1148,7 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
     if (CFG::Aimbot_Target_Buildings)
     {
         const auto isRescueRanger{ pWeapon->GetWeaponID() == TF_WEAPON_SHOTGUN_BUILDING_RESCUE };
-        const auto nGroup = CFG::Aimbot_Projectile_TeamCheck ? EEntGroup::BUILDINGS_ENEMIES : EEntGroup::BUILDINGS_ALL;
+        const auto nGroup = isRescueRanger ? EEntGroup::BUILDINGS_ALL : EEntGroup::BUILDINGS_ENEMIES;
 
         for (const auto pEntity : H::Entities->GetGroup(nGroup))
         {
@@ -1092,15 +1160,9 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
             if (pBuilding->m_bPlacing())
                 continue;
 
-            if (pBuilding->m_iTeamNum() == pLocal->m_iTeamNum())
+            if (isRescueRanger && pBuilding->m_iTeamNum() == pLocal->m_iTeamNum() && pBuilding->m_iHealth() >= pBuilding->m_iMaxHealth())
             {
-                if (CFG::Aimbot_Projectile_TeamCheck) continue;
-
-                if (isRescueRanger && pBuilding->m_iHealth() >= pBuilding->m_iMaxHealth())
-                {
-                    continue;
-                }
-                else continue;
+                continue;
             }
 
             Vec3 vPos = pBuilding->GetCenter(); //fuck teleporters when aimed at with pipes lma
@@ -1127,7 +1189,7 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
     // Sort by target priority
     F::AimbotCommon->Sort(m_vecTargets, CFG::Aimbot_Projectile_Sort);
 
-    const auto maxTargets{ std::min(CFG::Aimbot_Projectile_MaxTargets, static_cast<int>(m_vecTargets.size())) };
+    const auto maxTargets{ std::min(CFG::Aimbot_Projectile_Max_Processing_Targets, static_cast<int>(m_vecTargets.size())) };
     auto targetsScanned{ 0 };
 
     for (auto& target : m_vecTargets)
