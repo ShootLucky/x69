@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../SDK/SDK.h"
+#include "../src/SDK/SDK.h"
 
 class CEnginePrediction
 {

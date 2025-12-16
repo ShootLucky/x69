@@ -11,8 +11,6 @@ namespace CFG
 	CFGVAR(Aimbot_FOV, 45.f);
 	CFGVAR(Aimbot_VisibleCheck, true);
 	CFGVAR(Aimbot_TeamCheck, true);
-	CFGVAR(Aimbot_SilentAim, false);
-	CFGVAR(Aimbot_Aimlock, false); // namespace "CFG" não possui membro "Aimbot_Projectile_KeyMode" Aimbot_Melee_KeyMode
 	CFGVAR(Aimbot_Hitscan_Smoothing, 5.f);
 	CFGVAR(Aimbot_Hitbox_Head, false);
 	CFGVAR(Aimbot_Hitbox_Neck, false);
@@ -50,7 +48,7 @@ namespace CFG
 	CFGVAR(Aimbot_BaimAfterHealth, 0.18f);
 	CFGVAR(Aimbot_Hitbox_Sort, 0);
 	CFGVAR(Aimbot_Projectile_NoSpread, false);//Aimbot_Projectile_AimPosition Aimbot_Projectile_BBoxMultipoint Aimbot_Hitscan_AlwaysActive
-	CFGVAR(Aimbot_Projectile_AutoDoubleDonk, false);
+	CFGVAR(Aimbot_Projectile_AutoDoubleDonk, false); //Misc_Accuracy_Improvements
 	CFGVAR(Aimbot_Projectile_AimPosition, 0);
 	CFGVAR(Aimbot_Projectile_GroundStrafePrediction, false);
 	CFGVAR(Aimbot_Projectile_AdvancedAirStrafe, false);
@@ -140,8 +138,10 @@ namespace CFG
 	CFGVAR(PlayersLogs_Type, 0);
 #pragma endregion
 #pragma region Misc
-	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization
+	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key
+	CFGVAR(Misc_Edge_Jump_Key, true);
 	CFGVAR(Misc_SetupBones_Optimization, false);
+	CFGVAR(Misc_Accuracy_Improvements, false);
 	CFGVAR(Radio, false)
 		CFGVAR(Misc_AutoStrafer_Enable, false);
 	CFGVAR(Misc_AutoRocketJump_Enable, false);

@@ -6,8 +6,8 @@
 
 namespace Memory
 {
-	std::uintptr_t FindSignature(const char *szModule, const char *szPattern);
-	PVOID FindInterface(const char *szModule, const char *szObject);
+	std::uintptr_t FindSignature(const char* szModule, const char* szPattern);
+	PVOID FindInterface(const char* szModule, const char* szObject);
 
 	inline void* GetVFunc(void* instance, size_t index)
 	{

@@ -748,7 +748,8 @@ void CESP::Run()
                 if (F::LagRecords->HasRecords(pPlayer, &totalRecords)) {
                     for (int n = 1; n <= totalRecords; ++n) { // start from 1 to skip current
                         auto pRecord = F::LagRecords->GetRecord(pPlayer, n);
-                        if (!pRecord || !pRecord->bValid) continue;
+                        if (!pRecord || !pRecord->Player)
+                            continue;
                         F::LagRecordMatrixHelper->Set(pRecord);
                         float alphaFactor = 1.0f - static_cast<float>(n) / static_cast<float>(totalRecords + 1);
                         Color_t fadedClr = clr;

@@ -197,7 +197,7 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
                     if (nPriorityRecord >= 1 && nPriorityRecord < nRecords)
                     {
                         const LagRecord_t* lagRecord = F::LagRecords->GetRecord(pPlayer, nPriorityRecord);
-                        if (lagRecord && lagRecord->bValid && lagRecord->SimulationTime > 0.0f)
+                        if (lagRecord && lagRecord->Player && lagRecord->SimulationTime > 0.0f)
                         {
                             F::LagRecordMatrixHelper->Set(lagRecord);
                             Vec3 vPos = pPlayer->GetHitboxPos(nAimHitbox);
@@ -235,7 +235,7 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
                     if ((bFakeLatencyActive || (pLocal->m_iClass() == TF_CLASS_SNIPER && bIsSniperRifle) || bIsAmbassador) && n == nRecords - 3)
                         continue;
                     const LagRecord_t* lagRecord = F::LagRecords->GetRecord(pPlayer, n);
-                    if (!lagRecord || !lagRecord->bValid || lagRecord->SimulationTime <= 0.0f)
+                    if (!lagRecord || !lagRecord->Player || lagRecord->SimulationTime <= 0.0f)
                         continue;
                     F::LagRecordMatrixHelper->Set(lagRecord);
                     Vec3 vPos = pPlayer->GetHitboxPos(nAimHitbox);

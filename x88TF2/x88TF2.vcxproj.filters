@@ -52,6 +52,9 @@
     <ClCompile Include="src\Hooks\CHudTFCrosshair_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\CTFPlayerShared_IsPlayerDominated.cpp" />
     <ClCompile Include="src\Hooks\IVEngineClient013_ClientCmd.cpp" />
+    <ClCompile Include="src\Hooks\CBaseEntity_BaseInterpolatePart1.cpp" />
+    <ClCompile Include="src\Hooks\CBaseEntity_InterpolateServerEntities.cpp" />
+    <ClCompile Include="src\Hooks\INetChannel_SendNetMsg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -219,5 +222,6 @@
     <ClInclude Include="src\Features\Radio\Radio.h" />
     <ClInclude Include="src\SDK\TF2\utlmemory.h" />
     <ClInclude Include="src\SDK\TF2\utlblockmemory.h" />
+    <ClInclude Include="src\SDK\TF2\NetVars\CTFPartyClient.h" />
   </ItemGroup>
 </Project>

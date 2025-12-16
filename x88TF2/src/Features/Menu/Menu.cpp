@@ -939,7 +939,7 @@ void menu::render() {
         H::Draw->String(font, name_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Name");
         H::Draw->String(font, ignored_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Ignored");
         H::Draw->String(font, cheater_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Cheater");
-        H::Draw->String(font, retard_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "RetardLegit");
+        H::Draw->String(font, retard_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Nigga");
         y += 15;
         // Horizontal line under headers
         H::Draw->Line(name_x, y, retard_x + 100, y, Color_t(255, 255, 255, 255));

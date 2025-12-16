@@ -1,21 +1,81 @@
 #include "Backtrack.h"
+
 #include <ranges>
+
 #include "CFG.h"
-#include "../Misc/Misc.h"
+
 bool CLagRecords::IsSimulationTimeValid(float flCurSimTime, float flCmprSimTime)
 {
-	return flCurSimTime - flCmprSimTime < 0.2f + F::Misc->GetFakeLatency();
+	// Base limit + fake latency extension
+	float flMaxTime = 0.2f + m_flFakeLatency;
+
+	// Clamp to sv_maxunlag to avoid breaking server lag compensation
+	flMaxTime = std::min(flMaxTime, m_flMaxUnlag);
+
+	return flCurSimTime - flCmprSimTime < flMaxTime;
 }
+
+void CLagRecords::UpdateDatagram()
+{
+	auto pNetChan = reinterpret_cast<CNetChannel*>(I::EngineClient->GetNetChannelInfo());
+	if (!pNetChan)
+	{
+		// Reset state when no net channel (disconnected/joining)
+		m_dSequences.clear();
+		m_iLastInSequence = 0;
+		m_nLastInSequenceNr = 0;
+		m_flFakeLatency = 0.0f;
+		return;
+	}
+
+	const auto pLocal = H::Entities->GetLocal();
+	if (pLocal)
+		m_nOldTickBase = pLocal->m_nTickBase();
+
+	// Detect sequence number reset (happens when joining new game)
+	// If current sequence is much lower than last, we've joined a new game
+	if (pNetChan->m_nInSequenceNr < m_iLastInSequence - 100)
+	{
+		// Reset fake latency state for new game
+		m_dSequences.clear();
+		m_iLastInSequence = 0;
+		m_nLastInSequenceNr = 0;
+		m_flFakeLatency = 0.0f;
+	}
+
+	// Track incoming sequences for fake latency
+	if (pNetChan->m_nInSequenceNr > m_iLastInSequence)
+	{
+		m_iLastInSequence = pNetChan->m_nInSequenceNr;
+
+		Sequence_t seq;
+		seq.nInReliableState = pNetChan->m_nInReliableState;
+		seq.nSequenceNr = pNetChan->m_nInSequenceNr;
+		seq.flTime = I::GlobalVars->realtime;
+
+		m_dSequences.emplace_front(seq);
+	}
+
+	// Keep only last 67 sequences (Amalgam's limit)
+	if (m_dSequences.size() > 67)
+		m_dSequences.pop_back();
+}
+
 void CLagRecords::AddRecord(C_TFPlayer* pPlayer)
 {
 	LagRecord_t newRecord = {};
+
 	m_bSettingUpBones = true;
+
 	const auto setup_bones_optimization{ CFG::Misc_SetupBones_Optimization };
+
 	if (setup_bones_optimization)
 	{
 		pPlayer->InvalidateBoneCache();
 	}
+
 	const auto result = pPlayer->SetupBones(newRecord.BoneMatrix, 128, BONE_USED_BY_ANYTHING, I::GlobalVars->curtime);
+
 	if (setup_bones_optimization)
 	{
 		auto attach = pPlayer->FirstMoveChild();
@@ -26,12 +86,16 @@ void CLagRecords::AddRecord(C_TFPlayer* pPlayer)
 				attach->InvalidateBoneCache();
 				attach->SetupBones(nullptr, -1, BONE_USED_BY_ANYTHING, I::GlobalVars->curtime);
 			}
+
 			attach = attach->NextMovePeer();
 		}
 	}
+
 	m_bSettingUpBones = false;
+
 	if (!result)
 		return;
+
 	newRecord.Player = pPlayer;
 	newRecord.SimulationTime = pPlayer->m_flSimulationTime();
 	newRecord.AbsOrigin = pPlayer->GetAbsOrigin();
@@ -41,46 +105,59 @@ void CLagRecords::AddRecord(C_TFPlayer* pPlayer)
 	newRecord.Velocity = pPlayer->m_vecVelocity();
 	newRecord.Center = pPlayer->GetCenter();
 	newRecord.Flags = pPlayer->m_fFlags();
-	newRecord.bValid = true;
+
 	if (const auto pAnimState = pPlayer->GetAnimState())
 		newRecord.FeetYaw = pAnimState->m_flCurrentFeetYaw;
+
 	m_LagRecords[pPlayer].emplace_front(newRecord);
 }
+
 const LagRecord_t* CLagRecords::GetRecord(C_TFPlayer* pPlayer, int nRecord, bool bSafe)
 {
 	if (!bSafe)
 	{
 		if (!m_LagRecords.contains(pPlayer))
 			return nullptr;
+
 		if (nRecord < 0 || nRecord > static_cast<int>(m_LagRecords[pPlayer].size() - 1))
 			return nullptr;
 	}
+
 	return &m_LagRecords[pPlayer][nRecord];
 }
+
 bool CLagRecords::HasRecords(C_TFPlayer* pPlayer, int* pTotalRecords)
 {
 	if (m_LagRecords.contains(pPlayer))
 	{
 		const size_t nSize = m_LagRecords[pPlayer].size();
+
 		if (nSize <= 0)
 			return false;
+
 		if (pTotalRecords)
 			*pTotalRecords = static_cast<int>(nSize - 1);
+
 		return true;
 	}
+
 	return false;
 }
+
 void CLagRecords::UpdateRecords()
 {
 	const auto pLocal = H::Entities->GetLocal();
+
 	if (!pLocal || pLocal->deadflag() || pLocal->InCond(TF_COND_HALLOWEEN_GHOST_MODE) || pLocal->InCond(TF_COND_HALLOWEEN_KART))
 	{
 		if (!m_LagRecords.empty())
 		{
 			m_LagRecords.clear();
 		}
+
 		return;
 	}
+
 	// Remove invalid players
 	for (const auto pEntity : H::Entities->GetGroup(CFG::Misc_SetupBones_Optimization ? EEntGroup::PLAYERS_ALL : EEntGroup::PLAYERS_ENEMIES))
 	{
@@ -88,12 +165,15 @@ void CLagRecords::UpdateRecords()
 		{
 			continue;
 		}
+
 		const auto pPlayer = pEntity->As<C_TFPlayer>();
+
 		if (pPlayer->deadflag())
 		{
 			m_LagRecords[pPlayer].clear();
 		}
 	}
+
 	// Remove invalid records
 	for (auto& records : m_LagRecords | std::views::values)
 	{
@@ -111,97 +191,221 @@ void CLagRecords::UpdateRecords()
 		}
 	}
 }
+
 bool CLagRecords::DiffersFromCurrent(const LagRecord_t* pRecord)
 {
 	const auto pPlayer = pRecord->Player;
+
 	if (!pPlayer)
 		return false;
+
 	if (static_cast<int>((pPlayer->m_vecOrigin() - pRecord->AbsOrigin).Length()) != 0)
 		return true;
+
 	if (static_cast<int>((pPlayer->GetEyeAngles() - pRecord->EyeAngles).Length()) != 0)
 		return true;
+
 	if (pPlayer->m_fFlags() != pRecord->Flags)
 		return true;
+
 	if (const auto pAnimState = pPlayer->GetAnimState())
 	{
 		if (fabsf(pAnimState->m_flCurrentFeetYaw - pRecord->FeetYaw) > 0.0f)
 			return true;
 	}
+
 	return false;
 }
+
 void CLagRecordMatrixHelper::Set(const LagRecord_t* pRecord)
 {
 	if (!pRecord)
 		return;
+
 	const auto pPlayer = pRecord->Player;
+
 	if (!pPlayer || pPlayer->deadflag())
 		return;
+
 	const auto pCachedBoneData = pPlayer->GetCachedBoneData();
+
 	if (!pCachedBoneData)
 		return;
+
 	m_pPlayer = pPlayer;
 	m_vAbsOrigin = pPlayer->GetAbsOrigin();
 	m_vAbsAngles = pPlayer->GetAbsAngles();
 	memcpy(m_BoneMatrix, pCachedBoneData->Base(), sizeof(matrix3x4_t) * pCachedBoneData->Count());
+
 	memcpy(pCachedBoneData->Base(), pRecord->BoneMatrix, sizeof(matrix3x4_t) * pCachedBoneData->Count());
+
 	pPlayer->SetAbsOrigin(pRecord->AbsOrigin);
 	pPlayer->SetAbsAngles(pRecord->AbsAngles);
+
 	m_bSuccessfullyStored = true;
 }
+
 void CLagRecordMatrixHelper::Restore()
 {
 	if (!m_bSuccessfullyStored || !m_pPlayer)
 		return;
+
 	const auto pCachedBoneData = m_pPlayer->GetCachedBoneData();
+
 	if (!pCachedBoneData)
 		return;
+
 	m_pPlayer->SetAbsOrigin(m_vAbsOrigin);
 	m_pPlayer->SetAbsAngles(m_vAbsAngles);
 	memcpy(pCachedBoneData->Base(), m_BoneMatrix, sizeof(matrix3x4_t) * pCachedBoneData->Count());
+
 	m_pPlayer = nullptr;
 	m_vAbsOrigin = {};
 	m_vAbsAngles = {};
 	std::memset(m_BoneMatrix, 0, sizeof(matrix3x4_t) * 128);
 	m_bSuccessfullyStored = false;
 }
-float CLagRecords::GetFakeLatency() const
-{
-	return CFG::Misc_FakeLatency_Enable ? CFG::Misc_FakeLatencyfloat_Enable : 0.0f;
-}
-void CLagRecords::RecordIncomingSequence(CNetChannel* pNetChan)
-{
-	if (!pNetChan || !CFG::Misc_FakeLatency_Enable) return;
 
-	if (pNetChan->m_nInSequenceNr > m_lastincomingsequencenumber)
+
+void CLagRecords::AdjustPing(INetChannel* pNetChanInterface)
+{
+	auto pNetChan = reinterpret_cast<CNetChannel*>(pNetChanInterface);
+	if (!pNetChan)
+		return;
+
+	// Store original values
+	m_nOldInSequenceNr = pNetChan->m_nInSequenceNr;
+	m_nOldInReliableState = pNetChan->m_nInReliableState;
+
+	const auto pLocal = H::Entities->GetLocal();
+	if (!pLocal || !pLocal->m_iClass())
+		return;
+
+	// Only apply fake latency for hitscan and melee weapons
+	const auto pWeapon = pLocal->m_hActiveWeapon().Get();
+	if (!pWeapon)
+		return;
+
+	const auto pWeaponBase = pWeapon->As<C_TFWeaponBase>();
+	if (!pWeaponBase)
+		return;
+
+	const int nWeaponID = pWeaponBase->GetWeaponID();
+
+	// Check if weapon is hitscan or melee (ONLY apply fake latency for these)
+	const bool bIsHitscanOrMelee = (
+		// Hitscan weapons
+		nWeaponID == TF_WEAPON_SHOTGUN_PRIMARY ||
+		nWeaponID == TF_WEAPON_SHOTGUN_SOLDIER ||
+		nWeaponID == TF_WEAPON_SHOTGUN_HWG ||
+		nWeaponID == TF_WEAPON_SHOTGUN_PYRO ||
+		nWeaponID == TF_WEAPON_SCATTERGUN ||
+		nWeaponID == TF_WEAPON_SNIPERRIFLE ||
+		nWeaponID == TF_WEAPON_MINIGUN ||
+		nWeaponID == TF_WEAPON_SMG ||
+		nWeaponID == TF_WEAPON_PISTOL ||
+		nWeaponID == TF_WEAPON_PISTOL_SCOUT ||
+		nWeaponID == TF_WEAPON_REVOLVER ||
+		nWeaponID == TF_WEAPON_SENTRY_BULLET ||
+		nWeaponID == TF_WEAPON_SENTRY_ROCKET ||
+		// Melee weapons
+		nWeaponID == TF_WEAPON_BAT ||
+		nWeaponID == TF_WEAPON_BAT_WOOD ||
+		nWeaponID == TF_WEAPON_BAT_FISH ||
+		nWeaponID == TF_WEAPON_BOTTLE ||
+		nWeaponID == TF_WEAPON_FIREAXE ||
+		nWeaponID == TF_WEAPON_CLUB ||
+		nWeaponID == TF_WEAPON_CROWBAR ||
+		nWeaponID == TF_WEAPON_KNIFE ||
+		nWeaponID == TF_WEAPON_FISTS ||
+		nWeaponID == TF_WEAPON_SHOVEL ||
+		nWeaponID == TF_WEAPON_WRENCH ||
+		nWeaponID == TF_WEAPON_BONESAW ||
+		nWeaponID == TF_WEAPON_SWORD
+		);
+
+	// Only apply fake latency for hitscan/melee weapons
+	if (!bIsHitscanOrMelee)
 	{
-		m_lastincomingsequencenumber = pNetChan->m_nInSequenceNr;
+		// Smooth back to 0 if we had fake latency active
+		if (m_flFakeLatency > 0.0f)
+		{
+			m_flFakeLatency = std::max(0.0f, m_flFakeLatency - I::GlobalVars->interval_per_tick);
+		}
+		return;
+	}
 
-		IncomingSequence_t seq;
-		seq.inreliablestate = pNetChan->m_nInReliableState;
-		seq.sequencenr = pNetChan->m_nInSequenceNr;
-		seq.curtime = I::GlobalVars->realtime;
+	// Get desired fake latency from config (convert ms to seconds)
+	m_flWishFakeLatency = CFG::Aimbot_ActiveLagRecords / 1000.0f;
 
-		m_Sequences.push_front(seq);
+	// Update max unlag from server cvar
+	static auto sv_maxunlag = I::CVar->FindVar("sv_maxunlag");
+	if (sv_maxunlag)
+		m_flMaxUnlag = sv_maxunlag->GetFloat();
 
-		if (m_Sequences.size() > 2048)
-			m_Sequences.pop_back();
+	if (m_flWishFakeLatency <= 0.0f)
+	{
+		// No fake latency desired, smooth back to 0
+		if (m_flFakeLatency > 0.0f)
+		{
+			m_flFakeLatency = std::max(0.0f, m_flFakeLatency - I::GlobalVars->interval_per_tick);
+		}
+		return;
+	}
+
+	// Calculate real latency from tickbase
+	float flReal = TICKS_TO_TIME(pLocal->m_nTickBase() - m_nOldTickBase);
+	static float flStaticReal = 0.0f;
+	flStaticReal += (flReal + 5 * I::GlobalVars->interval_per_tick - flStaticReal) * 0.1f;
+
+	// Find sequence that gives us the desired fake latency
+	int nInReliableState = pNetChan->m_nInReliableState;
+	int nInSequenceNr = pNetChan->m_nInSequenceNr;
+	float flLatency = 0.0f;
+
+	for (auto& seq : m_dSequences)
+	{
+		nInReliableState = seq.nInReliableState;
+		nInSequenceNr = seq.nSequenceNr;
+		flLatency = (I::GlobalVars->realtime - seq.flTime) - I::GlobalVars->interval_per_tick;
+
+		// Stop if we've reached desired latency or limits
+		if (flLatency > m_flWishFakeLatency ||
+			m_nLastInSequenceNr >= seq.nSequenceNr ||
+			flLatency > m_flMaxUnlag - flStaticReal)
+			break;
+	}
+
+	// Failsafe: don't go over 1 second
+	if (flLatency > 1.0f)
+		return;
+
+	// Apply the fake latency by rewinding sequence numbers
+	pNetChan->m_nInSequenceNr = nInSequenceNr;
+	pNetChan->m_nInReliableState = nInReliableState;
+
+	m_nLastInSequenceNr = nInSequenceNr;
+
+	// Smooth the fake latency value
+	if (m_flWishFakeLatency > 0.0f || m_flFakeLatency > 0.0f)
+	{
+		float flDelta = flLatency - m_flFakeLatency;
+		flDelta = std::clamp(flDelta, -I::GlobalVars->interval_per_tick, I::GlobalVars->interval_per_tick);
+		m_flFakeLatency += flDelta * 0.1f;
+
+		// Snap to 0 if very close
+		if (!m_flWishFakeLatency && m_flFakeLatency < I::GlobalVars->interval_per_tick)
+			m_flFakeLatency = 0.0f;
 	}
 }
-void CLagRecords::AdjustPing(CNetChannel* pNetChan)
-{
-	if (!pNetChan || !CFG::Misc_FakeLatency_Enable) return;
 
-	for (auto it = m_Sequences.begin(); it != m_Sequences.end(); )
-	{
-		if (I::GlobalVars->realtime - it->curtime >= GetFakeLatency())
-		{
-			pNetChan->m_nInReliableState = it->inreliablestate;
-			pNetChan->m_nInSequenceNr = it->sequencenr;
-			it = m_Sequences.erase(it);
-		}
-		else
-		{
-			++it;
-		}
-	}
+void CLagRecords::RestorePing(INetChannel* pNetChanInterface)
+{
+	auto pNetChan = reinterpret_cast<CNetChannel*>(pNetChanInterface);
+	if (!pNetChan)
+		return;
+
+	// Restore original sequence numbers
+	pNetChan->m_nInSequenceNr = m_nOldInSequenceNr;
+	pNetChan->m_nInReliableState = m_nOldInReliableState;
 }

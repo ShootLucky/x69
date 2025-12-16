@@ -5,27 +5,27 @@
 #define GetBits(x) (INRANGE((x & (~0x20)),'A','F') ? ((x & (~0x20)) - 'A' + 0xA) : (INRANGE(x,'0','9') ? x - '0' : 0))
 #define GetBytes(x) (GetBits(x[0]) << 4 | GetBits(x[1]))
 
-typedef void *(*InstantiateInterfaceFn)();
+typedef void* (*InstantiateInterfaceFn)();
 
 struct InterfaceInit_t
 {
 	InstantiateInterfaceFn m_pInterface = nullptr;
-	const char *m_pszInterfaceName = nullptr;
-	InterfaceInit_t *m_pNextInterface = nullptr;
+	const char* m_pszInterfaceName = nullptr;
+	InterfaceInit_t* m_pNextInterface = nullptr;
 };
 
 #include <vector>
 #include <Psapi.h>
 
-std::vector<int> pattern_to_byte(const char *pattern)
+std::vector<int> pattern_to_byte(const char* pattern)
 {
 	/// Prerequisites
 	auto              bytes = std::vector<int>{};
-	const auto        start = const_cast<char *>(pattern);
-	const char *const end = const_cast<char *>(pattern) + strlen(pattern);
+	const auto        start = const_cast<char*>(pattern);
+	const char* const end = const_cast<char*>(pattern) + strlen(pattern);
 
 	/// Convert signature into corresponding bytes
-	for (char *current = start; current < end; ++current)
+	for (char* current = start; current < end; ++current)
 	{
 		/// Is current byte a wildcard? Simply ignore that that byte later
 		if (*current == '?')
@@ -49,7 +49,7 @@ std::vector<int> pattern_to_byte(const char *pattern)
 	return bytes;
 }
 
-std::uintptr_t Memory::FindSignature(const char *szModule, const char *szPattern)
+std::uintptr_t Memory::FindSignature(const char* szModule, const char* szPattern)
 {
 	if (const auto hMod = GetModuleHandleA(szModule))
 	{
@@ -77,10 +77,10 @@ std::uintptr_t Memory::FindSignature(const char *szModule, const char *szPattern
 		/// Convert IDA-Style signature to a byte sequence
 		const auto pattern_bytes = pattern_to_byte(szPattern);
 
-		const auto image_bytes = reinterpret_cast<byte *>(hMod);
+		const auto image_bytes = reinterpret_cast<byte*>(hMod);
 
 		const auto signature_size = pattern_bytes.size();
-		const int *signature_bytes = pattern_bytes.data();
+		const int* signature_bytes = pattern_bytes.data();
 
 		/// Now loop through all bytes and check if the byte sequence matches
 		for (auto i = 0ul; i < image_size - signature_size; ++i)
@@ -114,9 +114,9 @@ std::uintptr_t Memory::FindSignature(const char *szModule, const char *szPattern
 	return 0x0;
 }
 
-using CreateInterfaceFn = void*(*)(const char* pName, int* pReturnCode);
+using CreateInterfaceFn = void* (*)(const char* pName, int* pReturnCode);
 
-PVOID Memory::FindInterface(const char *szModule, const char *szObject)
+PVOID Memory::FindInterface(const char* szModule, const char* szObject)
 {
 	/*auto hmModule = GetModuleHandleA(szModule);
 

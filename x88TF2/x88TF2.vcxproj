@@ -370,6 +370,8 @@
     <ClCompile Include="src\Features\ProjectileSim\ProjectileSim.cpp" />
     <ClCompile Include="src\Features\Radio\Radio.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
+    <ClCompile Include="src\Hooks\CBaseEntity_BaseInterpolatePart1.cpp" />
+    <ClCompile Include="src\Hooks\CBaseEntity_InterpolateServerEntities.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_SetAbsVelocity.cpp" />
     <ClCompile Include="src\Hooks\CHudTFCrosshair_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_CreateMove.cpp" />
@@ -380,6 +382,7 @@
     <ClCompile Include="src\Hooks\IEngineVGuiInternal_Paint.cpp" />
     <ClCompile Include="src\Hooks\CTFWeapon_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\IInput_GetUserCmd.cpp" />
+    <ClCompile Include="src\Hooks\INetChannel_SendNetMsg.cpp" />
     <ClCompile Include="src\Hooks\IVEngineClient013_ClientCmd.cpp" />
     <ClCompile Include="src\Hooks\netgraphstringchanger.cpp" />
     <ClCompile Include="src\SDK\TF2\bitbuf.cpp" />
@@ -426,6 +429,7 @@
     <ClInclude Include="src\Features\ProjectileSim\ProjectileSim.h" />
     <ClInclude Include="src\Features\Radio\Radio.h" />
     <ClInclude Include="src\SDK\TF2\iviewrender.h" />
+    <ClInclude Include="src\SDK\TF2\NetVars\CTFPartyClient.h" />
     <ClInclude Include="src\SDK\TF2\renderutils.h" />
     <ClInclude Include="src\SDK\TF2\utlblockmemory.h" />
     <ClInclude Include="src\SDK\TF2\utlmemory.h" />

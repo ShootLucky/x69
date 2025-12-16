@@ -87,14 +87,17 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 
 	F::EnginePrediction->Start(pCmd);
 	{
-
 		{
-
+			if ((pLocal->m_fFlags() & FL_ONGROUND) && !(F::EnginePrediction->flags & FL_ONGROUND))
+			{
+				*pSendPacket = false;
+			}
 		}
 
 		F::Aimbot->Run(pCmd);
 	}
 	F::EnginePrediction->End();
+
 
 	//nTicksTargetSame
 	{
@@ -137,4 +140,15 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			}
 		}
 	}
+
+	// Don't choke too much
+	if (I::ClientState->chokedcommands > 22)
+	{
+		*pSendPacket = true;
+	}
+
+	G::nOldButtons = pCmd->buttons;
+	G::vUserCmdAngles = pCmd->viewangles;
+
+	return (G::bSilentAngles || G::bPSilentAngles) ? false : CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 }

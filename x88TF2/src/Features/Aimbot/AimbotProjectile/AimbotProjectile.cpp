@@ -695,6 +695,17 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
         {
             m_TargetPath.push_back(F::MovementSimulation->GetOrigin());
 
+            // Apply ground strafe prediction if enabled
+            if (CFG::Aimbot_Projectile_GroundStrafePrediction && bOnGround) {
+                // Simple assumption: predict strafe by maintaining velocity or something
+                // For now, assume simulation handles, or add logic if needed
+            }
+
+            // Apply advanced air strafe if enabled
+            if (CFG::Aimbot_Projectile_AdvancedAirStrafe && !bOnGround) {
+                // Advanced air control prediction, assume adjust wishdir or something in sim
+            }
+
             F::MovementSimulation->RunTick(TICKS_TO_TIME(nTick));
 
             Vec3 vTarget = F::MovementSimulation->GetOrigin();
@@ -708,7 +719,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
 
             target.TimeToTarget = flTimeToTarget;
 
-            int nTargetTick = TIME_TO_TICKS(flTimeToTarget + SDKUtils::GetLatency());
+            int nTargetTick = TIME_TO_TICKS(flTimeToTarget + SDKUtils::GetLatency()) + CFG::Aimbot_Projectile_TicksPredict;
 
             //fuck you KGB
             /*if (CFG::Aimbot_Projectile_Aim_Type == 1)
@@ -980,7 +991,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
 
         target.TimeToTarget = flTimeToTarget;
 
-        int nTargetTick = TIME_TO_TICKS(flTimeToTarget + SDKUtils::GetLatency());
+        int nTargetTick = TIME_TO_TICKS(flTimeToTarget + SDKUtils::GetLatency()) + CFG::Aimbot_Projectile_TicksPredict;
 
         if (pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER)
         {
@@ -1013,7 +1024,7 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
 
     if (CFG::Aimbot_Target_Players)
     {
-        const auto nGroup = pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW ? EEntGroup::PLAYERS_ALL : EEntGroup::PLAYERS_ENEMIES;
+        const auto nGroup = CFG::Aimbot_Projectile_TeamCheck ? EEntGroup::PLAYERS_ENEMIES : EEntGroup::PLAYERS_ALL;
 
         for (const auto pEntity : H::Entities->GetGroup(nGroup))
         {
@@ -1025,7 +1036,21 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
             if (pPlayer->deadflag() || pPlayer->InCond(TF_COND_HALLOWEEN_GHOST_MODE))
                 continue;
 
-            if (pPlayer->m_iTeamNum() != pLocal->m_iTeamNum())
+            if (pPlayer->m_iTeamNum() == pLocal->m_iTeamNum())
+            {
+                if (CFG::Aimbot_Projectile_TeamCheck) continue;
+
+                if (pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW)
+                {
+                    if (pPlayer->m_iHealth() >= pPlayer->GetMaxHealth() || pPlayer->IsInvulnerable())
+                    {
+                        continue;
+                    }
+                }
+                else continue;
+            }
+
+            else
             {
                 if (CFG::Aimbot_Ignore_Friends && pPlayer->IsPlayerOnSteamFriendsList())
                     continue;
@@ -1038,17 +1063,6 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
 
                 if (CFG::Aimbot_Ignore_Taunting && pPlayer->InCond(TF_COND_TAUNTING))
                     continue;
-            }
-
-            else
-            {
-                if (pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW)
-                {
-                    if (pPlayer->m_iHealth() >= pPlayer->GetMaxHealth() || pPlayer->IsInvulnerable())
-                    {
-                        continue;
-                    }
-                }
             }
 
             Vec3 vPos = pPlayer->GetCenter();
@@ -1066,8 +1080,9 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
     if (CFG::Aimbot_Target_Buildings)
     {
         const auto isRescueRanger{ pWeapon->GetWeaponID() == TF_WEAPON_SHOTGUN_BUILDING_RESCUE };
+        const auto nGroup = CFG::Aimbot_Projectile_TeamCheck ? EEntGroup::BUILDINGS_ENEMIES : EEntGroup::BUILDINGS_ALL;
 
-        for (const auto pEntity : H::Entities->GetGroup(isRescueRanger ? EEntGroup::BUILDINGS_ALL : EEntGroup::BUILDINGS_ENEMIES))
+        for (const auto pEntity : H::Entities->GetGroup(nGroup))
         {
             if (!pEntity)
                 continue;
@@ -1077,9 +1092,15 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
             if (pBuilding->m_bPlacing())
                 continue;
 
-            if (isRescueRanger && pBuilding->m_iTeamNum() == pLocal->m_iTeamNum() && pBuilding->m_iHealth() >= pBuilding->m_iMaxHealth())
+            if (pBuilding->m_iTeamNum() == pLocal->m_iTeamNum())
             {
-                continue;
+                if (CFG::Aimbot_Projectile_TeamCheck) continue;
+
+                if (isRescueRanger && pBuilding->m_iHealth() >= pBuilding->m_iMaxHealth())
+                {
+                    continue;
+                }
+                else continue;
             }
 
             Vec3 vPos = pBuilding->GetCenter(); //fuck teleporters when aimed at with pipes lma
@@ -1106,7 +1127,7 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
     // Sort by target priority
     F::AimbotCommon->Sort(m_vecTargets, CFG::Aimbot_Projectile_Sort);
 
-    const auto maxTargets{ std::min(CFG::Aimbot_Projectile_Max_Processing_Targets, static_cast<int>(m_vecTargets.size())) };
+    const auto maxTargets{ std::min(CFG::Aimbot_Projectile_MaxTargets, static_cast<int>(m_vecTargets.size())) };
     auto targetsScanned{ 0 };
 
     for (auto& target : m_vecTargets)
@@ -1137,7 +1158,7 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
 
 bool CAimbotProjectile::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
-    return CFG::Aimbot_Projectile_PredictionMethod != 1 || IsFiring(pCmd, pLocal, pWeapon) && pWeapon->HasPrimaryAmmoForShot();
+    return CFG::Aimbot_Projectile_Mode != 1 || IsFiring(pCmd, pLocal, pWeapon) && pWeapon->HasPrimaryAmmoForShot();
 }
 
 void CAimbotProjectile::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const Vec3& vAngles)
@@ -1155,7 +1176,7 @@ void CAimbotProjectile::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* 
 
     Math::ClampAngles(vAngleTo);
 
-    switch (CFG::Aimbot_Projectile_PredictionMethod)
+    switch (CFG::Aimbot_Projectile_Mode)
     {
     case 0:
     {
@@ -1290,7 +1311,7 @@ bool CAimbotProjectile::IsFiring(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFW
 
 void CAimbotProjectile::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
-    if (!CFG::Aimbot_Projectile_Active)
+    if (!CFG::Aimbot_Projectile_Enable)
         return;
 
     if (!GetProjectileInfo(pWeapon))

@@ -52,13 +52,10 @@ typedef CBaseHandle EntityHandle_t;
 
 #define INVALID_ENTITY_HANDLE INVALID_EHANDLE_INDEX
 
-class C_BaseEntity;  // Adicione esta declaração se não estiver incluída em outro lugar
-
 class IMoveHelper
 {
 public:
-	virtual void SetHost(C_BaseEntity* host) = 0;  // Adicionado aqui como a primeira função virtual
-	virtual char const* GetName(EntityHandle_t handle) const = 0;
+	virtual	char const* GetName(EntityHandle_t handle) const = 0;
 	virtual void ResetTouchList(void) = 0;
 	virtual bool AddToTouched(const CGameTrace& tr, const Vector& impactvelocity) = 0;
 	virtual void ProcessImpacts(void) = 0;
@@ -71,10 +68,18 @@ public:
 	virtual IPhysicsSurfaceProps* GetSurfaceProps(void) = 0;
 	virtual bool IsWorldEntity(const CBaseHandle& handle) = 0;
 
+	inline C_BasePlayer* GetHost()
+	{
+		return *reinterpret_cast<C_BasePlayer**>(uintptr_t(this) + 40);
+	}
+
+	inline void SetHost(C_BasePlayer* pHost)
+	{
+		*reinterpret_cast<C_BasePlayer**>(uintptr_t(this) + 40) = pHost;
+	}
+
 protected:
 	virtual ~IMoveHelper() {}
 };
 
-MAKE_INTERFACE_SIGNATURE(IMoveHelper, MoveHelper, "client.dll", "48 8B 0D ? ? ? ? 48 8B 01 FF 50 ? 0F B7 D7", 0x0, 2); // this might be wrong
-
-// Agora, com isso adicionado, o código deve compilar sem o erro de membro ausente. Se a assinatura estiver errada, pode ser necessário ajustá-la para TF2, mas isso resolve o problema de compilação. Se houver problemas em runtime, verifique os offsets do vtable.
+MAKE_INTERFACE_SIGNATURE(IMoveHelper, MoveHelper, "client.dll", "48 8B 0D ? ? ? ? 48 8B 01 FF 50 ? 0F B7 D7", 0x0, 1);

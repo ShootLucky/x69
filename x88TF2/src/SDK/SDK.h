@@ -34,6 +34,7 @@
 #include "TF2/itexture.h"
 #include "TF2/MD5.h"
 #include "TF2/c_tf_player.h"
+#include "TF2/NetVars/CTFPartyClient.h"
 
 #include "Helpers/Draw/Draw.h"
 #include "Helpers/Entities/Entities.h"

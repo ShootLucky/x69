@@ -10,23 +10,27 @@ const char* ChooseRandomSubText()
 {
     // 0 .. 9999 (precisão alta para frases raras)
     int r = rand() % 10000;
+
     // COMUNS
-    if (r < 4500) return "god i wish i had x69"; // 45%
-    else if (r < 6000) return "try minecraft"; // 15%
-    else if (r < 7400) return "don't try valorant"; // 14%
-    else if (r < 8800) return "medusa.solutions best cheats"; // 14%
+    if (r < 4500) return "god i wish i had x69";
+    else if (r < 6000) return "totally legit, trust me";
+    else if (r < 7400) return "random crits are balanced";
+    else if (r < 8800) return "medusa.solutions best cheats";
+
     // RARAS
-    else if (r < 9300) return "skill issue detected"; // 5% (ajustado)
-    else if (r < 9600) return "vac was never enough"; // 3%
-    else if (r < 9750) return "aimbot ready"; // 1.5% (novo)
-    else if (r < 9850) return "wallhack engaged"; // 1% (novo)
-    else if (r < 9900) return "cs2 cheats loaded"; // 0.5% (novo)
+    else if (r < 9300) return "skill issue detected";
+    else if (r < 9600) return "vac was never enough";
+    else if (r < 9750) return "moneybot = fedoraware";
+    else if (r < 9850) return "spy backtrack go brr";
+    else if (r < 9900) return "lmaobox paste detected";
+
     // RARÍSSIMAS
-    else if (r < 9950) return "you weren't supposed to see this"; // 0.5%
-    else if (r < 9990) return "fuck ic0z, drevs, and those pedophiles."; // 0.4%
-    else if (r < 9995) return "secret dev message"; // 0.05% (novo)
-    else return "x69 internal // dev build"; // 0.05%
+    else if (r < 9950) return "hvh mid on badlands";
+    else if (r < 9990) return "moneybot >> lmaobox >> paste";
+    else if (r < 9995) return "nullcore users fear this... x64";
+    else return "x69 internal // dev build";
 }
+
 
 void CApp::Start()
 {
