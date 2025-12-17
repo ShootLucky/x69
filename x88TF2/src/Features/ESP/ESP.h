@@ -1,4 +1,3 @@
-// esp.h
 #pragma once
 #include "../src/SDK/SDK.h"
 #include "../src/SDK/Helpers/Draw/Draw.h"
@@ -15,6 +14,7 @@ public:
 	void Shutdown();
 	// Estado (consulta rápida).
 	bool IsEnabled() const noexcept { return CFG::ESP_Enable; }
+	void CustomFOV(CViewSetup* pSetup);
 private:
 	// Helpers de desenho — implementados em ESP.cpp
 	void DrawBox(int left, int top, int w, int h, const Color_t& clr);

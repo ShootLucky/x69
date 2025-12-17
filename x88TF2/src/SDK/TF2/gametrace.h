@@ -15,7 +15,7 @@ public:
 	csurface_t surface{};
 	int hitgroup{};
 	short physicsbone{};
-	C_BaseEntity *m_pEnt{};
+	C_BaseEntity* m_pEnt{};
 	int hitbox{};
 };
 

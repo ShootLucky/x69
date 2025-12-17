@@ -10,12 +10,10 @@
 #include <filesystem> // For directory iteration
 #include "../src/SDK/SDK.h" // Assuming this includes necessary SDK headers for IGameEventListener2 and related
 #include "../../Features/PlayersList/PlayersList.h" // Added for Playerlist
-
 namespace menu {
     static int item_count = 1;
     static int item_countx3 = 12;
 }
-
 // Helper para obter nome legível de uma virtual-key
 static std::string GetKeyName(int vk)
 {
@@ -825,6 +823,31 @@ void menu::render() {
             H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         checkbox(x_esp, &y, "Aimbot FOV", &CFG::Aimbot_DrawFOV, false, 255, current_item++);
+        y += 30; // Distancia de y
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_esp, &y, "Remove punch", &CFG::Visuals_RemovePunch, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_esp, &y, "Fov", &CFG::Visuals_CustomFov_Enable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_esp, &y, "Fov Amount", CFG::Visuals_CustomFov_Amount, 0.f, 120.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_esp, &y, "Remove Scoped zoom", &CFG::Visuals_RemoveScopedZoom, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_esp, &y, "Remove Scoped", &CFG::Visuals_RemoveScoped, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_esp, &y, "Remove Fire", &CFG::Visuals_RemoveFire, false, 255, current_item++);
         // Chams column (middle)
         y = start_y;
         if (!menu_locked && menu::item_count == current_item) {
@@ -879,6 +902,34 @@ void menu::render() {
         }
         if (CFG::BulletTracer) {
             combo(x_chams, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)" }, false, 255, current_item++);
+        }
+        y += 30; // Distancia de y
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_chams, &y, "Third Person", &CFG::Misc_ThirdPerson_Enable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_chams, &y, "Key Mode", &CFG::Misc_ThirdPerson_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        key_selector(x_chams, &y, &CFG::Misc_ThirdPerson_Key, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_chams, &y, "Distance offsets", CFG::Misc_ThirdPerson_Distance, -50.f, 100.f, current_item++); // Assuming range 0-100, adjust as needed
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_chams, &y, "Side Offsets", CFG::Misc_ThirdPerson_SideOffset, -50.f, 50.f, current_item++); // Assuming range -50-50
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_chams, &y, "Fov", CFG::Misc_ThirdPerson_Fov, 0.f, 120.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         // Skeleton column (right)
         y = start_y;
@@ -1063,6 +1114,10 @@ void menu::render() {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         key_selector(x_left, &y, &CFG::Misc_AutoRocketJump_Key, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left, &y, "Anti AFK", &CFG::Misc_AntiAFK_Enable, false, 255, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }

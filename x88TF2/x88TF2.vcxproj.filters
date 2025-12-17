@@ -55,6 +55,13 @@
     <ClCompile Include="src\Hooks\CBaseEntity_BaseInterpolatePart1.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_InterpolateServerEntities.cpp" />
     <ClCompile Include="src\Hooks\INetChannel_SendNetMsg.cpp" />
+    <ClCompile Include="src\Hooks\CBaseEntity_AddVar.cpp" />
+    <ClCompile Include="src\Hooks\CBasePlayer_CalcPlayerView.cpp" />
+    <ClCompile Include="src\Hooks\CPrediction_RunCommand.cpp" />
+    <ClCompile Include="src\Hooks\CRendering3dView_EnableWorldFog.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayer_UpdateClientSideAnimation.cpp" />
+    <ClCompile Include="src\Hooks\ClientModeShared_OverrideView.cpp" />
+    <ClCompile Include="src\Hooks\IBaseClientDLL_FrameStageNotify.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />

@@ -16,8 +16,10 @@ public:
 	void Bunnyhop(CUserCmd* pCmd);
 	void AutoRocketJump(CUserCmd* pCmd);
 	void AutoStrafe(CUserCmd* pCmd);
+	void AntiAFK(CUserCmd* pCmd);
 	float GetFakeLatency() const;
 	void RecordIncomingSequence(CNetChannel* pNetChan);
 	void AdjustPing(CNetChannel* pNetChan);
+	void Thirdperson(CViewSetup* pSetup);
 };
 MAKE_SINGLETON_SCOPED(CMisc, Misc, F);

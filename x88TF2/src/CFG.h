@@ -138,9 +138,17 @@ namespace CFG
 	CFGVAR(Logs_Enable, false);
 	CFGVAR(Logs_Type, 0);
 	CFGVAR(PlayersLogs_Type, 0);
+	CFGVAR(Visuals_ThirdPerson_ScopedFov, 0.f);
+	CFGVAR(Visuals_CustomFov_Amount, 0.f);
+	CFGVAR(Visuals_CustomFov_Enable, false);
+	CFGVAR(Visuals_RemoveFire, false);
+	CFGVAR(Visuals_RemovePunch, false);
+	CFGVAR(Visuals_RemoveScoped, false);
+	CFGVAR(Visuals_RemoveScopedZoom, false);
 #pragma endregion
 #pragma region Misc
-	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key
+	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key Misc_AntiAFK_Enable
+	CFGVAR(Misc_AntiAFK_Enable, true);
 	CFGVAR(Misc_Edge_Jump_Key, true);
 	CFGVAR(Misc_SetupBones_Optimization, false);
 	CFGVAR(Misc_Accuracy_Improvements, false);
@@ -159,12 +167,12 @@ namespace CFG
 	CFGVAR(Radio_VolDown, false);
 	CFGVAR(Misc_AccuracyImprovements, true);
 	CFGVAR(Misc_Fake_Taunt, false);
-#pragma endregion
-#pragma region TEST
-	CFGVAR(Important_checkbox, true);
-	CFGVAR(TestCombo, 0);
-	CFGVAR(TestFloat, 0.f);
-	CFGVAR(TestInt, 0);
+	CFGVAR(Misc_ThirdPerson_Distance, 0.f);
+	CFGVAR(Misc_ThirdPerson_Enable, false);
+	CFGVAR(Misc_ThirdPerson_Fov, 0.f);
+	CFGVAR(Misc_ThirdPerson_Key, 0);
+	CFGVAR(Misc_ThirdPerson_KeyMode, 0);
+	CFGVAR(Misc_ThirdPerson_SideOffset, 0.f);
 #pragma endregion
 #pragma region Colors
 #pragma endregion

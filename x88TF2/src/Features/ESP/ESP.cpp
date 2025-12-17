@@ -9,8 +9,8 @@
 #include <cmath>
 #include <vector>
 #include <cstring> // for strcmp
+#include <limits> // for numeric_limits
 #define PI 3.14159265358979323846f
-#define TF_COND_STEALTHED 4
 static bool IsFiniteVec(const Vec3& v)
 {
     return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
@@ -154,11 +154,6 @@ void CESP::DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
         }
     }
     if (!projOk) return;
-    // Removido: 2D fill e outline para focar apenas no wireframe 3D com outline
-    // Color_t fillClr(clr.r, clr.g, clr.b, 100);
-    // H::Draw->Rect(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), w, h, fillClr);
-    // H::Draw->OutlinedRect(static_cast<int>(std::round(left)), static_cast<int>(std::round(top)), w, h, clr);
-    // Draw 3D wireframe
     const std::pair<int, int> edges[] = {
         {0,1},{1,2},{2,3},{3,0},
         {4,5},{5,6},{6,7},{7,4},
@@ -234,6 +229,18 @@ void CESP::DrawFOVCircle(float fov, const Color_t& color) {
     float radius = tanf(DEG2RAD(fov) / 2.0f) / tanf(DEG2RAD(viewFOV) / 2.0f) * (h / 2.0f);
     H::Draw->OutlinedCircle(centerX, centerY, radius, 64, color);
 }
+void CESP::CustomFOV(CViewSetup* pSetup)
+{
+    if (!pSetup) return;
+    auto pLocal = H::Entities->GetLocal();
+    if (!pLocal) return;
+    float fov = pSetup->fov; // default to current
+    if (CFG::Visuals_CustomFov_Enable) fov = CFG::Visuals_CustomFov_Amount;
+    if (InCond(pLocal, TF_COND_ZOOMED)) {
+        if (CFG::Visuals_RemoveScopedZoom) fov = 90.0f; // or CFG::Visuals_CustomFov_Amount
+    }
+    pSetup->fov = fov;
+}
 // ---------------------------------------------------------------
 void CESP::Run()
 {
@@ -243,6 +250,18 @@ void CESP::Run()
     H::Draw->UpdateW2SMatrix();
     auto pLocal = H::Entities->GetLocal();
     if (!pLocal) return;
+    // Apply new visual features
+    if (CFG::Visuals_RemovePunch) {
+        pLocal->m_viewPunchAngle() = Vec3(0, 0, 0);
+        pLocal->m_aimPunchAngle() = Vec3(0, 0, 0);
+    }
+    if (InCond(pLocal, TF_COND_ZOOMED)) {
+        if (CFG::Visuals_RemoveScoped) {
+            pLocal->RemoveCond(TF_COND_ZOOMED);
+        }
+    }
+    // For Remove Fire, assuming remove muzzle flash or similar; implementation may require additional hooks
+    // Placeholder: if (CFG::Visuals_RemoveFire) { /* suppress particles or effects */ }
     // Bullet Tracers drawing
     const int maxClients = I::EngineClient->GetMaxClients();
     const int highestIndex = I::ClientEntityList->GetHighestEntityIndex();
@@ -295,9 +314,7 @@ void CESP::Run()
             drawChamsBox = (isLocal ? CFG::ESP_ChamsLocalPlayer : CFG::ESP_ChamsBox) && !(CFG::ESP_ChamsTeam && isTeammate) && !(isCloaked && CFG::ESP_ChamsHideCloaked);
             // Check for thirdperson for local player
             if (isLocal) {
-                ConVar* tp = I::CVar->FindVar("c_thirdpersonshoulder");
-                bool inThirdPerson = (tp && tp->GetBool());
-                if (!inThirdPerson) {
+                if (!CFG::Misc_ThirdPerson_Enable) {
                     drawESP = false;
                     drawSkeleton = false;
                     drawChamsBox = false;
@@ -308,8 +325,12 @@ void CESP::Run()
             if (pResource) {
                 static int healthOffset = NetVars::GetNetVar("CPlayerResource", "m_iHealth");
                 static int maxHealthOffset = NetVars::GetNetVar("CTFPlayerResource", "m_iMaxHealth");
-                health = *reinterpret_cast<int*>((uintptr_t)pResource + healthOffset + i * sizeof(int));
-                max_health = *reinterpret_cast<int*>((uintptr_t)pResource + maxHealthOffset + i * sizeof(int));
+                health = *reinterpret_cast<int*>(
+                    reinterpret_cast<uintptr_t>(pResource) + healthOffset + i * sizeof(int)
+                    );
+                max_health = *reinterpret_cast<int*>(
+                    reinterpret_cast<uintptr_t>(pResource) + maxHealthOffset + i * sizeof(int)
+                    );
             }
             if (max_health <= 0) max_health = pPlayer->GetMaxHealth();
             if (max_health <= 0) max_health = 100;
@@ -335,7 +356,9 @@ void CESP::Run()
             if (strcmp(networkName, "CObjectSentrygun") == 0) name = "Sentry";
             else if (strcmp(networkName, "CObjectDispenser") == 0) name = "Dispenser";
             else name = "Teleporter";
-            int level = *reinterpret_cast<int*>((uintptr_t)pBase + NetVars::GetNetVar("CBaseObject", "m_iUpgradeLevel"));
+            int level = *reinterpret_cast<int*>(
+                reinterpret_cast<uintptr_t>(pBase) + NetVars::GetNetVar("CBaseObject", "m_iUpgradeLevel")
+                );
             name += " Lvl " + std::to_string(level);
             health = static_cast<C_BaseObject*>(pBase)->m_iHealth();
             max_health = static_cast<C_BaseObject*>(pBase)->m_iMaxHealth();
@@ -381,7 +404,7 @@ void CESP::Run()
             else if (strcmp(networkName, "CTeamControlPoint") == 0) name = "Control Point";
             else name = "Payload Cart";
             drawESP = CFG::ESP_CaptureFlag;
-            // Chams e Skeleton independentes de drawESP
+            // Chams e Skeleton independentes
             drawChamsBox = CFG::ESP_ChamsCaptureFlag;
             drawSkeleton = false;
             clr = Color_t(255, 255, 0, 255); // yellow
@@ -495,12 +518,13 @@ void CESP::Run()
             if (CFG::ESP_Health && max_health > 0 && (isPlayer || isBuilding))
             {
                 health = std::clamp(health, 0, max_health);
+                int healthType = CFG::ESP_HealthType;
                 int barX = static_cast<int>(std::round(left)) - 6;
                 int barY = static_cast<int>(std::round(top)) - 1;
                 int barW = 4;
                 int barH = height + 2;
-                int healthType = CFG::ESP_HealthType;
-                if (healthType == 0 || healthType == 2) { // bar or both
+                bool hasBar = (healthType == 0 || healthType == 2);
+                if (hasBar) {
                     H::Draw->Rect(barX, barY, barW, barH, Color_t(0, 0, 0, 200));
                     if (barH > 2 && health > 0)
                     {
@@ -513,12 +537,18 @@ void CESP::Run()
                         H::Draw->Rect(barX + 1, fillY, 2, fillH, c);
                     }
                 }
-                if (healthType == 1 || healthType == 2) { // number or both
+                if (healthType == 1 || healthType == 2) {
                     const CFont& font = H::Fonts->Get(EFonts::ESP);
                     std::string healthStr = std::to_string(health);
-                    int textX = barX + barW / 2;
-                    int textY = barY + barH / 2;
-                    H::Draw->String(font, textX, textY, Color_t(255, 255, 255, 255), POS_CENTERXY, healthStr.c_str());
+                    int textY = barY; // Upper part
+                    int textX;
+                    if (hasBar) {
+                        textX = barX + barW + 2; // To the right (side) of the health bar
+                    }
+                    else {
+                        textX = barX; // Next to the box (using barX which is left -6)
+                    }
+                    H::Draw->String(font, textX, textY, Color_t(255, 255, 255, 255), POS_DEFAULT, healthStr.c_str());
                 }
             }
         }
@@ -537,7 +567,7 @@ void CESP::Run()
             if (!pModel) continue;
             auto pHDR = I::ModelInfoClient->GetStudiomodel(pModel);
             if (!pHDR) continue;
-            int numBones = std::min(pHDR->numbones, maxBones);
+            int numBones = std::min(static_cast<int>(pHDR->numbones), maxBones);
             int hitboxSet = pAnimating->m_nHitboxSet();
             int hitboxCount = pHDR->iHitboxCount(hitboxSet);
             bool useAA = (dist < 1500.0f);
@@ -698,9 +728,9 @@ void CESP::Run()
                 // Estilo moderno: Adiciona pulso animado para brilho (sem outline branco/glow externo)
                 float pulse = (std::sin(I::GlobalVars->curtime * 4.0f) + 1.0f) * 0.5f * 0.3f + 0.7f; // Pulso suave entre 0.7 e 1.0 para brilho moderno
                 Color_t wireColor = Color_t(
-                    static_cast<unsigned char>(std::min(255.0f, clr.r * pulse)),
-                    static_cast<unsigned char>(std::min(255.0f, clr.g * pulse)),
-                    static_cast<unsigned char>(std::min(255.0f, clr.b * pulse)),
+                    static_cast<unsigned char>(std::min(255.0f, static_cast<float>(clr.r) * pulse)),
+                    static_cast<unsigned char>(std::min(255.0f, static_cast<float>(clr.g) * pulse)),
+                    static_cast<unsigned char>(std::min(255.0f, static_cast<float>(clr.b) * pulse)),
                     clr.a
                 );
                 for (int hb = 0; hb < hitboxCount; ++hb)
@@ -751,6 +781,14 @@ void CESP::Run()
                         if (!pRecord || !pRecord->Player)
                             continue;
                         F::LagRecordMatrixHelper->Set(pRecord);
+                        // Recompute boneMatrix for backtrack record (fix: call SetupBones again with record's simtime)
+                        ok = pClientEnt->SetupBones(
+                            boneMatrix,
+                            maxBones,
+                            BONE_USED_BY_ANYTHING,
+                            pRecord->SimulationTime
+                        );
+                        if (!ok) continue;
                         float alphaFactor = 1.0f - static_cast<float>(n) / static_cast<float>(totalRecords + 1);
                         Color_t fadedClr = clr;
                         fadedClr.a = static_cast<unsigned char>(clr.a * alphaFactor);
@@ -863,9 +901,9 @@ void CESP::Run()
                         if (drawBacktrackChams) {
                             float pulse = (std::sin(I::GlobalVars->curtime * 4.0f) + 1.0f) * 0.5f * 0.3f + 0.7f;
                             Color_t wireColor = Color_t(
-                                static_cast<unsigned char>(std::min(255.0f, fadedClr.r * pulse)),
-                                static_cast<unsigned char>(std::min(255.0f, fadedClr.g * pulse)),
-                                static_cast<unsigned char>(std::min(255.0f, fadedClr.b * pulse)),
+                                static_cast<unsigned char>(std::min(255.0f, static_cast<float>(fadedClr.r) * pulse)),
+                                static_cast<unsigned char>(std::min(255.0f, static_cast<float>(fadedClr.g) * pulse)),
+                                static_cast<unsigned char>(std::min(255.0f, static_cast<float>(fadedClr.b) * pulse)),
                                 fadedClr.a
                             );
                             for (int hb = 0; hb < hitboxCount; ++hb)

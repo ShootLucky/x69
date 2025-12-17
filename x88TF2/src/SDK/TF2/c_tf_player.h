@@ -182,6 +182,9 @@ public:
 	NETVAR(m_iCampaignMedals, int, "CTFPlayer", "m_iCampaignMedals");
 	NETVAR(m_iPlayerSkinOverride, int, "CTFPlayer", "m_iPlayerSkinOverride");
 	NETVAR(m_bViewingCYOAPDA, bool, "CTFPlayer", "m_bViewingCYOAPDA");
+	NETVAR(m_viewPunchAngle, Vec3, "CBasePlayer", "m_viewPunchAngle");
+	NETVAR(m_aimPunchAngle, Vec3, "CBasePlayer", "m_aimPunchAngle");
+	void RemoveCond(int cond) { m_nPlayerCond() &= ~(1 << cond); }
 
 	byte GetMoveType() {
 		static int nOffset = NetVars::GetNetVar("CTFPlayer", "m_nWaterLevel") - 4;
