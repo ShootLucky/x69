@@ -687,6 +687,10 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
+        checkbox(x_center, &y, "Splash DEBUG", &CFG::Debug_SplashPoints, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
         float_slider(x_center, &y, "Splash Points", CFG::Aimbot_Projectile_SplashPoints, 10.f, 200.f, current_item++);
         // Melee (right column)
         y = start_y;
@@ -969,7 +973,7 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        combo(x_skel, &y, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted" }, false, 255, current_item++);
+        combo(x_skel, &y, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted", "Line + Box" }, false, 255, current_item++);
         y += 30;
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -983,8 +987,26 @@ void menu::render() {
             H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
         multi_combo(x_skel, &y, "Players Logs Type", &CFG::PlayersLogs_Type, std::vector<std::string>{"Damage", "Respawn", "Enter", "Exit", "Playerlist", "Class"}, 255, current_item++);
+        // Add spacing before View Model Custom
+        y += 30; // Increased spacing for better distance
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_skel, &y, "View Model", &CFG::Visuals_ViewModel_Enable, false, 255, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_skel, &y, "Offsets Forward", CFG::Visuals_ViewModel_Forward, -50.f, 50.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_skel, &y, "Offsets Right", CFG::Visuals_ViewModel_Right, -50.f, 50.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_skel, &y, "Offsets Up", CFG::Visuals_ViewModel_Up, -50.f, 50.f, current_item++);
         max_items = current_item - 1;
-    }
+        }
     else if (CFG::CurrentSection == 2) { // Playerlist section
         int base_x = 150;
         int name_x = base_x;

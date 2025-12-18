@@ -1,4 +1,3 @@
-// esp.cpp
 #include "ESP.h"
 #include "../src/SDK/TF2/interface.h"
 #include "../src/SDK/Helpers/Entities/Entities.h"
@@ -250,11 +249,6 @@ void CESP::Run()
     H::Draw->UpdateW2SMatrix();
     auto pLocal = H::Entities->GetLocal();
     if (!pLocal) return;
-    // Apply new visual features
-    if (CFG::Visuals_RemovePunch) {
-        pLocal->m_viewPunchAngle() = Vec3(0, 0, 0);
-        pLocal->m_aimPunchAngle() = Vec3(0, 0, 0);
-    }
     if (InCond(pLocal, TF_COND_ZOOMED)) {
         if (CFG::Visuals_RemoveScoped) {
             pLocal->RemoveCond(TF_COND_ZOOMED);
@@ -540,14 +534,16 @@ void CESP::Run()
                 if (healthType == 1 || healthType == 2) {
                     const CFont& font = H::Fonts->Get(EFonts::ESP);
                     std::string healthStr = std::to_string(health);
-                    int textY = barY; // Upper part
+                    int textW = font.GetStringWidth(healthStr.c_str());
+                    int textH = H::Fonts->GetFontHeight(EFonts::ESP);
                     int textX;
                     if (hasBar) {
-                        textX = barX + barW + 2; // To the right (side) of the health bar
+                        textX = barX - textW - 2;
                     }
                     else {
-                        textX = barX; // Next to the box (using barX which is left -6)
+                        textX = static_cast<int>(left) - textW - 2;
                     }
+                    int textY = static_cast<int>(top);
                     H::Draw->String(font, textX, textY, Color_t(255, 255, 255, 255), POS_DEFAULT, healthStr.c_str());
                 }
             }
@@ -636,103 +632,10 @@ void CESP::Run()
                         }
                     }
                 }
-                // Draw circle with cat ears on head
-                auto headIt = keyBoneScreens.find("bip_head");
-                if (headIt != keyBoneScreens.end())
-                {
-                    // Compute r based on head hitbox size
-                    float r = 10.0f; // default
-                    auto pHeadBox = pHDR->pHitbox(HITBOX_HEAD, hitboxSet);
-                    if (pHeadBox)
-                    {
-                        int headBoneIdx = pHeadBox->bone;
-                        if (headBoneIdx >= 0 && headBoneIdx < numBones)
-                        {
-                            Vec3 headCorners[8];
-                            Vec3 modelHeadCorners[8] = {
-                                { pHeadBox->bbmin.x, pHeadBox->bbmin.y, pHeadBox->bbmin.z },
-                                { pHeadBox->bbmin.x, pHeadBox->bbmax.y, pHeadBox->bbmin.z },
-                                { pHeadBox->bbmax.x, pHeadBox->bbmax.y, pHeadBox->bbmin.z },
-                                { pHeadBox->bbmax.x, pHeadBox->bbmin.y, pHeadBox->bbmin.z },
-                                { pHeadBox->bbmax.x, pHeadBox->bbmax.y, pHeadBox->bbmax.z },
-                                { pHeadBox->bbmax.x, pHeadBox->bbmin.y, pHeadBox->bbmax.z },
-                                { pHeadBox->bbmin.x, pHeadBox->bbmax.y, pHeadBox->bbmax.z },
-                                { pHeadBox->bbmin.x, pHeadBox->bbmin.y, pHeadBox->bbmax.z }
-                            };
-                            for (int c = 0; c < 8; ++c) Math::VectorTransform(modelHeadCorners[c], boneMatrix[headBoneIdx], headCorners[c]);
-                            Vec3 headScr[8];
-                            bool headProjOk = true;
-                            for (int c = 0; c < 8; ++c)
-                            {
-                                if (!H::Draw->W2S(headCorners[c], headScr[c]))
-                                {
-                                    headProjOk = false;
-                                    break;
-                                }
-                            }
-                            if (headProjOk)
-                            {
-                                float headLeft = headScr[0].x, headRight = headScr[0].x, headTop = headScr[0].y, headBottom = headScr[0].y;
-                                for (int c = 1; c < 8; ++c)
-                                {
-                                    if (headScr[c].x < headLeft) headLeft = headScr[c].x;
-                                    if (headScr[c].x > headRight) headRight = headScr[c].x;
-                                    if (headScr[c].y < headTop) headTop = headScr[c].y;
-                                    if (headScr[c].y > headBottom) headBottom = headScr[c].y;
-                                }
-                                float headWidth = headRight - headLeft;
-                                float headHeight = headBottom - headTop;
-                                r = std::min(headWidth, headHeight) / 2.0f; // Use min to make more proportional, fitting the smaller dimension
-                            }
-                        }
-                    }
-                    Vec3 screenHead = headIt->second;
-                    Color_t circleClr = boneColor;
-                    int segments = 64; // Increased segments for smoother circle
-                    Vec3 lastP;
-                    bool first = true;
-                    for (int s = 0; s <= segments; s++)
-                    {
-                        float theta = 2.0f * PI * static_cast<float>(s) / static_cast<float>(segments);
-                        float px = screenHead.x + r * std::cos(theta);
-                        float py = screenHead.y + r * std::sin(theta);
-                        Vec3 p(px, py, 0);
-                        if (!first)
-                            DrawSmoothBoneLine(lastP, p, circleClr, useAA); // Use smooth lines with adjusted alpha
-                        lastP = p;
-                        first = false;
-                    }
-                    // Cat ears on top
-                    float earH = r * 0.6f; // Reduced ear height for better proportion
-                    float earBaseAngle = PI / 6.0f; // 30 degrees from top for spacing
-                    // Left ear base left and right on circle
-                    float leftBaseLTheta = 3 * PI / 2 - earBaseAngle;
-                    float leftBaseRTheta = 3 * PI / 2 - earBaseAngle / 2;
-                    Vec3 leftEarBaseL(screenHead.x + r * std::cos(leftBaseLTheta), screenHead.y + r * std::sin(leftBaseLTheta), 0);
-                    Vec3 leftEarBaseR(screenHead.x + r * std::cos(leftBaseRTheta), screenHead.y + r * std::sin(leftBaseRTheta), 0);
-                    Vec3 leftEarTip(screenHead.x + r * std::cos(3 * PI / 2 - earBaseAngle * 0.75f), screenHead.y + r * std::sin(3 * PI / 2 - earBaseAngle * 0.75f) - earH, 0);
-                    DrawSmoothBoneLine(leftEarBaseL, leftEarTip, circleClr, useAA); // Use smooth lines with adjusted alpha
-                    DrawSmoothBoneLine(leftEarTip, leftEarBaseR, circleClr, useAA); // Use smooth lines with adjusted alpha
-                    // Right ear symmetric
-                    float rightBaseLTheta = 3 * PI / 2 + earBaseAngle / 2;
-                    float rightBaseRTheta = 3 * PI / 2 + earBaseAngle;
-                    Vec3 rightEarBaseL(screenHead.x + r * std::cos(rightBaseLTheta), screenHead.y + r * std::sin(rightBaseLTheta), 0);
-                    Vec3 rightEarBaseR(screenHead.x + r * std::cos(rightBaseRTheta), screenHead.y + r * std::sin(rightBaseRTheta), 0);
-                    Vec3 rightEarTip(screenHead.x + r * std::cos(3 * PI / 2 + earBaseAngle * 0.75f), screenHead.y + r * std::sin(3 * PI / 2 + earBaseAngle * 0.75f) - earH, 0);
-                    DrawSmoothBoneLine(rightEarBaseL, rightEarTip, circleClr, useAA); // Use smooth lines with adjusted alpha
-                    DrawSmoothBoneLine(rightEarTip, rightEarBaseR, circleClr, useAA); // Use smooth lines with adjusted alpha
-                }
             }
             if (drawChamsBox)
             {
-                // Estilo moderno: Adiciona pulso animado para brilho (sem outline branco/glow externo)
-                float pulse = (std::sin(I::GlobalVars->curtime * 4.0f) + 1.0f) * 0.5f * 0.3f + 0.7f; // Pulso suave entre 0.7 e 1.0 para brilho moderno
-                Color_t wireColor = Color_t(
-                    static_cast<unsigned char>(std::min(255.0f, static_cast<float>(clr.r) * pulse)),
-                    static_cast<unsigned char>(std::min(255.0f, static_cast<float>(clr.g) * pulse)),
-                    static_cast<unsigned char>(std::min(255.0f, static_cast<float>(clr.b) * pulse)),
-                    clr.a
-                );
+                Color_t wireColor = clr;
                 for (int hb = 0; hb < hitboxCount; ++hb)
                 {
                     auto pBox = pHDR->pHitbox(hb, hitboxSet);
@@ -857,55 +760,10 @@ void CESP::Run()
                                     }
                                 }
                             }
-                            // Draw cat ears with fadedClr
-                            auto headIt = keyBoneScreens.find("bip_head");
-                            if (headIt != keyBoneScreens.end())
-                            {
-                                float r = 10.0f; // compute r as before
-                                Vec3 screenHead = headIt->second;
-                                Color_t circleClr = boneColor;
-                                int segments = 64;
-                                Vec3 lastP;
-                                bool first = true;
-                                for (int s = 0; s <= segments; s++)
-                                {
-                                    float theta = 2.0f * PI * static_cast<float>(s) / static_cast<float>(segments);
-                                    float px = screenHead.x + r * std::cos(theta);
-                                    float py = screenHead.y + r * std::sin(theta);
-                                    Vec3 p(px, py, 0);
-                                    if (!first)
-                                        DrawSmoothBoneLine(lastP, p, circleClr, useAA);
-                                    lastP = p;
-                                    first = false;
-                                }
-                                // Cat ears code with circleClr = boneColor = fadedClr
-                                float earH = r * 0.6f;
-                                float earBaseAngle = PI / 6.0f;
-                                float leftBaseLTheta = 3 * PI / 2 - earBaseAngle;
-                                float leftBaseRTheta = 3 * PI / 2 - earBaseAngle / 2;
-                                Vec3 leftEarBaseL(screenHead.x + r * std::cos(leftBaseLTheta), screenHead.y + r * std::sin(leftBaseLTheta), 0);
-                                Vec3 leftEarBaseR(screenHead.x + r * std::cos(leftBaseRTheta), screenHead.y + r * std::sin(leftBaseRTheta), 0);
-                                Vec3 leftEarTip(screenHead.x + r * std::cos(3 * PI / 2 - earBaseAngle * 0.75f), screenHead.y + r * std::sin(3 * PI / 2 - earBaseAngle * 0.75f) - earH, 0);
-                                DrawSmoothBoneLine(leftEarBaseL, leftEarTip, circleClr, useAA);
-                                DrawSmoothBoneLine(leftEarTip, leftEarBaseR, circleClr, useAA);
-                                float rightBaseLTheta = 3 * PI / 2 + earBaseAngle / 2;
-                                float rightBaseRTheta = 3 * PI / 2 + earBaseAngle;
-                                Vec3 rightEarBaseL(screenHead.x + r * std::cos(rightBaseLTheta), screenHead.y + r * std::sin(rightBaseLTheta), 0);
-                                Vec3 rightEarBaseR(screenHead.x + r * std::cos(rightBaseRTheta), screenHead.y + r * std::sin(rightBaseRTheta), 0);
-                                Vec3 rightEarTip(screenHead.x + r * std::cos(3 * PI / 2 + earBaseAngle * 0.75f), screenHead.y + r * std::sin(3 * PI / 2 + earBaseAngle * 0.75f) - earH, 0);
-                                DrawSmoothBoneLine(rightEarBaseL, rightEarTip, circleClr, useAA);
-                                DrawSmoothBoneLine(rightEarTip, rightEarBaseR, circleClr, useAA);
-                            }
                         }
                         // Draw backtrack chams
                         if (drawBacktrackChams) {
-                            float pulse = (std::sin(I::GlobalVars->curtime * 4.0f) + 1.0f) * 0.5f * 0.3f + 0.7f;
-                            Color_t wireColor = Color_t(
-                                static_cast<unsigned char>(std::min(255.0f, static_cast<float>(fadedClr.r) * pulse)),
-                                static_cast<unsigned char>(std::min(255.0f, static_cast<float>(fadedClr.g) * pulse)),
-                                static_cast<unsigned char>(std::min(255.0f, static_cast<float>(fadedClr.b) * pulse)),
-                                fadedClr.a
-                            );
+                            Color_t wireColor = fadedClr;
                             for (int hb = 0; hb < hitboxCount; ++hb)
                             {
                                 auto pBox = pHDR->pHitbox(hb, hitboxSet);
@@ -955,40 +813,6 @@ void CESP::Run()
         DrawFOVCircle(CFG::Aimbot_FOV, Color_t(0, 0, 255, 255)); // blue for aimbot
         DrawFOVCircle(CFG::Aimbot_Projectile_FOV, Color_t(0, 255, 0, 255)); // green for project
         DrawFOVCircle(CFG::Aimbot_Melee_FOV, Color_t(255, 0, 0, 255)); // red for melee
-    }
-    if (CFG::Visuals_Draw_Movement_Path_Style != 0 && CFG::Aimbot_Projectile_Enable) {
-        if (G::nTargetIndex > 0) {
-            C_TFPlayer* pTarget = reinterpret_cast<C_TFPlayer*>(I::ClientEntityList->GetClientEntity(G::nTargetIndex));
-            if (pTarget && pTarget->m_lifeState() == LIFE_ALIVE && pTarget->m_iTeamNum() != pLocal->m_iTeamNum()) {
-                Vec3 pos = pTarget->GetAbsOrigin();
-                Vec3 vel = pTarget->m_vecVelocity();
-                float dt = I::GlobalVars->interval_per_tick;
-                float gravity = SDKUtils::GetGravity() * dt;
-                Color_t clr = Color_t(255, 255, 0, 255); // yellow
-                int style = CFG::Visuals_Draw_Movement_Path_Style;
-                int ticks = CFG::Aimbot_Projectile_TicksPredict;
-                Vec3 lastPos = pos;
-                Vec3 lastScr;
-                H::Draw->W2S(lastPos, lastScr);
-                for (int t = 1; t <= ticks; t++) {
-                    pos += vel * dt;
-                    if (!(pTarget->m_fFlags() & FL_ONGROUND)) {
-                        vel.z -= gravity;
-                    }
-                    Vec3 scr;
-                    if (H::Draw->W2S(pos, scr)) {
-                        if (style == 1) { // line
-                            DrawSmoothBoneLine(lastScr, scr, clr);
-                        }
-                        else if (style == 2) { // dotted
-                            H::Draw->FilledCircle(scr.x, scr.y, 2, 8, clr);
-                        }
-                    }
-                    lastPos = pos;
-                    lastScr = scr;
-                }
-            }
-        }
     }
 }
 CESP gESP;

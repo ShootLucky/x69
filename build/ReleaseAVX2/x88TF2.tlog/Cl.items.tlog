@@ -24,9 +24,12 @@ C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\ClientModeS
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CMultiPlayerAnimState_ResetGestureSlot.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CPrediction_RunCommand.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CPrediction_RunCommand.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CRendering3dView_EnableWorldFog.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CRendering3dView_EnableWorldFog.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFPlayerShared_InCond.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CTFPlayerShared_InCond.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFPlayerShared_IsPlayerDominated.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CTFPlayerShared_IsPlayerDominated.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFPlayer_AvoidPlayers.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CTFPlayer_AvoidPlayers.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CTFPlayer_MaybeDrawRailgunBeam.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFPlayer_UpdateClientSideAnimation.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CTFPlayer_UpdateClientSideAnimation.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFViewModel_CalcViewModelView.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CTFViewModel_CalcViewModelView.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\CTFWeaponBase_GetTracerType.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\CTFWeaponBase_GetTracerType.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\IBaseClientDLL_FrameStageNotify.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\IBaseClientDLL_FrameStageNotify.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\IEngineVGuiInternal_Paint.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\IEngineVGuiInternal_Paint.obj

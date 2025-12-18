@@ -1,7 +1,6 @@
 #pragma once
 #include "../AimbotCommon/AimbotCommon.h"
 #include "../src/Features/LagRecords/Backtrack.h"
-
 class CAimbotHitscan
 {
     struct HitscanTarget_t : AimTarget_t
@@ -11,22 +10,18 @@ class CAimbotHitscan
         const LagRecord_t* LagRecord = nullptr;
         bool WasMultiPointed = false;
     };
-
     std::vector<HitscanTarget_t> m_vecTargets = {};
-
     int GetAimHitbox(C_TFWeaponBase* pWeapon);
-    bool ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target);
-    bool ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target);
-    bool ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target);
+    bool ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles);
+    bool ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles);
+    bool ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles);
     bool GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, HitscanTarget_t& outTarget);
     bool ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
     void Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles);
     bool ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const HitscanTarget_t& target);
     void HandleFire(CUserCmd* pCmd, C_TFWeaponBase* pWeapon);
-
 public:
     bool IsFiring(CUserCmd* pCmd, C_TFWeaponBase* pWeapon);
     void Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
 };
-
 MAKE_SINGLETON_SCOPED(CAimbotHitscan, AimbotHitscan, F);

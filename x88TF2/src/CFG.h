@@ -24,6 +24,7 @@ namespace CFG
 	CFGVAR(Aimbot_Projectile_Smoothing, 5.f);
 	CFGVAR(Aimbot_Projectile_TicksPredict, 0);
 	CFGVAR(Aimbot_Projectile_TeamCheck, true);
+	CFGVAR(Debug_SplashPoints, false);
 	CFGVAR(Aimbot_Projectile_Mode, 0);
 	CFGVAR(Aimbot_ActiveShoot, false);
 	CFGVAR(Aimbot_ActiveLagRecords, false);
@@ -145,6 +146,11 @@ namespace CFG
 	CFGVAR(Visuals_RemovePunch, false);
 	CFGVAR(Visuals_RemoveScoped, false);
 	CFGVAR(Visuals_RemoveScopedZoom, false);
+	CFGVAR(Visuals_ViewModel_Enable, false);
+	CFGVAR(Visuals_ViewModel_Forward, 0.f);
+	CFGVAR(Visuals_ViewModel_Right, 0.f);
+	CFGVAR(Visuals_ViewModel_Up, 0.f);
+	CFGVAR(Visuals_Removals_Mode, 0);
 #pragma endregion
 #pragma region Misc
 	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key Misc_AntiAFK_Enable

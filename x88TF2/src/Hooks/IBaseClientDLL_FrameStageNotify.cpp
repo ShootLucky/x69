@@ -98,6 +98,8 @@ MAKE_HOOK(IBaseClientDLL_FrameStageNotify, Memory::GetVFunc(I::BaseClientDLL, 35
 	{
 		H::Input->Update();
 
+		F::Misc->ViewModelOffsets();
+
 		//fake taunt stuff
 		{
 			static bool bWasEnabled = false;

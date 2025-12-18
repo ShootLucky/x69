@@ -86,6 +86,41 @@ void CMisc::Thirdperson(CViewSetup* pSetup)
         }
     }
 }
+void CMisc::ViewModelOffsets()
+{
+    static ConVar* cl_wpn_sway_interp = I::CVar->FindVar("cl_wpn_sway_interp");
+
+    if (!cl_wpn_sway_interp)
+        return;
+
+    const auto pLocal = H::Entities->GetLocal();
+
+    if (!pLocal)
+        return;
+
+    if (CFG::Visuals_ViewModel_Enable && !pLocal->deadflag())
+    {
+        if (const auto pWeapon = H::Entities->GetWeapon())
+        {
+            const float flBaseValue = pWeapon->GetWeaponID() == TF_WEAPON_COMPOUND_BOW ? 0.02f : 0.05f;
+        }
+    }
+    else
+    {
+        if (cl_wpn_sway_interp->GetFloat() != 0.f)
+        {
+            cl_wpn_sway_interp->SetValue(0.0f);
+        }
+    }
+
+    // Apply viewmodel convars
+    static ConVar* tf_use_min_viewmodels = I::CVar->FindVar("tf_use_min_viewmodels");
+    static ConVar* cl_flipviewmodels = I::CVar->FindVar("cl_flipviewmodels");
+    static ConVar* cl_first_person_uses_world_model = I::CVar->FindVar("cl_first_person_uses_world_model");
+
+}
+
+
 void CMisc::AutoRocketJump(CUserCmd* pCmd)
 {
     if (!CFG::Misc_AutoRocketJump_Enable)

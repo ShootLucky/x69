@@ -62,6 +62,9 @@
     <ClCompile Include="src\Hooks\CTFPlayer_UpdateClientSideAnimation.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_OverrideView.cpp" />
     <ClCompile Include="src\Hooks\IBaseClientDLL_FrameStageNotify.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayerShared_InCond.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayer_AvoidPlayers.cpp" />
+    <ClCompile Include="src\Hooks\CTFViewModel_CalcViewModelView.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />

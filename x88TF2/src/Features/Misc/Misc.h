@@ -21,5 +21,6 @@ public:
 	void RecordIncomingSequence(CNetChannel* pNetChan);
 	void AdjustPing(CNetChannel* pNetChan);
 	void Thirdperson(CViewSetup* pSetup);
+	void ViewModelOffsets(); // sem pSetup
 };
 MAKE_SINGLETON_SCOPED(CMisc, Misc, F);

@@ -1,6 +1,7 @@
 #include "AimbotHitscan.h"
 #include "CFG.h"
 #include <array>
+#include <algorithm>
 
 int CAimbotHitscan::GetAimHitbox(C_TFWeaponBase* pWeapon)
 {
@@ -18,7 +19,7 @@ int CAimbotHitscan::GetAimHitbox(C_TFWeaponBase* pWeapon)
     }
 }
 
-bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target)
+bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     if (!CFG::Aimbot_Hitscan_Scan_Head)
         return false;
@@ -37,7 +38,7 @@ bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target)
     const auto pBox = pSet->pHitbox(HITBOX_HEAD);
     if (!pBox)
         return false;
-    matrix3x4_t boneMatrix[128] = {};
+    matrix3x4_t boneMatrix[128];
     if (!pPlayer->SetupBones(boneMatrix, 128, 0x100, I::GlobalVars->curtime))
         return false;
     const Vec3 vMins = pBox->bbmin;
@@ -53,6 +54,12 @@ bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target)
         Vec3(0.0f, 0.0f, vMaxs.z * scale)
     };
     const Vec3 vLocalPos = pLocal->GetShootPos();
+    struct PointInfo_t
+    {
+        Vec3 Position;
+        float FOVTo;
+    };
+    std::vector<PointInfo_t> vecVisiblePoints = {};
     for (const auto& vPoint : vPoints)
     {
         Vec3 vTransformed = {};
@@ -62,15 +69,23 @@ bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target)
             continue;
         if (nHitHitbox != HITBOX_HEAD)
             continue;
-        target.Position = vTransformed;
-        target.AngleTo = Math::CalcAngle(vLocalPos, vTransformed);
-        target.WasMultiPointed = true;
-        return true;
+        const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vTransformed);
+        const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+        vecVisiblePoints.push_back({ vTransformed, flFOVTo });
     }
-    return false;
+    if (vecVisiblePoints.empty())
+        return false;
+    std::sort(vecVisiblePoints.begin(), vecVisiblePoints.end(), [](const PointInfo_t& a, const PointInfo_t& b)
+        {
+            return a.FOVTo < b.FOVTo;
+        });
+    target.Position = vecVisiblePoints.front().Position;
+    target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
+    target.WasMultiPointed = true;
+    return true;
 }
 
-bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target)
+bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     const bool bScanningBody = CFG::Aimbot_Hitscan_Scan_Body;
     const bool bScaningArms = CFG::Aimbot_Hitscan_Scan_Arms;
@@ -80,10 +95,16 @@ bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target)
     const auto pPlayer = target.Entity->As<C_TFPlayer>();
     if (!pPlayer)
         return false;
-    matrix3x4_t boneMatrix[128] = {};
+    matrix3x4_t boneMatrix[128];
     if (!pPlayer->SetupBones(boneMatrix, 128, 0x100, I::GlobalVars->curtime))
         return false;
     const Vec3 vLocalPos = pLocal->GetShootPos();
+    struct PointInfo_t
+    {
+        Vec3 Position;
+        float FOVTo;
+    };
+    std::vector<PointInfo_t> vecVisiblePoints = {};
     for (int n = 1; n < pPlayer->GetNumOfHitboxes(); n++)
     {
         if (n == target.AimedHitbox)
@@ -98,14 +119,22 @@ bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target)
         Vec3 vHitbox = pPlayer->GetHitboxPos(n);
         if (!H::AimUtils->TraceEntityBullet(pPlayer, vLocalPos, vHitbox))
             continue;
-        target.Position = vHitbox;
-        target.AngleTo = Math::CalcAngle(vLocalPos, vHitbox);
-        return true;
+        const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vHitbox);
+        const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+        vecVisiblePoints.push_back({ vHitbox, flFOVTo });
     }
-    return false;
+    if (vecVisiblePoints.empty())
+        return false;
+    std::sort(vecVisiblePoints.begin(), vecVisiblePoints.end(), [](const PointInfo_t& a, const PointInfo_t& b)
+        {
+            return a.FOVTo < b.FOVTo;
+        });
+    target.Position = vecVisiblePoints.front().Position;
+    target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
+    return true;
 }
 
-bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target)
+bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     if (!CFG::Aimbot_Hitscan_Scan_Buildings)
         return false;
@@ -113,6 +142,12 @@ bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target)
     if (!pObject)
         return false;
     const Vec3 vLocalPos = pLocal->GetShootPos();
+    struct PointInfo_t
+    {
+        Vec3 Position;
+        float FOVTo;
+    };
+    std::vector<PointInfo_t> vecVisiblePoints = {};
     if (pObject->GetClassId() == ETFClassIds::CObjectSentrygun)
     {
         for (int n = 0; n < pObject->GetNumOfHitboxes(); n++)
@@ -120,9 +155,9 @@ bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target)
             Vec3 vHitbox = pObject->GetHitboxPos(n);
             if (!H::AimUtils->TraceEntityBullet(pObject, vLocalPos, vHitbox))
                 continue;
-            target.Position = vHitbox;
-            target.AngleTo = Math::CalcAngle(vLocalPos, vHitbox);
-            return true;
+            const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vHitbox);
+            const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+            vecVisiblePoints.push_back({ vHitbox, flFOVTo });
         }
     }
     else
@@ -144,18 +179,27 @@ bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target)
             Math::VectorTransform(vPoint, transform, vTransformed);
             if (!H::AimUtils->TraceEntityBullet(pObject, vLocalPos, vTransformed))
                 continue;
-            target.Position = vTransformed;
-            target.AngleTo = Math::CalcAngle(vLocalPos, vTransformed);
-            return true;
+            const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vTransformed);
+            const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+            vecVisiblePoints.push_back({ vTransformed, flFOVTo });
         }
     }
-    return false;
+    if (vecVisiblePoints.empty())
+        return false;
+    std::sort(vecVisiblePoints.begin(), vecVisiblePoints.end(), [](const PointInfo_t& a, const PointInfo_t& b)
+        {
+            return a.FOVTo < b.FOVTo;
+        });
+    target.Position = vecVisiblePoints.front().Position;
+    target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
+    return true;
 }
 
 bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, HitscanTarget_t& outTarget)
 {
     const Vec3 vLocalPos = pLocal->GetShootPos();
-    const Vec3 vLocalAngles = I::EngineClient->GetViewAngles();
+    Vec3 vLocalAngles;
+    I::EngineClient->GetViewAngles(vLocalAngles);
     m_vecTargets.clear();
     if (CFG::Aimbot_Target_Players)
     {
@@ -175,7 +219,7 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
                 continue;
             if (CFG::Aimbot_Ignore_Taunting && pPlayer->InCond(TF_COND_TAUNTING))
                 continue;
-            matrix3x4_t boneMatrix[128] = {};
+            matrix3x4_t boneMatrix[128];
             if (!pPlayer->SetupBones(boneMatrix, 128, 0x100, I::GlobalVars->curtime))
                 continue;
             if (CFG::Aimbot_TargetLagRecords)
@@ -344,7 +388,7 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
             {
                 F::LagRecordMatrixHelper->Set(t.LagRecord);
             }
-            if (ScanHead(pLocal, t) || ScanBody(pLocal, t))
+            if (ScanHead(pLocal, t, vLocalAngles) || ScanBody(pLocal, t, vLocalAngles))
             {
                 t.AngleTo = Math::CalcAngle(vLocalPos, t.Position);
                 t.FOVTo = Math::CalcFov(vLocalAngles, t.AngleTo);
@@ -357,7 +401,7 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
         }
         else
         {
-            if (ScanBuilding(pLocal, t))
+            if (ScanBuilding(pLocal, t, vLocalAngles))
             {
                 t.AngleTo = Math::CalcAngle(vLocalPos, t.Position);
                 t.FOVTo = Math::CalcFov(vLocalAngles, t.AngleTo);
@@ -396,12 +440,13 @@ bool CAimbotHitscan::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWea
 
 void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles)
 {
-    const Vec3 vOldAngles = pCmd->viewangles;
+    Vec3 vOldAngles = pCmd->viewangles;
     Vec3 vDelta = vAngles - vOldAngles;
     vDelta.x = Math::NormalizeAngle(vDelta.x);
     vDelta.y = Math::NormalizeAngle(vDelta.y);
     vDelta.z = Math::NormalizeAngle(vDelta.z);
     float fSmoothing = CFG::Aimbot_Hitscan_Smoothing;
+    if (CFG::Aimbot_Hitscan_Mode == 1) fSmoothing = 0.0f;
     Vec3 vStep;
     if (fSmoothing <= 0.0f)
     {
@@ -412,14 +457,22 @@ void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles
         vStep = vDelta / fSmoothing;
     }
     const float fMaxChange = 30.0f;
-    vStep.x = std::clamp(vStep.x, -fMaxChange, fMaxChange);
-    vStep.y = std::clamp(vStep.y, -fMaxChange, fMaxChange);
+    if (CFG::Aimbot_Hitscan_Mode != 1)
+    {
+        vStep.x = std::clamp(vStep.x, -fMaxChange, fMaxChange);
+        vStep.y = std::clamp(vStep.y, -fMaxChange, fMaxChange);
+    }
     pCmd->viewangles = vOldAngles + vStep;
     Math::ClampAngles(pCmd->viewangles);
     if (CFG::Aimbot_Hitscan_Mode == 1)
     {
-        Vec3 oldAngles = vOldAngles;
-        I::EngineClient->SetViewAngles(oldAngles);
+        float forward = pCmd->forwardmove;
+        float side = pCmd->sidemove;
+        float up = pCmd->upmove;
+        float yaw_rad = DEG2RAD(pCmd->viewangles.y - vOldAngles.y);
+        pCmd->forwardmove = cos(yaw_rad) * forward + cos(yaw_rad + (PI / 2)) * side;
+        pCmd->sidemove = sin(yaw_rad) * forward + sin(yaw_rad + (PI / 2)) * side;
+        I::EngineClient->SetViewAngles(vOldAngles);
         G::bSilentAngles = true;
     }
 }
@@ -444,7 +497,7 @@ bool CAimbotHitscan::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBa
         if (sniper->m_flChargedDamage() < 50.0f)
             return false;
     }
-    if (CFG::Aimbot_SmoothAutoShoot && CFG::Aimbot_Hitscan_Mode == 2)
+    if (CFG::Aimbot_SmoothAutoShoot && (CFG::Aimbot_Hitscan_Mode == 1 || CFG::Aimbot_Hitscan_Mode == 2))
     {
         Vec3 vForward = {};
         Math::AngleVectors(pCmd->viewangles, &vForward);
@@ -462,13 +515,6 @@ bool CAimbotHitscan::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBa
                 {
                     if (nHitHitbox != HITBOX_HEAD)
                         return false;
-                    Vec3 vMins = {}, vMaxs = {}, vCenter = {};
-                    matrix3x4_t matrix = {};
-                    pPlayer->GetHitboxInfo(nHitHitbox, &vCenter, &vMins, &vMaxs, &matrix);
-                    vMins *= 0.8f;
-                    vMaxs *= 0.8f;
-                    if (!Math::RayToOBB(vTraceStart, vForward, vCenter, vMins, vMaxs, matrix))
-                        return false;
                 }
             }
             else
@@ -483,15 +529,6 @@ bool CAimbotHitscan::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBa
                 if (target.AimedHitbox == HITBOX_HEAD)
                 {
                     if (nHitHitbox != HITBOX_HEAD)
-                    {
-                        F::LagRecordMatrixHelper->Restore();
-                        return false;
-                    }
-                    Vec3 vMins = {}, vMaxs = {}, vCenter = {};
-                    SDKUtils::GetHitboxInfoFromMatrix(pPlayer, nHitHitbox, const_cast<matrix3x4_t*>(target.LagRecord->BoneMatrix), &vCenter, &vMins, &vMaxs);
-                    vMins *= 0.8f;
-                    vMaxs *= 0.8f;
-                    if (!Math::RayToOBB(vTraceStart, vForward, vCenter, vMins, vMaxs, *target.LagRecord->BoneMatrix))
                     {
                         F::LagRecordMatrixHelper->Restore();
                         return false;

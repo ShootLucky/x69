@@ -381,9 +381,12 @@
     <ClCompile Include="src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp" />
     <ClCompile Include="src\Hooks\CPrediction_RunCommand.cpp" />
     <ClCompile Include="src\Hooks\CRendering3dView_EnableWorldFog.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayerShared_InCond.cpp" />
     <ClCompile Include="src\Hooks\CTFPlayerShared_IsPlayerDominated.cpp" />
+    <ClCompile Include="src\Hooks\CTFPlayer_AvoidPlayers.cpp" />
     <ClCompile Include="src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp" />
     <ClCompile Include="src\Hooks\CTFPlayer_UpdateClientSideAnimation.cpp" />
+    <ClCompile Include="src\Hooks\CTFViewModel_CalcViewModelView.cpp" />
     <ClCompile Include="src\Hooks\CTFWeaponBase_GetTracerType.cpp" />
     <ClCompile Include="src\Hooks\IBaseClientDLL_FrameStageNotify.cpp" />
     <ClCompile Include="src\Hooks\IEngineVGuiInternal_Paint.cpp" />
