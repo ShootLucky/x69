@@ -280,7 +280,6 @@ void CESP::Run()
         bool isLocal = (i == localIndex);
         bool drawESP = false;
         bool drawSkeleton = false;
-        bool drawChamsBox = false;
         bool isPlayer = false;
         bool isBuilding = false;
         bool isPickup = false;
@@ -289,7 +288,6 @@ void CESP::Run()
         int health = 0;
         int max_health = 100;
         Color_t clr = Color_t(255, 255, 255, 255);
-        bool drawBacktrackChams = false;
         bool drawBacktrackSkeleton = false;
         C_TFPlayer* pPlayer = nullptr;
         if (strcmp(networkName, "CTFPlayer") == 0)
@@ -299,19 +297,17 @@ void CESP::Run()
             if (pPlayer->m_lifeState() != LIFE_ALIVE) continue;
             isPlayer = true;
             bool isCloaked = InCond(pPlayer, TF_COND_STEALTHED);
-            if (isCloaked && (CFG::ESP_HideCloaked || CFG::ESP_ChamsHideCloaked || CFG::ESP_SkeletonHideCloaked)) {
-                if ((CFG::ESP_HideCloaked && CFG::ESP_ChamsHideCloaked && CFG::ESP_SkeletonHideCloaked) || (!CFG::ESP_ChamsLocalPlayer && !CFG::ESP_SkeletonLocalPlayer)) continue;
+            if (isCloaked && (CFG::ESP_HideCloaked || CFG::ESP_SkeletonHideCloaked)) {
+                if ((CFG::ESP_HideCloaked && CFG::ESP_SkeletonHideCloaked) || (!CFG::ESP_SkeletonLocalPlayer)) continue;
             }
             clr = isLocal ? Color_t(255, 255, 255, 255) : (team == TF_TEAM_RED ? Color_t(255, 0, 0, 255) : Color_t(0, 0, 255, 255));
             drawESP = (isLocal ? CFG::ESP_LocalPlayer : true) && !(CFG::ESP_Team && isTeammate) && !(isCloaked && CFG::ESP_HideCloaked);
             drawSkeleton = (isLocal ? CFG::ESP_SkeletonLocalPlayer : CFG::ESP_Skeleton) && !(CFG::ESP_SkeletonTeam && isTeammate) && !(isCloaked && CFG::ESP_SkeletonHideCloaked);
-            drawChamsBox = (isLocal ? CFG::ESP_ChamsLocalPlayer : CFG::ESP_ChamsBox) && !(CFG::ESP_ChamsTeam && isTeammate) && !(isCloaked && CFG::ESP_ChamsHideCloaked);
             // Check for thirdperson for local player
             if (isLocal) {
                 if (!CFG::Misc_ThirdPerson_Enable) {
                     drawESP = false;
                     drawSkeleton = false;
-                    drawChamsBox = false;
                 }
             }
             player_info_t info{};
@@ -330,7 +326,7 @@ void CESP::Run()
             if (max_health <= 0) max_health = 100;
             health = std::clamp(health, 0, max_health);
             // Backtrack check
-            int backtrackType = CFG::ESP_Chams_BacktrackType | CFG::ESP_Skeleton_BacktrackType; // Combined
+            int backtrackType = CFG::ESP_Skeleton_BacktrackType; // Combined
             bool backtrackCondition = false;
             if (backtrackType & (1 << 3)) backtrackCondition = true; // All
             else {
@@ -338,12 +334,11 @@ void CESP::Run()
                 if (isTeammate && (backtrackType & (1 << 1))) backtrackCondition = true;
                 if (isLocal && (backtrackType & (1 << 2))) backtrackCondition = true;
             }
-            drawBacktrackChams = CFG::ESP_Chams_Backtrack && backtrackCondition;
             drawBacktrackSkeleton = CFG::ESP_Skeleton_Backtrack && backtrackCondition;
         }
         else if (strcmp(networkName, "CObjectSentrygun") == 0 || strcmp(networkName, "CObjectDispenser") == 0 || strcmp(networkName, "CObjectTeleporter") == 0)
         {
-            if (!CFG::ESP_Build && !CFG::ESP_ChamsBuild && !CFG::ESP_SkeletonBuild) continue;
+            if (!CFG::ESP_Build && !CFG::ESP_SkeletonBuild) continue;
             isBuilding = true;
             if (CFG::ESP_BuildOnlyEnemy && !isEnemy) continue;
             clr = (team == TF_TEAM_RED ? Color_t(255, 0, 0, 255) : Color_t(0, 0, 255, 255));
@@ -358,7 +353,6 @@ void CESP::Run()
             max_health = static_cast<C_BaseObject*>(pBase)->m_iMaxHealth();
             drawESP = CFG::ESP_Build && !(CFG::ESP_BuildOnlyEnemy && !isEnemy);
             drawSkeleton = CFG::ESP_SkeletonBuild && !(CFG::ESP_SkeletonBuildOnlyEnemy && !isEnemy);
-            drawChamsBox = CFG::ESP_ChamsBuild && !(CFG::ESP_ChamsBuildOnlyEnemy && !isEnemy);
         }
         else if ((strcmp(networkName, "CTFAmmoPack") == 0 ||
             strstr(networkName, "item_healthkit_") ||
@@ -368,7 +362,7 @@ void CESP::Run()
         {
             // Skip se for debris de building (ex: sentry broken -> debris model similar a ammo, mas class != CTFAmmoPack e sem strstr)
             if (strstr(networkName, "debris") && !strstr(networkName, "item_")) continue;
-            if (!CFG::ESP_Pickups && !CFG::ESP_ChamsPickups) continue; // Removed skeleton
+            if (!CFG::ESP_Pickups) continue; // Removed skeleton
             isPickup = true;
             bool isAmmo = (strcmp(networkName, "CTFAmmoPack") == 0 ||
                 strstr(networkName, "ammopack") ||
@@ -383,7 +377,6 @@ void CESP::Run()
             }
             drawESP = CFG::ESP_Pickups;
             drawSkeleton = false;
-            drawChamsBox = CFG::ESP_ChamsPickups;
         }
         else if (strcmp(networkName, "CCaptureFlag") == 0 ||
             strcmp(networkName, "CTFItemTeamFlag") == 0 ||
@@ -399,7 +392,6 @@ void CESP::Run()
             else name = "Payload Cart";
             drawESP = CFG::ESP_CaptureFlag;
             // Chams e Skeleton independentes
-            drawChamsBox = CFG::ESP_ChamsCaptureFlag;
             drawSkeleton = false;
             clr = Color_t(255, 255, 0, 255); // yellow
         }
@@ -473,7 +465,7 @@ void CESP::Run()
         int width = static_cast<int>(std::round(right - left));
         int height = static_cast<int>(std::round(bottom - top));
         if (width < 2 || height < 2) continue;
-        if (drawESP || drawChamsBox || drawSkeleton) { // Desenhar mesmo se só chams/skeleton
+        if (drawESP || drawSkeleton) { // Desenhar mesmo se só chams/skeleton
             bool draw_box = CFG::ESP_Box;
             bool draw_name = CFG::ESP_Name;
             if (isPickup) {
@@ -551,7 +543,7 @@ void CESP::Run()
         if (CFG::ESP_Offscreen && isEnemy && anyFailed && isPlayer) {
             DrawOffscreenArrow(origin, clr);
         }
-        if ((drawSkeleton || drawChamsBox || drawBacktrackSkeleton || drawBacktrackChams) && (isPlayer || isBuilding)) // Removed isFlag and isPickup
+        if ((drawSkeleton || drawBacktrackSkeleton) && (isPlayer || isBuilding)) // Removed isFlag and isPickup
         {
             matrix3x4_t boneMatrix[128] = {};
             const int maxBones = 128;
@@ -633,50 +625,8 @@ void CESP::Run()
                     }
                 }
             }
-            if (drawChamsBox)
-            {
-                Color_t wireColor = clr;
-                for (int hb = 0; hb < hitboxCount; ++hb)
-                {
-                    auto pBox = pHDR->pHitbox(hb, hitboxSet);
-                    if (!pBox) continue;
-                    int boneIdx = pBox->bone;
-                    if (boneIdx < 0 || boneIdx >= numBones) continue;
-                    Vec3 modelCorners[8] = {
-                        { pBox->bbmin.x, pBox->bbmin.y, pBox->bbmin.z },
-                        { pBox->bbmin.x, pBox->bbmax.y, pBox->bbmin.z },
-                        { pBox->bbmax.x, pBox->bbmax.y, pBox->bbmin.z },
-                        { pBox->bbmax.x, pBox->bbmin.y, pBox->bbmin.z },
-                        { pBox->bbmax.x, pBox->bbmax.y, pBox->bbmax.z },
-                        { pBox->bbmax.x, pBox->bbmin.y, pBox->bbmax.z },
-                        { pBox->bbmin.x, pBox->bbmax.y, pBox->bbmax.z },
-                        { pBox->bbmin.x, pBox->bbmin.y, pBox->bbmax.z }
-                    };
-                    Vec3 worldCorners[8];
-                    for (int c = 0; c < 8; ++c)
-                        Math::VectorTransform(modelCorners[c], boneMatrix[boneIdx], worldCorners[c]);
-                    bool badWorld = false;
-                    for (int c = 0; c < 8; ++c)
-                    {
-                        if (!IsFiniteVec(worldCorners[c])) { badWorld = true; break; }
-                    }
-                    if (badWorld) continue;
-                    Vec3 scr[8];
-                    bool fail = false;
-                    for (int c = 0; c < 8; ++c)
-                    {
-                        if (!H::Draw->W2S(worldCorners[c], scr[c]))
-                        {
-                            fail = true;
-                            break;
-                        }
-                    }
-                    if (fail) continue;
-                    DrawProjectedHitboxWire(scr, wireColor, useAA);
-                }
-            }
             // Backtrack drawing
-            if (isPlayer && (drawBacktrackChams || drawBacktrackSkeleton)) {
+            if (isPlayer && (drawBacktrackSkeleton)) {
                 int totalRecords = 0;
                 if (F::LagRecords->HasRecords(pPlayer, &totalRecords)) {
                     for (int n = 1; n <= totalRecords; ++n) { // start from 1 to skip current
@@ -759,48 +709,6 @@ void CESP::Run()
                                         DrawSmoothBoneLine(it1->second, it2->second, boneColor, useAA);
                                     }
                                 }
-                            }
-                        }
-                        // Draw backtrack chams
-                        if (drawBacktrackChams) {
-                            Color_t wireColor = fadedClr;
-                            for (int hb = 0; hb < hitboxCount; ++hb)
-                            {
-                                auto pBox = pHDR->pHitbox(hb, hitboxSet);
-                                if (!pBox) continue;
-                                int boneIdx = pBox->bone;
-                                if (boneIdx < 0 || boneIdx >= numBones) continue;
-                                Vec3 modelCorners[8] = {
-                                    { pBox->bbmin.x, pBox->bbmin.y, pBox->bbmin.z },
-                                    { pBox->bbmin.x, pBox->bbmax.y, pBox->bbmin.z },
-                                    { pBox->bbmax.x, pBox->bbmax.y, pBox->bbmin.z },
-                                    { pBox->bbmax.x, pBox->bbmin.y, pBox->bbmin.z },
-                                    { pBox->bbmax.x, pBox->bbmax.y, pBox->bbmax.z },
-                                    { pBox->bbmax.x, pBox->bbmin.y, pBox->bbmax.z },
-                                    { pBox->bbmin.x, pBox->bbmax.y, pBox->bbmax.z },
-                                    { pBox->bbmin.x, pBox->bbmin.y, pBox->bbmax.z }
-                                };
-                                Vec3 worldCorners[8];
-                                for (int c = 0; c < 8; ++c)
-                                    Math::VectorTransform(modelCorners[c], boneMatrix[boneIdx], worldCorners[c]);
-                                bool badWorld = false;
-                                for (int c = 0; c < 8; ++c)
-                                {
-                                    if (!IsFiniteVec(worldCorners[c])) { badWorld = true; break; }
-                                }
-                                if (badWorld) continue;
-                                Vec3 scr[8];
-                                bool fail = false;
-                                for (int c = 0; c < 8; ++c)
-                                {
-                                    if (!H::Draw->W2S(worldCorners[c], scr[c]))
-                                    {
-                                        fail = true;
-                                        break;
-                                    }
-                                }
-                                if (fail) continue;
-                                DrawProjectedHitboxWire(scr, wireColor, useAA);
                             }
                         }
                         F::LagRecordMatrixHelper->Restore();

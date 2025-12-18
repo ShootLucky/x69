@@ -97,17 +97,9 @@ namespace CFG
 	CFGVAR(ESP_Team, false);
 	// Novas opções para Skeleton ESP e Chams Box
 	CFGVAR(ESP_Skeleton, false);
-	CFGVAR(ESP_ChamsBox, false);
-	CFGVAR(ESP_ChamsTeam, false);
 	CFGVAR(ESP_CaptureFlag, false);
 	CFGVAR(ESP_Build, false);
 	CFGVAR(ESP_BuildOnlyEnemy, false);
-	CFGVAR(ESP_ChamsBuild, false);
-	CFGVAR(ESP_ChamsBuildOnlyEnemy, false);
-	CFGVAR(ESP_ChamsHideCloaked, false);
-	CFGVAR(ESP_ChamsLocalPlayer, false);
-	CFGVAR(ESP_ChamsPickups, false); // Adicionado: Chams para pickups
-	CFGVAR(ESP_ChamsCaptureFlag, false);
 	CFGVAR(ESP_HideCloaked, false);
 	CFGVAR(ESP_LocalPlayer, false);
 	CFGVAR(ESP_Offscreen, false);
@@ -119,7 +111,6 @@ namespace CFG
 	CFGVAR(ESP_SkeletonBuildOnlyEnemy, false);
 	CFGVAR(ESP_SkeletonHideCloaked, false);
 	CFGVAR(ESP_SkeletonLocalPlayer, false);
-	CFGVAR(ESP_SkeletonPickups, false); // Adicionado: Skeleton para pickups
 	CFGVAR(ESP_SkeletonTeam, false);
 	CFGVAR(ESP_SkeletonCaptureFlag, false);
 	// Bullet Tracer options
@@ -132,8 +123,6 @@ namespace CFG
 	CFGVAR(ESP_NameCapture, false);
 	CFGVAR(Visuals_Draw_Movement_Path_Style, 0);
 	CFGVAR(ESP_HealthType, 0);
-	CFGVAR(ESP_Chams_Backtrack, false);
-	CFGVAR(ESP_Chams_BacktrackType, 0);
 	CFGVAR(ESP_Skeleton_Backtrack, false);
 	CFGVAR(ESP_Skeleton_BacktrackType, 0);
 	CFGVAR(Logs_Enable, false);
@@ -151,6 +140,12 @@ namespace CFG
 	CFGVAR(Visuals_ViewModel_Right, 0.f);
 	CFGVAR(Visuals_ViewModel_Up, 0.f);
 	CFGVAR(Visuals_Removals_Mode, 0);
+	CFGVAR(ESP_Arrows, false);
+	CFGVAR(ESP_Conds, false);
+	CFGVAR(ESP_SniperLines, false);
+	CFGVAR(ESP_Tracer, false);
+	CFGVAR(ESP_Uber, false);
+	CFGVAR(ESP_UberBar, false);
 #pragma endregion
 #pragma region Misc
 	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key Misc_AntiAFK_Enable

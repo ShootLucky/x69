@@ -458,6 +458,9 @@ void menu::render() {
         int x_right = 550;
         int start_y = y;
         y = start_y;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
         text(x_left, &y, "Aimbot Keybind", regular);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -741,272 +744,251 @@ void menu::render() {
         max_items = current_item - 1;
     }
     else if (CFG::CurrentSection == 1) {
-        // Visual section divided into three columns: ESP left, Chams middle, Skeleton right
-        int x_esp = 150;
-        int x_chams = 350;
-        int x_skel = 550;
+        // Visual section
+        int x_left = 150;
+        int x_center = 350;
+        int x_right = 550;
         int start_y = y;
-        // ESP column (left)
-        y = start_y;
+        static int visuals_sub_section = 0;
         if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        checkbox(x_esp, &y, "ESP", &CFG::ESP_Enable, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        combo(x_left, &y, "Visuals Sub Tab", &visuals_sub_section, std::vector<std::string>{ "ESP", "Skeleton", "Others" }, false, 255, current_item++);
+        y += 15;
+        start_y = y;
+        int current_sub_item = current_item;
+        if (visuals_sub_section == 0) { // ESP
+            y = start_y;
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "ESP", &CFG::ESP_Enable, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "ESP Team", &CFG::ESP_Team, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Box", &CFG::ESP_Box, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_left, &y, "Box Type", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"}, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Name", &CFG::ESP_Name, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Health", &CFG::ESP_Health, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_left, &y, "Health Type", &CFG::ESP_HealthType, std::vector<std::string>{"Health bar", "Health number", "Number + bar"}, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Pickups", &CFG::ESP_Pickups, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Pickups Box", &CFG::ESP_PickupsBox, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Pickups Name", &CFG::ESP_PickupsName, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "ESP Build", &CFG::ESP_Build, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "ESP Build Only Enemy", &CFG::ESP_BuildOnlyEnemy, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "ESP Capture Flag", &CFG::ESP_CaptureFlag, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Box Capture", &CFG::ESP_BoxCapture, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Name Capture", &CFG::ESP_NameCapture, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "ESP Local Player", &CFG::ESP_LocalPlayer, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "ESP Offscreen", &CFG::ESP_Offscreen, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "ESP Hide Cloaked", &CFG::ESP_HideCloaked, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Aimbot FOV", &CFG::Aimbot_DrawFOV, false, 255, current_sub_item++);
+            y = start_y;
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, " ESP Conds", &CFG::ESP_Conds, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "ESP Sniper Lines", &CFG::ESP_SniperLines, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "ESP Tracer", &CFG::ESP_Tracer, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "ESP Uber", &CFG::ESP_Uber, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "ESP Uber Bar", &CFG::ESP_UberBar, false, 255, current_sub_item++);
+            max_items = current_sub_item - 1;
         }
-        checkbox(x_esp, &y, "ESP Team", &CFG::ESP_Team, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        else if (visuals_sub_section == 1) { // Skeleton
+            y = start_y;
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Skeleton ESP", &CFG::ESP_Skeleton, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Skeleton Team", &CFG::ESP_SkeletonTeam, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Skeleton Build", &CFG::ESP_SkeletonBuild, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Skeleton Build Only Enemy", &CFG::ESP_SkeletonBuildOnlyEnemy, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Skeleton Local Player", &CFG::ESP_SkeletonLocalPlayer, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Skeleton Hide Cloaked", &CFG::ESP_SkeletonHideCloaked, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Backtrack", &CFG::ESP_Skeleton_Backtrack, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            multi_combo(x_left, &y, "Backtrack Type", &CFG::ESP_Skeleton_BacktrackType, std::vector<std::string>{"Enemies", "Team", "Local Player", "All"}, 255, current_sub_item++);
+            max_items = current_sub_item - 1;
         }
-        checkbox(x_esp, &y, "Box", &CFG::ESP_Box, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        else if (visuals_sub_section == 2) { // Others
+            y = start_y;
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Tracer Effects", &CFG::BulletTracer, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            if (CFG::BulletTracer) {
+                combo(x_left, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)" }, false, 255, current_sub_item++);
+            }
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_left, &y, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted", "Line + Box" }, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Logs", &CFG::Logs_Enable, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            multi_combo(x_left, &y, "Logs Type", &CFG::Logs_Type, std::vector<std::string>{"Chat", "Console", "Screen", "All"}, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            multi_combo(x_left, &y, "Players Logs Type", &CFG::PlayersLogs_Type, std::vector<std::string>{"Damage", "Respawn", "Enter", "Exit", "Playerlist", "Class"}, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "View Model", &CFG::Visuals_ViewModel_Enable, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left, &y, "Offsets Forward", CFG::Visuals_ViewModel_Forward, -50.f, 50.f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left, &y, "Offsets Right", CFG::Visuals_ViewModel_Right, -50.f, 50.f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left, &y, "Offsets Up", CFG::Visuals_ViewModel_Up, -50.f, 50.f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Third Person", &CFG::Misc_ThirdPerson_Enable, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_left, &y, "Key Mode", &CFG::Misc_ThirdPerson_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            key_selector(x_left, &y, &CFG::Misc_ThirdPerson_Key, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left, &y, "Distance offsets", CFG::Misc_ThirdPerson_Distance, -50.f, 100.f, current_sub_item++); // Assuming range 0-100, adjust as needed
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left, &y, "Side Offsets", CFG::Misc_ThirdPerson_SideOffset, -50.f, 50.f, current_sub_item++); // Assuming range -50-50
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left, &y, "Fov", CFG::Misc_ThirdPerson_Fov, 0.f, 120.f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Remove punch", &CFG::Visuals_RemovePunch, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Fov", &CFG::Visuals_CustomFov_Enable, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left, &y, "Fov Amount", CFG::Visuals_CustomFov_Amount, 0.f, 120.f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Remove Scoped zoom", &CFG::Visuals_RemoveScopedZoom, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Remove Scoped", &CFG::Visuals_RemoveScoped, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left, &y, "Remove Fire", &CFG::Visuals_RemoveFire, false, 255, current_sub_item++);
+            max_items = current_sub_item - 1;
         }
-        combo(x_esp, &y, "Box Type", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"}, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Name", &CFG::ESP_Name, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Health", &CFG::ESP_Health, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        combo(x_esp, &y, "Health Type", &CFG::ESP_HealthType, std::vector<std::string>{"Health bar", "Health number", "Number + bar"}, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Pickups", &CFG::ESP_Pickups, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Pickups Box", &CFG::ESP_PickupsBox, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Pickups Name", &CFG::ESP_PickupsName, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "ESP Build", &CFG::ESP_Build, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "ESP Build Only Enemy", &CFG::ESP_BuildOnlyEnemy, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "ESP Capture Flag", &CFG::ESP_CaptureFlag, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Box Capture", &CFG::ESP_BoxCapture, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Name Capture", &CFG::ESP_NameCapture, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "ESP Local Player", &CFG::ESP_LocalPlayer, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "ESP Offscreen", &CFG::ESP_Offscreen, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "ESP Hide Cloaked", &CFG::ESP_HideCloaked, false, 255, current_item++);
-        // Add spacing before Aimbot FOV
-        y += 30; // Increased spacing for better distance
-        // Aimbot FOV option
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Aimbot FOV", &CFG::Aimbot_DrawFOV, false, 255, current_item++);
-        y += 30; // Distancia de y
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Remove punch", &CFG::Visuals_RemovePunch, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Fov", &CFG::Visuals_CustomFov_Enable, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        float_slider(x_esp, &y, "Fov Amount", CFG::Visuals_CustomFov_Amount, 0.f, 120.f, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Remove Scoped zoom", &CFG::Visuals_RemoveScopedZoom, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Remove Scoped", &CFG::Visuals_RemoveScoped, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_esp - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_esp, &y, "Remove Fire", &CFG::Visuals_RemoveFire, false, 255, current_item++);
-        // Chams column (middle)
-        y = start_y;
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Box", &CFG::ESP_ChamsBox, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Team", &CFG::ESP_ChamsTeam, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Pickups", &CFG::ESP_ChamsPickups, false, 255, current_item++); // Adicionado
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Build", &CFG::ESP_ChamsBuild, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Build Only Enemy", &CFG::ESP_ChamsBuildOnlyEnemy, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Capture Flag", &CFG::ESP_ChamsCaptureFlag, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Local Player", &CFG::ESP_ChamsLocalPlayer, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Chams Hide Cloaked", &CFG::ESP_ChamsHideCloaked, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Backtrack", &CFG::ESP_Chams_Backtrack, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        multi_combo(x_chams, &y, "Backtrack Type", &CFG::ESP_Chams_BacktrackType, std::vector<std::string>{"Enemies", "Team", "Local Player", "All"}, 255, current_item++);
-        // Add spacing before Bullet Tracer options
-        y += 30; // Increased spacing for better distance
-        // Bullet Tracer options under Chams
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Tracer Effects", &CFG::BulletTracer, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        if (CFG::BulletTracer) {
-            combo(x_chams, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)" }, false, 255, current_item++);
-        }
-        y += 30; // Distancia de y
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_chams, &y, "Third Person", &CFG::Misc_ThirdPerson_Enable, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        combo(x_chams, &y, "Key Mode", &CFG::Misc_ThirdPerson_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        key_selector(x_chams, &y, &CFG::Misc_ThirdPerson_Key, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        float_slider(x_chams, &y, "Distance offsets", CFG::Misc_ThirdPerson_Distance, -50.f, 100.f, current_item++); // Assuming range 0-100, adjust as needed
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        float_slider(x_chams, &y, "Side Offsets", CFG::Misc_ThirdPerson_SideOffset, -50.f, 50.f, current_item++); // Assuming range -50-50
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        float_slider(x_chams, &y, "Fov", CFG::Misc_ThirdPerson_Fov, 0.f, 120.f, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_chams - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        // Skeleton column (right)
-        y = start_y;
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton ESP", &CFG::ESP_Skeleton, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Team", &CFG::ESP_SkeletonTeam, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Build", &CFG::ESP_SkeletonBuild, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Build Only Enemy", &CFG::ESP_SkeletonBuildOnlyEnemy, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Local Player", &CFG::ESP_SkeletonLocalPlayer, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Skeleton Hide Cloaked", &CFG::ESP_SkeletonHideCloaked, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Backtrack", &CFG::ESP_Skeleton_Backtrack, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        multi_combo(x_skel, &y, "Backtrack Type", &CFG::ESP_Skeleton_BacktrackType, std::vector<std::string>{"Enemies", "Team", "Local Player", "All"}, 255, current_item++);
-        y += 30; // Distancia de y para nao ficar grudado
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        combo(x_skel, &y, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted", "Line + Box" }, false, 255, current_item++);
-        y += 30;
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "Logs", &CFG::Logs_Enable, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        multi_combo(x_skel, &y, "Logs Type", &CFG::Logs_Type, std::vector<std::string>{"Chat", "Console", "Screen", "All"}, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        multi_combo(x_skel, &y, "Players Logs Type", &CFG::PlayersLogs_Type, std::vector<std::string>{"Damage", "Respawn", "Enter", "Exit", "Playerlist", "Class"}, 255, current_item++);
-        // Add spacing before View Model Custom
-        y += 30; // Increased spacing for better distance
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        checkbox(x_skel, &y, "View Model", &CFG::Visuals_ViewModel_Enable, false, 255, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        float_slider(x_skel, &y, "Offsets Forward", CFG::Visuals_ViewModel_Forward, -50.f, 50.f, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        float_slider(x_skel, &y, "Offsets Right", CFG::Visuals_ViewModel_Right, -50.f, 50.f, current_item++);
-        if (!menu_locked && menu::item_count == current_item) {
-            H::Draw->String(font, x_skel - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        float_slider(x_skel, &y, "Offsets Up", CFG::Visuals_ViewModel_Up, -50.f, 50.f, current_item++);
-        max_items = current_item - 1;
-        }
+    }
     else if (CFG::CurrentSection == 2) { // Playerlist section
         int base_x = 150;
         int name_x = base_x;
