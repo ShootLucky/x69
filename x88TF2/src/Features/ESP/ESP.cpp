@@ -1,3 +1,4 @@
+// esp.cpp
 #include "ESP.h"
 #include "../src/SDK/TF2/interface.h"
 #include "../src/SDK/Helpers/Entities/Entities.h"
@@ -10,6 +11,7 @@
 #include <cstring> // for strcmp
 #include <limits> // for numeric_limits
 #define PI 3.14159265358979323846f
+
 static bool IsFiniteVec(const Vec3& v)
 {
     return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
@@ -235,10 +237,37 @@ void CESP::CustomFOV(CViewSetup* pSetup)
     if (!pLocal) return;
     float fov = pSetup->fov; // default to current
     if (CFG::Visuals_CustomFov_Enable) fov = CFG::Visuals_CustomFov_Amount;
-    if (InCond(pLocal, TF_COND_ZOOMED)) {
+    if (InCond(pLocal, 1)) {
         if (CFG::Visuals_RemoveScopedZoom) fov = 90.0f; // or CFG::Visuals_CustomFov_Amount
     }
     pSetup->fov = fov;
+}
+// Helper function for GetHitboxPosition
+Vec3 GetHitboxPosition(C_TFPlayer* pPlayer, int iHitbox) {
+    matrix3x4_t boneMatrix[128];
+    if (!pPlayer->SetupBones(boneMatrix, 128, BONE_USED_BY_HITBOX, I::GlobalVars->curtime)) {
+        return Vec3();
+    }
+    auto pModel = pPlayer->GetModel();
+    if (!pModel) {
+        return Vec3();
+    }
+    auto pHDR = I::ModelInfoClient->GetStudiomodel(pModel);
+    if (!pHDR) {
+        return Vec3();
+    }
+    auto pSet = pHDR->pHitboxSet(0); // Assuming hitbox set 0
+    if (!pSet) {
+        return Vec3();
+    }
+    auto pBox = pSet->pHitbox(iHitbox);
+    if (!pBox) {
+        return Vec3();
+    }
+    Vec3 vMin, vMax;
+    Math::VectorTransform(pBox->bbmin, boneMatrix[pBox->bone], vMin);
+    Math::VectorTransform(pBox->bbmax, boneMatrix[pBox->bone], vMax);
+    return (vMin + vMax) * 0.5f;
 }
 // ---------------------------------------------------------------
 void CESP::Run()
@@ -249,9 +278,9 @@ void CESP::Run()
     H::Draw->UpdateW2SMatrix();
     auto pLocal = H::Entities->GetLocal();
     if (!pLocal) return;
-    if (InCond(pLocal, TF_COND_ZOOMED)) {
+    if (InCond(pLocal, 1)) {
         if (CFG::Visuals_RemoveScoped) {
-            pLocal->RemoveCond(TF_COND_ZOOMED);
+            pLocal->RemoveCond(1);
         }
     }
     // For Remove Fire, assuming remove muzzle flash or similar; implementation may require additional hooks
@@ -296,7 +325,7 @@ void CESP::Run()
             if (!pPlayer) continue;
             if (pPlayer->m_lifeState() != LIFE_ALIVE) continue;
             isPlayer = true;
-            bool isCloaked = InCond(pPlayer, TF_COND_STEALTHED);
+            bool isCloaked = InCond(pPlayer, 4);
             if (isCloaked && (CFG::ESP_HideCloaked || CFG::ESP_SkeletonHideCloaked)) {
                 if ((CFG::ESP_HideCloaked && CFG::ESP_SkeletonHideCloaked) || (!CFG::ESP_SkeletonLocalPlayer)) continue;
             }
@@ -537,6 +566,96 @@ void CESP::Run()
                     }
                     int textY = static_cast<int>(top);
                     H::Draw->String(font, textX, textY, Color_t(255, 255, 255, 255), POS_DEFAULT, healthStr.c_str());
+                }
+            }
+        }
+        if (isPlayer && drawESP) {
+            int playerClass = pPlayer->m_iClass();
+            // ESP Conds (inspired by Amalgam and Seowned implementations)
+            if (CFG::ESP_Conds) {
+                std::vector<std::string> conds;
+                if (InCond(pPlayer, 4)) conds.push_back("Cloaked");
+                if (InCond(pPlayer, 3)) conds.push_back("Disguised");
+                if (InCond(pPlayer, 5)) conds.push_back("Uber");
+                if (InCond(pPlayer, 22)) conds.push_back("Burning");
+                if (InCond(pPlayer, 7)) conds.push_back("Taunt");
+                // Add more conditions as needed (e.g., Bonked, Jarated, etc.)
+                const CFont& font = H::Fonts->Get(EFonts::ESP);
+                int condX = static_cast<int>(right) + 5;
+                int condY = static_cast<int>(top);
+                for (const auto& c : conds) {
+                    H::Draw->String(font, condX, condY, Color_t(255, 255, 255, 255), POS_DEFAULT, c.c_str());
+                    condY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
+                }
+            }
+            // ESP Uber and Uber Bar for Medics (inspired by Amalgam)
+            if (playerClass == 5 && (CFG::ESP_Uber || CFG::ESP_UberBar)) {
+                C_WeaponMedigun* pMedigun = nullptr;
+                C_BaseEntity* pWeaponEnt = pPlayer->m_hActiveWeapon().Get();
+                if (pWeaponEnt) {
+                    C_TFWeaponBase* pWeapon = static_cast<C_TFWeaponBase*>(pWeaponEnt);
+                    if (pWeapon && pWeapon->GetWeaponID() == 29) {
+                        pMedigun = static_cast<C_WeaponMedigun*>(pWeapon);
+                    }
+                }
+                if (!pMedigun) {
+                    // Check secondary slot
+                    C_TFWeaponBase* pSecondary = pPlayer->GetWeaponFromSlot(1);
+                    if (pSecondary && pSecondary->GetWeaponID() == 29) {
+                        pMedigun = static_cast<C_WeaponMedigun*>(pSecondary);
+                    }
+                }
+                if (pMedigun) {
+                    float charge = pMedigun->m_flChargeLevel();
+                    const CFont& font = H::Fonts->Get(EFonts::ESP);
+                    if (CFG::ESP_Uber) {
+                        std::string uberText = "Uber: " + std::to_string(static_cast<int>(charge * 100.0f)) + "%";
+                        int uberY = static_cast<int>(bottom) + 5;
+                        H::Draw->String(font, static_cast<int>((left + right) / 2.0f), uberY, Color_t(255, 0, 255, 255), POS_CENTERX, uberText.c_str());
+                    }
+                    if (CFG::ESP_UberBar) {
+                        int barX = static_cast<int>(left) - 12;
+                        int barY = static_cast<int>(top) - 1;
+                        int barW = 4;
+                        int barH = height + 2;
+                        H::Draw->Rect(barX, barY, barW, barH, Color_t(0, 0, 0, 200));
+                        if (barH > 2 && charge > 0.0f) {
+                            int fillH = static_cast<int>(std::round((barH - 2) * charge));
+                            int fillY = barY + (barH - 1) - fillH;
+                            Color_t uberClr(255, 0, 255, 255); // Purple for uber
+                            H::Draw->Rect(barX + 1, fillY, 2, fillH, uberClr);
+                        }
+                    }
+                }
+            }
+            // ESP Sniper Lines (inspired by Seowned and Amalgam - draw aim projection lines for enemy snipers)
+            if (CFG::ESP_SniperLines && isEnemy && playerClass == 2) {
+                Vec3 eyePos = pPlayer->GetShootPos();
+                Vec3 ang = pPlayer->GetEyeAngles();
+                Vec3 fwd;
+                Math::AngleVectors(ang, &fwd);
+                Vec3 end = eyePos + fwd * 16384.0f; // Long distance
+                // Trace to wall (optional, for realism)
+                CGameTrace tr;
+                CTraceFilterWorldAndPropsOnly filter;
+                Ray_t ray;
+                ray.Init(eyePos, end);
+                I::EngineTrace->TraceRay(ray, MASK_SHOT, &filter, &tr);
+                end = tr.endpos;
+                Vec3 scrStart, scrEnd;
+                if (H::Draw->W2S(eyePos, scrStart) && H::Draw->W2S(end, scrEnd)) {
+                    DrawSmoothBoneLine(scrStart, scrEnd, clr, true);
+                }
+            }
+            // ESP Tracer (inspired by Seowned - draw tracers from crosshair to enemy players)
+            if (CFG::ESP_Tracer && isEnemy && !anyFailed) {
+                Vec3 head = GetHitboxPosition(pPlayer, 0);
+                Vec3 scrHead;
+                if (H::Draw->W2S(head, scrHead)) {
+                    int sw, sh;
+                    I::EngineClient->GetScreenSize(sw, sh);
+                    Vec3 center(static_cast<float>(sw) / 2.0f, static_cast<float>(sh) / 2.0f, 0.0f);
+                    DrawSmoothBoneLine(center, scrHead, clr, true);
                 }
             }
         }

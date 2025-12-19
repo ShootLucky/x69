@@ -802,14 +802,6 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Build", &CFG::ESP_Build, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "ESP Build Only Enemy", &CFG::ESP_BuildOnlyEnemy, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
             checkbox(x_left, &y, "ESP Capture Flag", &CFG::ESP_CaptureFlag, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -826,10 +818,6 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Offscreen", &CFG::ESP_Offscreen, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
             checkbox(x_left, &y, "ESP Hide Cloaked", &CFG::ESP_HideCloaked, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -839,7 +827,19 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, " ESP Conds", &CFG::ESP_Conds, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "ESP Build", &CFG::ESP_Build, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "ESP Build Only Enemy", &CFG::ESP_BuildOnlyEnemy, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "ESP Offscreen", &CFG::ESP_Offscreen, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "ESP Conds", &CFG::ESP_Conds, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
