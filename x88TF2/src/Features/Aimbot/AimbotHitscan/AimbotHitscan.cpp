@@ -2,7 +2,6 @@
 #include "CFG.h"
 #include <array>
 #include <algorithm>
-
 int CAimbotHitscan::GetAimHitbox(C_TFWeaponBase* pWeapon)
 {
     switch (CFG::Aimbot_Hitscan_Hitbox)
@@ -18,7 +17,6 @@ int CAimbotHitscan::GetAimHitbox(C_TFWeaponBase* pWeapon)
     default: return HITBOX_PELVIS;
     }
 }
-
 bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     if (!CFG::Aimbot_Hitscan_Scan_Head)
@@ -84,13 +82,12 @@ bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target, const
     target.WasMultiPointed = true;
     return true;
 }
-
 bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     const bool bScanningBody = CFG::Aimbot_Hitscan_Scan_Body;
-    const bool bScaningArms = CFG::Aimbot_Hitscan_Scan_Arms;
+    const bool bScanningArms = CFG::Aimbot_Hitscan_Scan_Arms;
     const bool bScanningLegs = CFG::Aimbot_Hitscan_Scan_Legs;
-    if (!bScanningBody && !bScaningArms && !bScanningLegs)
+    if (!bScanningBody && !bScanningArms && !bScanningLegs)
         return false;
     const auto pPlayer = target.Entity->As<C_TFPlayer>();
     if (!pPlayer)
@@ -112,7 +109,7 @@ bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const
         const int nHitboxGroup = pPlayer->GetHitboxGroup(n);
         if (!bScanningBody && (nHitboxGroup == HITGROUP_CHEST || nHitboxGroup == HITGROUP_STOMACH))
             continue;
-        if (!bScaningArms && (nHitboxGroup == HITGROUP_LEFTARM || nHitboxGroup == HITGROUP_RIGHTARM))
+        if (!bScanningArms && (nHitboxGroup == HITGROUP_LEFTARM || nHitboxGroup == HITGROUP_RIGHTARM))
             continue;
         if (!bScanningLegs && (nHitboxGroup == HITGROUP_LEFTLEG || nHitboxGroup == HITGROUP_RIGHTLEG))
             continue;
@@ -133,7 +130,6 @@ bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const
     target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
     return true;
 }
-
 bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     if (!CFG::Aimbot_Hitscan_Scan_Buildings)
@@ -194,7 +190,6 @@ bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, c
     target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
     return true;
 }
-
 bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, HitscanTarget_t& outTarget)
 {
     const Vec3 vLocalPos = pLocal->GetShootPos();
@@ -418,7 +413,6 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
     outTarget = m_vecTargets.front();
     return true;
 }
-
 bool CAimbotHitscan::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
     static bool bToggled = false;
@@ -437,7 +431,6 @@ bool CAimbotHitscan::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWea
     }
     return bDown;
 }
-
 void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles)
 {
     Vec3 vOldAngles = pCmd->viewangles;
@@ -476,7 +469,6 @@ void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles
         G::bSilentAngles = true;
     }
 }
-
 bool CAimbotHitscan::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const HitscanTarget_t& target)
 {
     if (!CFG::Aimbot_AutoShoot)
@@ -545,7 +537,6 @@ bool CAimbotHitscan::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBa
     }
     return true;
 }
-
 void CAimbotHitscan::HandleFire(CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
 {
     if (!pWeapon->HasPrimaryAmmoForShot())
@@ -566,7 +557,6 @@ void CAimbotHitscan::HandleFire(CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
         pCmd->buttons |= IN_ATTACK;
     }
 }
-
 bool CAimbotHitscan::IsFiring(CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
 {
     if (!pWeapon->HasPrimaryAmmoForShot())
@@ -575,7 +565,6 @@ bool CAimbotHitscan::IsFiring(CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
         return !(pCmd->buttons & IN_ATTACK) && (G::nOldButtons & IN_ATTACK);
     return (pCmd->buttons & IN_ATTACK) && G::bCanPrimaryAttack;
 }
-
 void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
     if (!CFG::Aimbot_Enable)

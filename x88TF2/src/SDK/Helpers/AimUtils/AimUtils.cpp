@@ -1,22 +1,7 @@
 #include "AimUtils.h"
 
 #include "../../SDK.h"
-
-class CTraceFilterSimple : public CTraceFilter
-{
-public:
-	CTraceFilterSimple(const IHandleEntity* passentity, int collisionGroup)
-		: m_pPassEnt(passentity), m_iCollisionGroup(collisionGroup) {
-	}
-
-	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
-	{
-		return pHandleEntity != m_pPassEnt;
-	}
-
-	const IHandleEntity* m_pPassEnt;
-	int m_iCollisionGroup;
-};
+#include "../src/SDK/Impl/TraceFilters/TraceFilters.h"
 
 void CAimUtils::Trace(const Vec3& start, const Vec3& end, unsigned int mask, CTraceFilter* filter, trace_t* trace)
 {

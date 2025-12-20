@@ -46,20 +46,27 @@ void CEnginePrediction::Start(CUserCmd* pCmd)
 		I::GlobalVars->frametime = (I::Prediction->m_bEnginePaused ? 0.0f : TICK_INTERVAL);
 		I::GlobalVars->tickcount = nServerTicks;
 
-		I::Prediction->m_bFirstTimePredicted = false;
 		I::Prediction->m_bInPrediction = true;
+		I::Prediction->m_bFirstTimePredicted = false;
 
 		I::Prediction->SetLocalViewAngles(pCmd->viewangles);
 
-		// Added for improvement: Track prediction errors for more accurate simulation
+		// Improvement: Start tracking prediction errors
 		I::GameMovement->StartTrackPredictionErrors(pLocal);
 
+		// Improvement: Set host for MoveHelper
+		I::MoveHelper->SetHost(pLocal);
+
+		memset(&m_MoveData, 0, sizeof(CMoveData));
 		I::Prediction->SetupMove(pLocal, pCmd, I::MoveHelper, &m_MoveData);
 		I::GameMovement->ProcessMovement(pLocal, &m_MoveData);
 		I::Prediction->FinishMove(pLocal, pCmd, &m_MoveData);
 
-		// Added for improvement: Finish tracking prediction errors
+		// Improvement: Finish tracking prediction errors
 		I::GameMovement->FinishTrackPredictionErrors(pLocal);
+
+		// Improvement: Reset MoveHelper host
+		I::MoveHelper->SetHost(nullptr);
 
 		pLocal->m_nTickBase() = nOldTickBase;
 

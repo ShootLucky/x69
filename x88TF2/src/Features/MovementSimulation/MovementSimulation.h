@@ -66,12 +66,15 @@ private:
     CMoveData m_MoveData{};
     bool m_bRunning{};
     float m_flYawTurnRate{};
+    Vec3 m_vecViewAngles{};
+    float m_flForwardMove{};
+    float m_flSideMove{};
 
     bool m_bOldInPrediction{};
     bool m_bOldFirstTimePredicted{};
     float m_flOldFrametime{};
 
-    void SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveData);
+    void SetupMoveData(C_TFPlayer* pPlayer);
 
 public:
     bool Initialize(C_TFPlayer* pPlayer);

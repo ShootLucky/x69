@@ -556,6 +556,10 @@ void menu::render() {
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
+        float_slider(x_left, &y, "Multipoint Scale", CFG::Aimbot_Hitscan_Multipoint_Scale, 0.f, 1.f, current_item++);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
         float_slider(x_left, &y, "FOV", CFG::Aimbot_FOV, 0.f, 180.f, current_item++);
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");

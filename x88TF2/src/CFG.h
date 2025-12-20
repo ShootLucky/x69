@@ -19,7 +19,8 @@ namespace CFG
 	CFGVAR(Aimbot_Hitbox_Body, false);
 	CFGVAR(Aimbot_Hitbox_Buildings, false);
 	CFGVAR(Aimbot_Projectile_Enable, false);
-	CFGVAR(Aimbot_Projectile_Key, 0);
+	CFGVAR(Aimbot_Projectile_Key, 0); //Aimbot_Hitscan_Multipoint_Scale
+	CFGVAR(Aimbot_Hitscan_Multipoint_Scale, 0.f);
 	CFGVAR(Aimbot_Projectile_FOV, 45.f);
 	CFGVAR(Aimbot_Projectile_Smoothing, 5.f);
 	CFGVAR(Aimbot_Projectile_TicksPredict, 0);

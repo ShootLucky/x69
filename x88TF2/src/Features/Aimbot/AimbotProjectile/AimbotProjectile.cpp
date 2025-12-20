@@ -3,6 +3,8 @@
 #include "../src/Features/MovementSimulation/MovementSimulation.h"
 #include "../src/Features/ProjectileSim/ProjectileSim.h"
 #include <algorithm>
+#include "../../../SDK/Helpers/AimUtils/AimUtils.h"
+
 void DrawProjPath(const CUserCmd* pCmd, float time)
 {
     if (!pCmd || !G::bFiring)
@@ -36,6 +38,7 @@ void DrawProjPath(const CUserCmd* pCmd, float time)
         I::DebugOverlay->AddLineOverlay(pre, post, 255, 255, 255, false, 10.0f);
     }
 }
+
 void DrawMovePath(const std::vector<Vec3>& vPath)
 {
     if (vPath.size() < 2)
@@ -102,6 +105,7 @@ void DrawMovePath(const std::vector<Vec3>& vPath)
         }
     }
 }
+
 Vec3 GetOffsetShootPos(C_TFPlayer* local, C_TFWeaponBase* weapon, const CUserCmd* pCmd)
 {
     auto out{ local->GetShootPos() };
@@ -138,10 +142,12 @@ Vec3 GetOffsetShootPos(C_TFPlayer* local, C_TFWeaponBase* weapon, const CUserCmd
     }
     return out;
 }
+
 bool IsChargingWeapon(int weaponID)
 {
     return weaponID == TF_WEAPON_COMPOUND_BOW || weaponID == TF_WEAPON_PIPEBOMBLAUNCHER || weaponID == TF_WEAPON_CANNON;
 }
+
 float GetRequiredChargeTime(C_TFWeaponBase* pWeapon, const ProjTarget_t& target, const Vec3& vLocalPos)
 {
     const int nWeaponID = pWeapon->GetWeaponID();
@@ -189,6 +195,7 @@ float GetRequiredChargeTime(C_TFWeaponBase* pWeapon, const ProjTarget_t& target,
     }
     return 0.0f;
 }
+
 float GetCurrentChargeTime(C_TFWeaponBase* pWeapon)
 {
     float charge_begin = pWeapon->As<C_TFPipebombLauncher>()->m_flChargeBeginTime();
@@ -198,6 +205,7 @@ float GetCurrentChargeTime(C_TFWeaponBase* pWeapon)
     }
     return 0.0f;
 }
+
 bool CAimbotProjectile::GetProjectileInfo(C_TFWeaponBase* pWeapon)
 {
     m_CurProjInfo = {};
@@ -319,11 +327,14 @@ bool CAimbotProjectile::GetProjectileInfo(C_TFWeaponBase* pWeapon)
     }
     return m_CurProjInfo.Speed > 0.0f;
 }
+
 bool CAimbotProjectile::CalcProjAngle(const Vec3& vFrom, const Vec3& vTo, Vec3& vAngleOut, float& flTimeOut, bool bHighArc)
 {
     const auto pWeapon = H::Entities->GetWeapon();
     if (!pWeapon)
+    {
         return false;
+    }
     const Vec3 v = vTo - vFrom;
     const float dx = sqrt(v.x * v.x + v.y * v.y);
     const float dy = v.z;
@@ -419,6 +430,7 @@ bool CAimbotProjectile::CalcProjAngle(const Vec3& vFrom, const Vec3& vTo, Vec3& 
     }
     return true;
 }
+
 void CAimbotProjectile::OffsetPlayerPosition(C_TFWeaponBase* pWeapon, Vec3& vPos, C_TFPlayer* pPlayer, bool bDucked, bool bOnGround)
 {
     const float flMaxZ{ (bDucked ? 62.0f : 82.0f) * pPlayer->m_flModelScale() };
@@ -506,6 +518,7 @@ void CAimbotProjectile::OffsetPlayerPosition(C_TFWeaponBase* pWeapon, Vec3& vPos
     default: break;
     }
 }
+
 bool CAimbotProjectile::CanArcReach(const Vec3& vFrom, const Vec3& vTo, const Vec3& vAngleTo, float flTargetTime, C_BaseEntity* pTarget)
 {
     const auto pLocal = H::Entities->GetLocal();
@@ -586,6 +599,7 @@ bool CAimbotProjectile::CanArcReach(const Vec3& vFrom, const Vec3& vTo, const Ve
     }
     return true;
 }
+
 bool CAimbotProjectile::CanSee(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const Vec3& vFrom, const Vec3& vTo, const ProjTarget_t& target, float flTimeToTarget)
 {
     Vec3 vLocalPos = vFrom;
@@ -630,6 +644,40 @@ bool CAimbotProjectile::CanSee(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, cons
     }
     return H::AimUtils->TraceProjectile(target.Entity, vLocalPos, vTo);
 }
+
+std::vector<Vec3> Sunflower2D(int number, int alpha)
+{
+    double phi = (1 + sqrt(5)) / 2; // golden ratio
+    double angle = 2 * PI / (phi * phi); // value used to calculate theta for each point
+    std::vector<Vec3> points;
+    float b = round(alpha * sqrt(number)); // number of boundary points
+    float theta, r, x, y;
+    for (int i = 1; i < number + 1; i++) {
+        if (i > number - b)
+            r = 1.f;
+        else
+            r = sqrt(i - 0.5) / sqrt(number - (b + 1) / 2);
+        theta = i * angle;
+        x = r * cos(theta);
+        y = r * sin(theta);
+        points.push_back(Vec3(x, y, 0));
+    }
+    return points;
+}
+
+bool DoesHitEntity(C_BaseEntity* Target, Vec3 Point, Vec3 predicted, float Distance) {
+    Vec3 max = Target->m_vecMaxs();
+    predicted.z += max.z / 2;
+    trace_t tr;
+    Ray_t ray;
+    ray.Init(Point, predicted);
+    CTraceFilterSimple filter(Target, COLLISION_GROUP_PROJECTILE);
+    I::EngineTrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
+    if (!tr.DidHit())
+        return true;
+    return false;
+}
+
 bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const CUserCmd* pCmd, ProjTarget_t& target)
 {
     Vec3 vLocalPos = pLocal->GetShootPos();
@@ -715,7 +763,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
             }
             if ((nTargetTick == nTick || nTargetTick == nTick - 1))
             {
-                auto runSplash = [&]()
+                auto runSplash = [&]() -> bool
                     {
                         if (!CFG::Aimbot_Projectile_SplashBot) return false;
                         auto isRocketLauncher{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER };
@@ -727,82 +775,63 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                         {
                             return false;
                         }
-                        Vec3 mins{ target.Entity->m_vecMins() };
-                        Vec3 maxs{ target.Entity->m_vecMaxs() };
-                        auto center{ F::MovementSimulation->GetOrigin() + Vec3(0.0f, 0.0f, (mins.z + maxs.z) * 0.5f) };
-                        center.x = vTarget.x;
-                        center.y = vTarget.y;
-                        auto numPoints{ static_cast<int>(CFG::Aimbot_Projectile_SplashPoints) };
-                        auto radius{ isRocketLauncher ? 146.0f : (isPipebomb ? 146.0f : (isBow ? 100.0f : 44.0f)) }; // Adapted radius for bow
-                        if (isAirStrike)
-                        {
-                            radius = 124.0f;
-                        }
-                        // Adjust radius based on movement speed
-                        float speed = F::MovementSimulation->GetSimulatedVelocity().Length2D();
-                        radius *= (1.0f - speed / 800.0f); // Reduce radius for faster moving targets
-                        // Prefer ground points if grounded
-                        bool preferGround = F::MovementSimulation->IsSimulatedOnGround();
-                        std::vector<Vec3> potential{};
-                        for (int n = 0; n < numPoints; n++)
-                        {
-                            auto a1{ acosf(1.0f - 2.0f * (static_cast<float>(n) / static_cast<float>(numPoints))) };
-                            auto a2{ (static_cast<float>(PI) * (3.0f - sqrtf(5.0f))) * static_cast<float>(n) };
-                            Vec3 dir{ sinf(a1) * cosf(a2), sinf(a1) * sinf(a2), cosf(a1) };
-                            if (preferGround && dir.z > 0.0f)
-                                continue; // Skip upper hemisphere if preferring ground
-                            dir *= radius;
-                            auto point{ center + dir };
-                            CTraceFilterWorldCustom filter{};
-                            trace_t trace{};
-                            H::AimUtils->Trace(center, point, MASK_SOLID, &filter, &trace);
-                            if (trace.fraction > 0.99f)
-                            {
+                        Vec3 absPos = F::MovementSimulation->GetOrigin();
+                        Vec3 worldSpaceCenter = absPos;
+                        worldSpaceCenter.z += (target.Entity->m_vecMins().z + target.Entity->m_vecMaxs().z) / 2;
+                        float wRadius = SDKUtils::AttribHookValue(146.0f, "mult_explosion_radius", pWeapon);
+                        auto offset = Vec3(0.0f, 0.0f, 0.0f); // Placeholder for projectile offset; adjust as per your setup
+                        Vec3 forward, right, up;
+                        QAngle an = Math::CalcAngle(pLocal->GetShootPos(), worldSpaceCenter);
+                        Math::AngleVectors(an, &forward, &right, &up);
+                        Vec3 shootPos = pLocal->GetShootPos() + (forward * offset.x) + (right * offset.y) + (up * offset.z);
+                        std::vector<Vec3> optimal = Sunflower2D(CFG::Aimbot_Projectile_SplashPoints, 2);
+                        float minDist = 10000.0f;
+                        float halfDist = pLocal->GetShootPos().DistTo(worldSpaceCenter) * 0.5f;
+                        float displacement = wRadius * 0.5;
+                        std::deque<Vec3> newOptimal;
+                        Vec3 nf, nr, nu;
+                        for (auto& p : optimal) {
+                            p = worldSpaceCenter - (forward * halfDist) + (right * p.x * displacement) + (up * p.y * displacement);
+                            Math::AngleVectors(Math::CalcAngle(shootPos, p), &nf, &nr, &nu);
+                            Vec3 end = p + (nf * 8160.f);
+                            trace_t tr;
+                            Ray_t ray;
+                            ray.Init(shootPos, end, Vec3(-4, -4, -4), Vec3(4, 4, 4)); // Adjust hull size as needed
+                            CTraceFilterWorldCustom filter;
+                            I::EngineTrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
+                            if (!tr.DidHit())
                                 continue;
-                            }
-                            potential.push_back(trace.endpos);
+                            float dist = tr.endpos.DistTo(worldSpaceCenter);
+                            if (dist > wRadius)
+                                continue;
+                            newOptimal.push_back(tr.endpos);
                         }
-                        std::ranges::sort(potential, [&](const Vec3& a, const Vec3& b)
-                            {
-                                // Sort by distance to center (closer for higher damage)
-                                float distA = a.DistTo(center);
-                                float distB = b.DistTo(center);
-                                return distA < distB;
+                        std::sort(newOptimal.begin(), newOptimal.end(), [&](const Vec3& a, const Vec3& b) {
+                            return (a.DistTo(worldSpaceCenter) < b.DistTo(worldSpaceCenter));
                             });
-                        for (auto& point : potential)
-                        {
-                            if (!CalcProjAngle(vLocalPos, point, target.AngleTo, target.TimeToTarget, false))
-                            {
-                                continue;
+                        std::vector<Vec3> goodPoints;
+                        for (auto& p : newOptimal) {
+                            float dist = p.DistTo(worldSpaceCenter);
+                            if (minDist < dist)
+                                break;
+                            if (DoesHitEntity(target.Entity, p, absPos, wRadius)) {
+                                minDist = dist;
+                                goodPoints.push_back(p);
                             }
-                            trace_t trace = {};
-                            CTraceFilterWorldCustom filter = {};
-                            H::AimUtils->TraceHull
-                            (
-                                GetOffsetShootPos(pLocal, pWeapon, pCmd),
-                                point,
-                                { -4.0f, -4.0f, -4.0f },
-                                { 4.0f, 4.0f, 4.0f },
-                                MASK_SOLID,
-                                &filter,
-                                &trace
-                            );
-                            if (trace.fraction < 0.9f || trace.startsolid || trace.allsolid)
-                            {
-                                continue;
-                            }
-                            H::AimUtils->Trace(trace.endpos, point, MASK_SOLID, &filter, &trace);
-                            if (trace.fraction < 1.0f)
-                            {
-                                continue;
-                            }
-                            if (CFG::Debug_SplashPoints)
-                            {
-                                I::DebugOverlay->AddBoxOverlay(point, Vec3(-1, -1, -1), Vec3(1, 1, 1), Vec3(0, 0, 0), 255, 0, 0, 128, 5.0f);
-                            }
-                            return true;
                         }
-                        return false;
+                        std::sort(goodPoints.begin(), goodPoints.end(), [&](const Vec3& a, const Vec3& b) {
+                            return (a.DistTo(worldSpaceCenter) < b.DistTo(worldSpaceCenter));
+                            });
+                        if (goodPoints.empty())
+                            return false;
+                        if (CFG::Debug_SplashPoints) {
+                            I::DebugOverlay->AddBoxOverlay(goodPoints.front(), Vec3(-3, -3, -3), Vec3(3, 3, 3), Vec3(0, 0, 0), 255, 0, 0, 128, I::GlobalVars->interval_per_tick * 2);
+                        }
+                        target.Position = goodPoints.front();
+                        if (!CalcProjAngle(vLocalPos, target.Position, target.AngleTo, target.TimeToTarget, false)) {
+                            return false;
+                        }
+                        return true;
                     };
                 if (CFG::Aimbot_Projectile_RocketSplashPoint && runSplash())
                 {
@@ -848,81 +877,75 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
     {
         const Vec3 vTarget = target.Position;
         float flTimeToTarget = 0.0f;
-        auto runSplash = [&]()
+        auto runSplash = [&]() -> bool
             {
                 if (!CFG::Aimbot_Projectile_SplashBot) return false;
-                const auto isRocketLauncher{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER };
-                const auto isDirectHit{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT };
-                const auto isAirStrike{ pWeapon->m_iItemDefinitionIndex() == Soldier_m_TheAirStrike };
-                const auto isPipebomb{ pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER };
-                const auto isBow{ pWeapon->GetWeaponID() == TF_WEAPON_COMPOUND_BOW };
+                auto isRocketLauncher{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER };
+                auto isDirectHit{ pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT };
+                auto isAirStrike{ pWeapon->m_iItemDefinitionIndex() == Soldier_m_TheAirStrike };
+                auto isPipebomb{ pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER };
+                auto isBow{ pWeapon->GetWeaponID() == TF_WEAPON_COMPOUND_BOW };
                 if (!isRocketLauncher && !isDirectHit && !isAirStrike && !isPipebomb && !isBow)
                 {
                     return false;
                 }
-                const auto center{ target.Entity->GetCenter() };
-                auto numPoints{ static_cast<int>(CFG::Aimbot_Projectile_SplashPoints) };
-                auto radius{ isRocketLauncher ? 146.0f : (isPipebomb ? 146.0f : (isBow ? 100.0f : 44.0f)) }; // Adapted radius for bow
-                if (isAirStrike)
-                {
-                    radius = 124.0f;
-                }
-                std::vector<Vec3> potential{};
-                for (int n = 0; n < numPoints; n++)
-                {
-                    const auto a1{ acosf(1.0f - 2.0f * (static_cast<float>(n) / static_cast<float>(numPoints))) };
-                    const auto a2{ (static_cast<float>(PI) * (3.0f - sqrtf(5.0f))) * static_cast<float>(n) };
-                    Vec3 dir{ sinf(a1) * cosf(a2), sinf(a1) * sinf(a2), cosf(a1) };
-                    dir *= radius;
-                    auto point{ center + dir };
-                    CTraceFilterWorldCustom filter{};
-                    trace_t trace{};
-                    H::AimUtils->Trace(center, point, MASK_SOLID, &filter, &trace);
-                    if (trace.fraction > 0.99f)
-                    {
+                Vec3 absPos = target.Position;
+                Vec3 worldSpaceCenter = absPos;
+                worldSpaceCenter.z += (target.Entity->m_vecMins().z + target.Entity->m_vecMaxs().z) / 2;
+                float wRadius = SDKUtils::AttribHookValue(146.0f, "mult_explosion_radius", pWeapon);
+                auto offset = Vec3(0.0f, 0.0f, 0.0f); // Placeholder for projectile offset; adjust as per your setup
+                Vec3 forward, right, up;
+                QAngle an = Math::CalcAngle(pLocal->GetShootPos(), worldSpaceCenter);
+                Math::AngleVectors(an, &forward, &right, &up);
+                Vec3 shootPos = pLocal->GetShootPos() + (forward * offset.x) + (right * offset.y) + (up * offset.z);
+                std::vector<Vec3> optimal = Sunflower2D(CFG::Aimbot_Projectile_SplashPoints, 2);
+                float minDist = 10000.0f;
+                float halfDist = pLocal->GetShootPos().DistTo(worldSpaceCenter) * 0.5f;
+                float displacement = wRadius * 0.5;
+                std::deque<Vec3> newOptimal;
+                Vec3 nf, nr, nu;
+                for (auto& p : optimal) {
+                    p = worldSpaceCenter - (forward * halfDist) + (right * p.x * displacement) + (up * p.y * displacement);
+                    Math::AngleVectors(Math::CalcAngle(shootPos, p), &nf, &nr, &nu);
+                    Vec3 end = p + (nf * 8160.f);
+                    trace_t tr;
+                    Ray_t ray;
+                    ray.Init(shootPos, end, Vec3(-4, -4, -4), Vec3(4, 4, 4)); // Adjust hull size as needed
+                    CTraceFilterWorldCustom filter;
+                    I::EngineTrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
+                    if (!tr.DidHit())
                         continue;
-                    }
-                    potential.push_back(trace.endpos);
+                    float dist = tr.endpos.DistTo(worldSpaceCenter);
+                    if (dist > wRadius)
+                        continue;
+                    newOptimal.push_back(tr.endpos);
                 }
-                std::ranges::sort(potential, [&](const Vec3& a, const Vec3& b)
-                    {
-                        return a.DistTo(center) < b.DistTo(center);
+                std::sort(newOptimal.begin(), newOptimal.end(), [&](const Vec3& a, const Vec3& b) {
+                    return (a.DistTo(worldSpaceCenter) < b.DistTo(worldSpaceCenter));
                     });
-                //I::DebugOverlay->ClearAllOverlays();
-                for (auto& point : potential)
-                {
-                    if (!CalcProjAngle(vLocalPos, point, target.AngleTo, target.TimeToTarget, false))
-                    {
-                        continue;
+                std::vector<Vec3> goodPoints;
+                for (auto& p : newOptimal) {
+                    float dist = p.DistTo(worldSpaceCenter);
+                    if (minDist < dist)
+                        break;
+                    if (DoesHitEntity(target.Entity, p, absPos, wRadius)) {
+                        minDist = dist;
+                        goodPoints.push_back(p);
                     }
-                    trace_t trace = {};
-                    CTraceFilterWorldCustom filter = {};
-                    H::AimUtils->TraceHull
-                    (
-                        GetOffsetShootPos(pLocal, pWeapon, pCmd),
-                        point,
-                        { -4.0f, -4.0f, -4.0f },
-                        { 4.0f, 4.0f, 4.0f },
-                        MASK_SOLID,
-                        &filter,
-                        &trace
-                    );
-                    if (trace.fraction < 0.9f || trace.startsolid || trace.allsolid)
-                    {
-                        continue;
-                    }
-                    H::AimUtils->Trace(trace.endpos, point, MASK_SOLID, &filter, &trace);
-                    if (trace.fraction < 1.0f)
-                    {
-                        continue;
-                    }
-                    if (CFG::Debug_SplashPoints)
-                    {
-                        I::DebugOverlay->AddBoxOverlay(point, Vec3(-1, -1, -1), Vec3(1, 1, 1), Vec3(0, 0, 0), 255, 0, 0, 128, 5.0f);
-                    }
-                    return true;
                 }
-                return false;
+                std::sort(goodPoints.begin(), goodPoints.end(), [&](const Vec3& a, const Vec3& b) {
+                    return (a.DistTo(worldSpaceCenter) < b.DistTo(worldSpaceCenter));
+                    });
+                if (goodPoints.empty())
+                    return false;
+                if (CFG::Debug_SplashPoints) {
+                    I::DebugOverlay->AddBoxOverlay(goodPoints.front(), Vec3(-3, -3, -3), Vec3(3, 3, 3), Vec3(0, 0, 0), 255, 0, 0, 128, I::GlobalVars->interval_per_tick * 2);
+                }
+                target.Position = goodPoints.front();
+                if (!CalcProjAngle(vLocalPos, target.Position, target.AngleTo, target.TimeToTarget, false)) {
+                    return false;
+                }
+                return true;
             };
         if (!CalcProjAngle(vLocalPos, vTarget, target.AngleTo, flTimeToTarget, false))
         {
@@ -954,6 +977,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
     m_TargetPath.clear();
     return false;
 }
+
 bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const CUserCmd* pCmd, ProjTarget_t& outTarget)
 {
     const Vec3 vLocalPos = pLocal->GetShootPos();
@@ -1049,10 +1073,12 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
     }
     return false;
 }
+
 bool CAimbotProjectile::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
     return CFG::Aimbot_Projectile_Mode != 1 || IsFiring(pCmd, pLocal, pWeapon) && pWeapon->HasPrimaryAmmoForShot();
 }
+
 void CAimbotProjectile::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const Vec3& vAngles)
 {
     Vec3 vAngleTo = vAngles - pLocal->m_vecPunchAngle();
@@ -1092,6 +1118,7 @@ void CAimbotProjectile::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* 
     default: break;
     }
 }
+
 bool CAimbotProjectile::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
     if (!CFG::Aimbot_AutoShoot)
@@ -1103,6 +1130,7 @@ bool CAimbotProjectile::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeapo
     }
     return true;
 }
+
 void CAimbotProjectile::HandleFire(CUserCmd* pCmd, C_TFWeaponBase* pWeapon, C_TFPlayer* pLocal, const ProjTarget_t& target)
 {
     const bool bIsBazooka = pWeapon->m_iItemDefinitionIndex() == Soldier_m_TheBeggarsBazooka;
@@ -1113,9 +1141,24 @@ void CAimbotProjectile::HandleFire(CUserCmd* pCmd, C_TFWeaponBase* pWeapon, C_TF
     {
         pCmd->buttons |= IN_ATTACK;
     }
+    else
+    {
+        // Updated charging logic
+        float requiredCharge = GetRequiredChargeTime(pWeapon, target, pLocal->GetShootPos());
+        float currentCharge = GetCurrentChargeTime(pWeapon);
+        if (currentCharge < requiredCharge)
+        {
+            pCmd->buttons |= IN_ATTACK; // Hold to charge
+        }
+        else
+        {
+            pCmd->buttons &= ~IN_ATTACK; // Release to fire
+        }
+    }
     if (bIsBazooka && pWeapon->HasPrimaryAmmoForShot())
         pCmd->buttons &= ~IN_ATTACK;
 }
+
 bool CAimbotProjectile::IsFiring(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
     if (!pWeapon->HasPrimaryAmmoForShot())
@@ -1137,6 +1180,7 @@ bool CAimbotProjectile::IsFiring(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFW
     }
     return (pCmd->buttons & IN_ATTACK) && G::bCanPrimaryAttack;
 }
+
 void CAimbotProjectile::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
     if (!CFG::Aimbot_Projectile_Enable)
