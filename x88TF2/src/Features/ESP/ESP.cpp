@@ -1,4 +1,3 @@
-// esp.cpp
 #include "ESP.h"
 #include "../src/SDK/TF2/interface.h"
 #include "../src/SDK/Helpers/Entities/Entities.h"
@@ -12,6 +11,12 @@
 #include <limits> // for numeric_limits
 #define PI 3.14159265358979323846f
 
+C_BaseEntity* CESP::RainEntity = nullptr;
+IClientNetworkable* CESP::RainNetworkable = nullptr;
+
+C_BaseEntity* CESP::WindEntity = nullptr;
+IClientNetworkable* CESP::WindNetworkable = nullptr;
+
 static bool IsFiniteVec(const Vec3& v)
 {
     return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
@@ -19,6 +24,19 @@ static bool IsFiniteVec(const Vec3& v)
 static bool InCond(C_TFPlayer* pPlayer, int cond)
 {
     return (pPlayer->m_nPlayerCond() & (1 << cond)) != 0;
+}
+static Color_t ColorLerp(const Color_t& a, const Color_t& b, float t)
+{
+    float fr = static_cast<float>(a.r) + (static_cast<float>(b.r) - static_cast<float>(a.r)) * t;
+    float fg = static_cast<float>(a.g) + (static_cast<float>(b.g) - static_cast<float>(a.g)) * t;
+    float fb = static_cast<float>(a.b) + (static_cast<float>(b.b) - static_cast<float>(a.b)) * t;
+    float fa = static_cast<float>(a.a) + (static_cast<float>(b.a) - static_cast<float>(a.a)) * t;
+    return Color_t(
+        static_cast<unsigned char>(std::clamp(fr, 0.0f, 255.0f)),
+        static_cast<unsigned char>(std::clamp(fg, 0.0f, 255.0f)),
+        static_cast<unsigned char>(std::clamp(fb, 0.0f, 255.0f)),
+        static_cast<unsigned char>(std::clamp(fa, 0.0f, 255.0f))
+    );
 }
 void CESP::Init()
 {
@@ -30,6 +48,143 @@ void CESP::Shutdown()
     if (!m_bInitialized) return;
     m_bInitialized = false;
 }
+
+void CESP::Rain()
+{
+    constexpr auto PRECIPITATION_INDEX = (MAX_EDICTS - 1);
+    constexpr auto WIND_INDEX = (MAX_EDICTS - 2);
+    if (!CFG::Visuals_Rain)
+    {
+        if (RainEntity && RainEntity->GetClientNetworkable())
+        {
+            static const auto dwOff = NetVars::GetNetVar("CPrecipitation", "m_nPrecipType");
+            *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(RainEntity) + dwOff) = -1; // Set to invalid type to fully disable particles
+            RainEntity->m_vecMins() = Vec3();
+            RainEntity->m_vecMaxs() = Vec3();
+            RainEntity->GetClientNetworkable()->PreDataUpdate(DATA_UPDATE_CREATED);
+            RainEntity->GetClientNetworkable()->OnPreDataChanged(DATA_UPDATE_CREATED);
+            RainEntity->GetClientNetworkable()->OnDataChanged(DATA_UPDATE_CREATED);
+            RainEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
+        }
+        // Disable wind if rain is off
+
+        if (WindEntity && WindEntity->GetClientNetworkable())
+        {
+            static const auto dwMinWindOff = NetVars::GetNetVar("CEnvWind", "m_iMinWind");
+            static const auto dwMaxWindOff = NetVars::GetNetVar("CEnvWind", "m_iMaxWind");
+            *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMinWindOff) = 0;
+            *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMaxWindOff) = 0;
+            WindEntity->GetClientNetworkable()->PreDataUpdate(DATA_UPDATE_CREATED);
+            WindEntity->GetClientNetworkable()->OnPreDataChanged(DATA_UPDATE_CREATED);
+            WindEntity->GetClientNetworkable()->OnDataChanged(DATA_UPDATE_CREATED);
+            WindEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
+        }
+
+        return;
+    }
+    // Get local player for centering rain
+    auto pLocal = H::Entities->GetLocal();
+    if (!pLocal)
+        return;
+    Vec3 center = pLocal->GetAbsOrigin();
+    static ClientClass* pPrecipClass = nullptr;
+    if (!pPrecipClass)
+    {
+        for (auto pReturn = I::BaseClientDLL->GetAllClasses(); pReturn; pReturn = pReturn->m_pNext)
+        {
+            if (pReturn->m_ClassID == static_cast<int>(ETFClassIds::CPrecipitation))
+            {
+                pPrecipClass = pReturn;
+                break;
+            }
+        }
+    }
+    const auto* pRainEntity = I::ClientEntityList->GetClientEntity(PRECIPITATION_INDEX);
+    if (!pRainEntity)
+    {
+        if (!pPrecipClass || !pPrecipClass->m_pCreateFn)
+            return;
+        RainNetworkable = reinterpret_cast<IClientNetworkable * (__cdecl*)(int, int)>(pPrecipClass->m_pCreateFn)(PRECIPITATION_INDEX, 0);
+        if (!RainNetworkable)
+            return;
+        RainEntity = static_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(PRECIPITATION_INDEX));
+        if (!RainEntity || !RainEntity->GetClientNetworkable())
+            return;
+    }
+    else if (!RainEntity)
+    {
+        RainEntity = static_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(PRECIPITATION_INDEX));
+        RainNetworkable = RainEntity ? RainEntity->GetClientNetworkable() : nullptr;
+    }
+    if (RainEntity && RainEntity->GetClientNetworkable())
+    {
+        static const auto dwOff = NetVars::GetNetVar("CPrecipitation", "m_nPrecipType");
+        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(RainEntity) + dwOff) = CFG::Visuals_Rain - 1; // Assuming 1 = Rain, etc.
+        RainEntity->GetClientNetworkable()->PreDataUpdate(DATA_UPDATE_CREATED);
+        RainEntity->GetClientNetworkable()->OnPreDataChanged(DATA_UPDATE_CREATED);
+        // Set bounds based on radius
+        // Use large bounds like in the working code to avoid the NULL material error
+        RainEntity->m_vecMins() = Vec3(-32768.0f, -32768.0f, -32768.0f);
+        RainEntity->m_vecMaxs() = Vec3(32768.0f, 32768.0f, 32768.0f);
+        RainEntity->GetClientNetworkable()->OnDataChanged(DATA_UPDATE_CREATED);
+        RainEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
+    }
+    // Handle env_wind for wind control - commented out for testing
+    /*
+    static ClientClass* pWindClass = nullptr;
+    if (!pWindClass)
+    {
+        for (auto pReturn = I::BaseClientDLL->GetAllClasses(); pReturn; pReturn = pReturn->m_pNext)
+        {
+            if (strcmp(pReturn->m_pNetworkName, "CEnvWind") == 0)
+            {
+                pWindClass = pReturn;
+                break;
+            }
+        }
+    }
+    const auto* pWindEntity = I::ClientEntityList->GetClientEntity(WIND_INDEX);
+    if (!pWindEntity)
+    {
+        if (!pWindClass || !pWindClass->m_pCreateFn)
+            return;
+        WindNetworkable = reinterpret_cast<IClientNetworkable * (__cdecl*)(int, int)>(pWindClass->m_pCreateFn)(WIND_INDEX, 0);
+        if (!WindNetworkable)
+            return;
+        WindEntity = static_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(WIND_INDEX));
+        if (!WindEntity || !WindEntity->GetClientNetworkable())
+            return;
+    }
+    else if (!WindEntity)
+    {
+        WindEntity = static_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(WIND_INDEX));
+        WindNetworkable = WindEntity ? WindEntity->GetClientNetworkable() : nullptr;
+    }
+    if (WindEntity && WindEntity->GetClientNetworkable())
+    {
+        static const auto dwMinWind = NetVars::GetNetVar("CEnvWind", "m_iMinWind");
+        static const auto dwMaxWind = NetVars::GetNetVar("CEnvWind", "m_iMaxWind");
+        static const auto dwMinGust = NetVars::GetNetVar("CEnvWind", "m_iMinGust");
+        static const auto dwMaxGust = NetVars::GetNetVar("CEnvWind", "m_iMaxGust");
+        static const auto dwGustDirChange = NetVars::GetNetVar("CEnvWind", "m_iGustDirChange");
+        static const auto dwInitialWindDir = NetVars::GetNetVar("CEnvWind", "m_iInitialWindDir");
+        float windSpeed = CFG::Visuals_Rain_WindSpeed;
+        int windSpeedInt = static_cast<int>(windSpeed);
+        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMinWind) = windSpeedInt;
+        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMaxWind) = windSpeedInt + 5; // Slight variation
+        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMinGust) = windSpeedInt + 10;
+        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMaxGust) = windSpeedInt + 20;
+        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwGustDirChange) = static_cast<int>(CFG::Visuals_Rain_WindDirection);
+        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwInitialWindDir) = static_cast<int>(CFG::Visuals_Rain_WindDirection);
+        WindEntity->GetClientNetworkable()->PreDataUpdate(DATA_UPDATE_CREATED);
+        WindEntity->GetClientNetworkable()->OnPreDataChanged(DATA_UPDATE_CREATED);
+        WindEntity->GetClientNetworkable()->OnDataChanged(DATA_UPDATE_CREATED);
+        WindEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
+    }
+    */
+    // Note: Width and Length are hard-coded in particle creation and cannot be easily modified without patching the engine code.
+    // For now, they are not adjusted.
+}
 // Apenas desenha caixa (box ESP) — funções auxiliares simples
 void CESP::DrawBox(int left, int top, int w, int h, const Color_t& clr)
 {
@@ -38,7 +193,8 @@ void CESP::DrawBox(int left, int top, int w, int h, const Color_t& clr)
 }
 void CESP::DrawBox2D(int left, int top, int w, int h, const Color_t& clr)
 {
-    DrawBox(left, top, w, h, clr);
+    Color_t outline = CFG::Color_ESP_Outline;
+    H::Draw->OutlinedRect(left, top, w, h, clr);
 }
 void CESP::DrawBox3D(Vec3 scr[8], const Color_t& clr, bool useAA)
 {
@@ -46,8 +202,10 @@ void CESP::DrawBox3D(Vec3 scr[8], const Color_t& clr, bool useAA)
 }
 void CESP::DrawBoxCorner(int left, int top, int w, int h, const Color_t& clr)
 {
+    Color_t outline = CFG::Color_ESP_Outline;
     int cornerLen = std::min(w, h) / 5;
     if (cornerLen < 1) return;
+    // Inner colored lines
     // Top-left
     H::Draw->Line(left, top, left + cornerLen, top, clr);
     H::Draw->Line(left, top, left, top + cornerLen, clr);
@@ -110,23 +268,7 @@ void CESP::DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr, 
     int by = static_cast<int>(std::round(b.y));
     // Draw main line
     H::Draw->Line(ax, ay, bx, by, clr);
-    if (useAA) {
-        // Draw offset lines for anti-aliasing effect with lower alpha to make thinner appearance
-        Color_t aaClr = Color_t(clr.r, clr.g, clr.b, 50); // Reduced alpha for weaker AA
-        float dx = static_cast<float>(bx - ax);
-        float dy = static_cast<float>(by - ay);
-        int off = 1;
-        if (std::abs(dx) > std::abs(dy)) {
-            // Horizontal-ish line, offset vertically
-            H::Draw->Line(ax, ay - off, bx, by - off, aaClr);
-            H::Draw->Line(ax, ay + off, bx, by + off, aaClr);
-        }
-        else {
-            // Vertical-ish line, offset horizontally
-            H::Draw->Line(ax - off, ay, bx - off, by, aaClr);
-            H::Draw->Line(ax + off, ay, bx + off, by, aaClr);
-        }
-    }
+    // Removed AA for thinner lines
 }
 void CESP::DrawScreenLine(const Vec3& a, const Vec3& b, const Color_t& clr)
 {
@@ -161,7 +303,7 @@ void CESP::DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
         {0,4},{1,5},{2,6},{3,7}
     };
     for (auto& e : edges) {
-        DrawOutlinedLine(scr[e.first], scr[e.second], clr);
+        DrawOutlinedLine(scr[e.first], scr[e.second], clr, CFG::Color_ESP_Outline);
     }
 }
 // --- Helper: desenha apenas o wireframe projetado (sem pontos/glow) ---
@@ -182,8 +324,7 @@ void CESP::DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool 
     {
         const Vec3& A = proj[e.first];
         const Vec3& B = proj[e.second];
-        // Use DrawSmoothBoneLine with useAA
-        DrawSmoothBoneLine(A, B, clr, useAA);
+        DrawThinLine(A, B, clr);
     }
 }
 void CESP::DrawOffscreenArrow(const Vec3& origin, const Color_t& clr)
@@ -213,9 +354,9 @@ void CESP::DrawOffscreenArrow(const Vec3& origin, const Color_t& clr)
     float sideAngle = PI / 6; // 30 deg
     Vec3 side1(centerX + (radius - 10) * cos(angle + sideAngle), centerY + (radius - 10) * sin(angle + sideAngle), 0); // Smaller sides
     Vec3 side2(centerX + (radius - 10) * cos(angle - sideAngle), centerY + (radius - 10) * sin(angle - sideAngle), 0);
-    DrawSmoothBoneLine(arrowTip, side1, clr);
-    DrawSmoothBoneLine(arrowTip, side2, clr);
-    DrawSmoothBoneLine(side1, side2, clr);
+    DrawSmoothBoneLine(arrowTip, side1, CFG::Color_OffscreenArrow);
+    DrawSmoothBoneLine(arrowTip, side2, CFG::Color_OffscreenArrow);
+    DrawSmoothBoneLine(side1, side2, CFG::Color_OffscreenArrow);
 }
 void CESP::DrawFOVCircle(float fov, const Color_t& color) {
     if (fov <= 0.0f) return;
@@ -329,9 +470,9 @@ void CESP::Run()
             if (isCloaked && (CFG::ESP_HideCloaked || CFG::ESP_SkeletonHideCloaked)) {
                 if ((CFG::ESP_HideCloaked && CFG::ESP_SkeletonHideCloaked) || (!CFG::ESP_SkeletonLocalPlayer)) continue;
             }
-            clr = isLocal ? Color_t(255, 255, 255, 255) : (team == TF_TEAM_RED ? Color_t(255, 0, 0, 255) : Color_t(0, 0, 255, 255));
-            drawESP = (isLocal ? CFG::ESP_LocalPlayer : true) && !(CFG::ESP_Team && isTeammate) && !(isCloaked && CFG::ESP_HideCloaked);
-            drawSkeleton = (isLocal ? CFG::ESP_SkeletonLocalPlayer : CFG::ESP_Skeleton) && !(CFG::ESP_SkeletonTeam && isTeammate) && !(isCloaked && CFG::ESP_SkeletonHideCloaked);
+            clr = isLocal ? CFG::Color_Local : (team == TF_TEAM_RED ? CFG::Color_TeamRed : CFG::Color_TeamBlue);
+            drawESP = (isLocal ? CFG::ESP_LocalPlayer : true) && !(CFG::ESP_Team && isTeammate && !isLocal) && !(isCloaked && CFG::ESP_HideCloaked);
+            drawSkeleton = (isLocal ? CFG::ESP_SkeletonLocalPlayer : CFG::ESP_Skeleton) && !(CFG::ESP_SkeletonTeam && isTeammate && !isLocal) && !(isCloaked && CFG::ESP_SkeletonHideCloaked);
             // Check for thirdperson for local player
             if (isLocal) {
                 if (!CFG::Misc_ThirdPerson_Enable) {
@@ -353,7 +494,7 @@ void CESP::Run()
             }
             if (max_health <= 0) max_health = pPlayer->GetMaxHealth();
             if (max_health <= 0) max_health = 100;
-            health = std::clamp(health, 0, max_health);
+            health = std::max(0, health);
             // Backtrack check
             int backtrackType = CFG::ESP_Skeleton_BacktrackType; // Combined
             bool backtrackCondition = false;
@@ -370,7 +511,7 @@ void CESP::Run()
             if (!CFG::ESP_Build && !CFG::ESP_SkeletonBuild) continue;
             isBuilding = true;
             if (CFG::ESP_BuildOnlyEnemy && !isEnemy) continue;
-            clr = (team == TF_TEAM_RED ? Color_t(255, 0, 0, 255) : Color_t(0, 0, 255, 255));
+            clr = isTeammate ? CFG::Color_BuildingTeam : CFG::Color_BuildingEnemy;
             if (strcmp(networkName, "CObjectSentrygun") == 0) name = "Sentry";
             else if (strcmp(networkName, "CObjectDispenser") == 0) name = "Dispenser";
             else name = "Teleporter";
@@ -398,11 +539,11 @@ void CESP::Run()
                 H::Entities->IsAmmoPack(pBase));
             if (isAmmo) {
                 name = "Ammo";
-                clr = Color_t(255, 215, 0, 255); // gold
+                clr = CFG::Color_Ammo;
             }
             else {
                 name = "Medkit";
-                clr = Color_t(0, 255, 0, 255); // green
+                clr = CFG::Color_Medkit;
             }
             drawESP = CFG::ESP_Pickups;
             drawSkeleton = false;
@@ -422,7 +563,7 @@ void CESP::Run()
             drawESP = CFG::ESP_CaptureFlag;
             // Chams e Skeleton independentes
             drawSkeleton = false;
-            clr = Color_t(255, 255, 0, 255); // yellow
+            clr = CFG::Color_Flag;
         }
         else continue;
         Vec3 origin = pBase->GetAbsOrigin();
@@ -528,11 +669,11 @@ void CESP::Run()
             if (draw_name && !name.empty())
             {
                 const CFont& font = H::Fonts->Get(EFonts::ESP);
-                H::Draw->String(font, static_cast<int>((left + right) / 2.0f), static_cast<int>(top) - 15, Color_t(255, 255, 255, 255), POS_CENTERX, name.c_str());
+                Color_t nameClr = isBuilding ? CFG::Color_BuildingName : CFG::Color_Name;
+                H::Draw->String(font, static_cast<int>((left + right) / 2.0f), static_cast<int>(top) - 15, nameClr, POS_CENTERX, name.c_str());
             }
             if (CFG::ESP_Health && max_health > 0 && (isPlayer || isBuilding))
             {
-                health = std::clamp(health, 0, max_health);
                 int healthType = CFG::ESP_HealthType;
                 int barX = static_cast<int>(std::round(left)) - 6;
                 int barY = static_cast<int>(std::round(top)) - 1;
@@ -540,15 +681,19 @@ void CESP::Run()
                 int barH = height + 2;
                 bool hasBar = (healthType == 0 || healthType == 2);
                 if (hasBar) {
-                    H::Draw->Rect(barX, barY, barW, barH, Color_t(0, 0, 0, 200));
+                    H::Draw->Rect(barX, barY, barW, barH, CFG::Color_HealthBarBG);
                     if (barH > 2 && health > 0)
                     {
                         float ratio = static_cast<float>(health) / static_cast<float>(max_health);
-                        int fillH = static_cast<int>(std::round((barH - 2) * ratio));
+                        int fillH = static_cast<int>(std::round((barH - 2) * std::min(1.0f, ratio)));
                         int fillY = barY + (barH - 1) - fillH;
-                        int red = static_cast<int>(255 * (1.0f - ratio));
-                        int green = static_cast<int>(255 * ratio);
-                        Color_t c(static_cast<unsigned char>(red), static_cast<unsigned char>(green), 0, 255);
+                        Color_t c;
+                        if (health > max_health) {
+                            c = CFG::Color_Overheal;
+                        }
+                        else {
+                            c = ColorLerp(CFG::Color_HealthLow, CFG::Color_HealthHigh, ratio);
+                        }
                         H::Draw->Rect(barX + 1, fillY, 2, fillH, c);
                     }
                 }
@@ -565,13 +710,16 @@ void CESP::Run()
                         textX = static_cast<int>(left) - textW - 2;
                     }
                     int textY = static_cast<int>(top);
-                    H::Draw->String(font, textX, textY, Color_t(255, 255, 255, 255), POS_DEFAULT, healthStr.c_str());
+                    H::Draw->String(font, textX, textY, CFG::Color_HealthText, POS_DEFAULT, healthStr.c_str());
                 }
             }
         }
         if (isPlayer && drawESP) {
             int playerClass = pPlayer->m_iClass();
             // ESP Conds (inspired by Amalgam and Seowned implementations)
+            const CFont& font = H::Fonts->Get(EFonts::ESP);
+            int rightTextX = static_cast<int>(right) + 5;
+            int rightTextY = static_cast<int>(top);
             if (CFG::ESP_Conds) {
                 std::vector<std::string> conds;
                 if (InCond(pPlayer, 4)) conds.push_back("Cloaked");
@@ -580,52 +728,9 @@ void CESP::Run()
                 if (InCond(pPlayer, 22)) conds.push_back("Burning");
                 if (InCond(pPlayer, 7)) conds.push_back("Taunt");
                 // Add more conditions as needed (e.g., Bonked, Jarated, etc.)
-                const CFont& font = H::Fonts->Get(EFonts::ESP);
-                int condX = static_cast<int>(right) + 5;
-                int condY = static_cast<int>(top);
                 for (const auto& c : conds) {
-                    H::Draw->String(font, condX, condY, Color_t(255, 255, 255, 255), POS_DEFAULT, c.c_str());
-                    condY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
-                }
-            }
-            // ESP Uber and Uber Bar for Medics (inspired by Amalgam)
-            if (playerClass == 5 && (CFG::ESP_Uber || CFG::ESP_UberBar)) {
-                C_WeaponMedigun* pMedigun = nullptr;
-                C_BaseEntity* pWeaponEnt = pPlayer->m_hActiveWeapon().Get();
-                if (pWeaponEnt) {
-                    C_TFWeaponBase* pWeapon = static_cast<C_TFWeaponBase*>(pWeaponEnt);
-                    if (pWeapon && pWeapon->GetWeaponID() == 29) {
-                        pMedigun = static_cast<C_WeaponMedigun*>(pWeapon);
-                    }
-                }
-                if (!pMedigun) {
-                    // Check secondary slot
-                    C_TFWeaponBase* pSecondary = pPlayer->GetWeaponFromSlot(1);
-                    if (pSecondary && pSecondary->GetWeaponID() == 29) {
-                        pMedigun = static_cast<C_WeaponMedigun*>(pSecondary);
-                    }
-                }
-                if (pMedigun) {
-                    float charge = pMedigun->m_flChargeLevel();
-                    const CFont& font = H::Fonts->Get(EFonts::ESP);
-                    if (CFG::ESP_Uber) {
-                        std::string uberText = "Uber: " + std::to_string(static_cast<int>(charge * 100.0f)) + "%";
-                        int uberY = static_cast<int>(bottom) + 5;
-                        H::Draw->String(font, static_cast<int>((left + right) / 2.0f), uberY, Color_t(255, 0, 255, 255), POS_CENTERX, uberText.c_str());
-                    }
-                    if (CFG::ESP_UberBar) {
-                        int barX = static_cast<int>(left) - 12;
-                        int barY = static_cast<int>(top) - 1;
-                        int barW = 4;
-                        int barH = height + 2;
-                        H::Draw->Rect(barX, barY, barW, barH, Color_t(0, 0, 0, 200));
-                        if (barH > 2 && charge > 0.0f) {
-                            int fillH = static_cast<int>(std::round((barH - 2) * charge));
-                            int fillY = barY + (barH - 1) - fillH;
-                            Color_t uberClr(255, 0, 255, 255); // Purple for uber
-                            H::Draw->Rect(barX + 1, fillY, 2, fillH, uberClr);
-                        }
-                    }
+                    H::Draw->String(font, rightTextX, rightTextY, CFG::Color_CondsText, POS_DEFAULT, c.c_str());
+                    rightTextY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
                 }
             }
             // ESP Sniper Lines (inspired by Seowned and Amalgam - draw aim projection lines for enemy snipers)
@@ -643,8 +748,42 @@ void CESP::Run()
                 I::EngineTrace->TraceRay(ray, MASK_SHOT, &filter, &tr);
                 end = tr.endpos;
                 Vec3 scrStart, scrEnd;
-                if (H::Draw->W2S(eyePos, scrStart) && H::Draw->W2S(end, scrEnd)) {
-                    DrawSmoothBoneLine(scrStart, scrEnd, clr, true);
+                bool startOn = H::Draw->W2S(eyePos, scrStart);
+                bool endOn = H::Draw->W2S(end, scrEnd);
+                if (startOn && endOn) {
+                    DrawSmoothBoneLine(scrStart, scrEnd, CFG::Color_SniperLine, false);
+                }
+                else if (startOn || endOn) {
+                    Vec3 start = eyePos;
+                    Vec3 dir = end - eyePos;
+                    if (!startOn) {
+                        start = end;
+                        dir = eyePos - end;
+                    }
+                    float low = 0.0f;
+                    float high = 1.0f;
+                    for (int it = 0; it < 20; ++it) {
+                        float mid = (low + high) / 2.0f;
+                        Vec3 test = start + dir * mid;
+                        Vec3 dummy;
+                        if (H::Draw->W2S(test, dummy)) {
+                            low = mid;
+                        }
+                        else {
+                            high = mid;
+                        }
+                    }
+                    Vec3 clipPos = start + dir * low;
+                    if (startOn) {
+                        scrEnd = Vec3();
+                        H::Draw->W2S(clipPos, scrEnd);
+                        DrawSmoothBoneLine(scrStart, scrEnd, CFG::Color_SniperLine, false);
+                    }
+                    else {
+                        scrStart = Vec3();
+                        H::Draw->W2S(clipPos, scrStart);
+                        DrawSmoothBoneLine(scrStart, scrEnd, CFG::Color_SniperLine, false);
+                    }
                 }
             }
             // ESP Tracer (inspired by Seowned - draw tracers from crosshair to enemy players)
@@ -655,7 +794,55 @@ void CESP::Run()
                     int sw, sh;
                     I::EngineClient->GetScreenSize(sw, sh);
                     Vec3 center(static_cast<float>(sw) / 2.0f, static_cast<float>(sh) / 2.0f, 0.0f);
-                    DrawSmoothBoneLine(center, scrHead, clr, true);
+                    DrawSmoothBoneLine(center, scrHead, CFG::Color_TracerLine, true);
+                }
+            }
+            Color_t uberColor = CFG::Color_UberBar;
+            Color_t outlineColor = CFG::Color_UberOutline;
+            if (CFG::ESP_Uber)
+            {
+                if (pPlayer->m_iClass() == TF_CLASS_MEDIC)
+                {
+                    if (auto pWeapon = pPlayer->GetWeaponFromSlot(1))
+                    {
+                        const CFont& smallFont = H::Fonts->Get(EFonts::ESP_SMALL);
+                        H::Draw->String(
+                            smallFont,
+                            rightTextX,
+                            rightTextY,
+                            CFG::Color_UberText,
+                            POS_DEFAULT,
+                            "%d%%", static_cast<int>(pWeapon->As<C_WeaponMedigun>()->m_flChargeLevel() * 100.0f)
+                        );
+                        rightTextY += smallFont.m_nTall + 1;
+                    }
+                }
+            }
+            if (CFG::ESP_UberBar)
+            {
+                if (pPlayer->m_iClass() == TF_CLASS_MEDIC)
+                {
+                    if (auto pWeapon = pPlayer->GetWeaponFromSlot(1))
+                    {
+                        auto pMedigun = pWeapon->As<C_WeaponMedigun>();
+                        if (auto flCharge = pMedigun->m_flChargeLevel())
+                        {
+                            int nBarH = 2;
+                            int nDrawY = static_cast<int>(top) + height + nBarH + 1;
+                            float flFillW = Math::RemapValClamped(flCharge, 0.0f, 1.0f, 0.0f, static_cast<float>(width));
+                            H::Draw->OutlinedRect(static_cast<int>(left) - 1, nDrawY - 1, static_cast<int>(flFillW) + 2, nBarH + 2, outlineColor);
+                            H::Draw->Rect(static_cast<int>(left), nDrawY, static_cast<int>(flFillW), nBarH, uberColor);
+                            if (pMedigun->m_iItemDefinitionIndex() == Medic_s_TheVaccinator)
+                            {
+                                if (flCharge >= 0.25f)
+                                    H::Draw->Rect(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.25f) - 1, nDrawY, 2, nBarH, outlineColor);
+                                if (flCharge >= 0.5f)
+                                    H::Draw->Rect(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.5f) - 1, nDrawY, 2, nBarH, outlineColor);
+                                if (flCharge >= 0.75f)
+                                    H::Draw->Rect(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.75f) - 1, nDrawY, 2, nBarH, outlineColor);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -723,7 +910,7 @@ void CESP::Run()
                         keyBoneScreens[kv.first] = screenPos;
                     }
                 }
-                Color_t boneColor = clr;
+                Color_t boneColor = isBuilding ? clr : CFG::Color_Skeleton;
                 const std::vector<std::vector<std::string>> chains = {
                     {"bip_head", "bip_neck", "bip_spine_3", "bip_spine_2", "bip_spine_1", "bip_spine_0", "bip_pelvis"},
                     {"bip_pelvis", "bip_hip_L", "bip_knee_L", "bip_foot_L"},
@@ -739,7 +926,7 @@ void CESP::Run()
                         auto it2 = keyBoneScreens.find(chain[idx + 1]);
                         if (it1 != keyBoneScreens.end() && it2 != keyBoneScreens.end())
                         {
-                            DrawSmoothBoneLine(it1->second, it2->second, boneColor, useAA); // Use smooth lines with adjusted alpha
+                            DrawOutlinedLine(it1->second, it2->second, boneColor, CFG::Color_ESP_Outline);
                         }
                     }
                 }
@@ -762,8 +949,8 @@ void CESP::Run()
                         );
                         if (!ok) continue;
                         float alphaFactor = 1.0f - static_cast<float>(n) / static_cast<float>(totalRecords + 1);
-                        Color_t fadedClr = clr;
-                        fadedClr.a = static_cast<unsigned char>(clr.a * alphaFactor);
+                        Color_t fadedClr = CFG::Color_BacktrackSkeleton;
+                        fadedClr.a = static_cast<unsigned char>(static_cast<float>(fadedClr.a) * alphaFactor);
                         // Draw backtrack skeleton
                         if (drawBacktrackSkeleton) {
                             std::map<std::string, Vec3> keyBoneScreens;
@@ -825,7 +1012,7 @@ void CESP::Run()
                                     auto it2 = keyBoneScreens.find(chain[idx + 1]);
                                     if (it1 != keyBoneScreens.end() && it2 != keyBoneScreens.end())
                                     {
-                                        DrawSmoothBoneLine(it1->second, it2->second, boneColor, useAA);
+                                        DrawOutlinedLine(it1->second, it2->second, boneColor, CFG::Color_ESP_Outline);
                                     }
                                 }
                             }
@@ -837,9 +1024,9 @@ void CESP::Run()
         }
     }
     if (CFG::Aimbot_DrawFOV) {
-        DrawFOVCircle(CFG::Aimbot_FOV, Color_t(0, 0, 255, 255)); // blue for aimbot
-        DrawFOVCircle(CFG::Aimbot_Projectile_FOV, Color_t(0, 255, 0, 255)); // green for project
-        DrawFOVCircle(CFG::Aimbot_Melee_FOV, Color_t(255, 0, 0, 255)); // red for melee
+        DrawFOVCircle(CFG::Aimbot_FOV, CFG::Color_AimbotFOV);
+        DrawFOVCircle(CFG::Aimbot_Projectile_FOV, CFG::Color_ProjFOV);
+        DrawFOVCircle(CFG::Aimbot_Melee_FOV, CFG::Color_MeleeFOV);
     }
 }
 CESP gESP;

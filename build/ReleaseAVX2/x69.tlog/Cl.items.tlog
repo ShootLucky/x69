@@ -38,6 +38,7 @@ C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\IInput_GetU
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\INetChannel_SendNetMsg.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\INetChannel_SendNetMsg.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\IVEngineClient013_ClientCmd.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\IVEngineClient013_ClientCmd.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\netgraphstringchanger.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\netgraphstringchanger.obj
+C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\Hooks\WINAPI_WndProc.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\WINAPI_WndProc.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\SDK\TF2\bitbuf.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\bitbuf.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\SDK\TF2\c_tf_player.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\c_tf_player.obj
 C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\x88TF2\src\SDK\TF2\netmessages.cpp;C:\Users\userp\Downloads\x88TF2_[unknowncheats.me]_\build\ReleaseAVX2\netmessages.obj

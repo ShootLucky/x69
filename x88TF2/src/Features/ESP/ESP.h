@@ -16,6 +16,7 @@ public:
 	// Estado (consulta rápida).
 	bool IsEnabled() const noexcept { return CFG::ESP_Enable; }
 	void CustomFOV(CViewSetup* pSetup);
+	void Rain();
 private:
 	// Helpers de desenho — implementados em ESP.cpp
 	void DrawBox(int left, int top, int w, int h, const Color_t& clr);
@@ -34,5 +35,9 @@ private:
 	void DrawOffscreenArrow(const Vec3& origin, const Color_t& clr);
 	void DrawFOVCircle(float fov, const Color_t& color);
 	bool m_bInitialized = false;
+	static C_BaseEntity* RainEntity;
+	static IClientNetworkable* RainNetworkable;
+	static C_BaseEntity* WindEntity;
+	static IClientNetworkable* WindNetworkable;
 };
 extern CESP gESP;

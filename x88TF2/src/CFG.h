@@ -141,6 +141,12 @@ namespace CFG
 	CFGVAR(Visuals_ViewModel_Right, 0.f);
 	CFGVAR(Visuals_ViewModel_Up, 0.f);
 	CFGVAR(Visuals_Removals_Mode, 0);
+	CFGVAR(Visuals_Rain, false);
+	CFGVAR(Visuals_Rain_Width, 1.f);
+	CFGVAR(Visuals_Rain_Length, 20.f);
+	CFGVAR(Visuals_Rain_Radius, 1000.f);
+	CFGVAR(Visuals_Rain_WindDirection, 0.f);
+	CFGVAR(Visuals_Rain_WindSpeed, 10.f);
 	CFGVAR(ESP_Arrows, false);
 	CFGVAR(ESP_Conds, false);
 	CFGVAR(ESP_SniperLines, false);
@@ -177,6 +183,35 @@ namespace CFG
 	CFGVAR(Misc_ThirdPerson_SideOffset, 0.f);
 #pragma endregion
 #pragma region Colors
+	CFGVAR(Color_TeamRed, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_TeamBlue, Color_t(0, 0, 255, 255));
+	CFGVAR(Color_Local, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Ammo, Color_t(255, 215, 0, 255));
+	CFGVAR(Color_Medkit, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Flag, Color_t(255, 255, 0, 255));
+	CFGVAR(Color_Uber, Color_t(255, 0, 255, 255));
+	CFGVAR(Color_ESP_Outline, Color_t(0, 0, 0, 255));
+	CFGVAR(Color_HealthBarBG, Color_t(0, 0, 0, 200));
+	CFGVAR(Color_HealthLow, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_HealthHigh, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Overheal, Color_t(0, 0, 255, 255));
+	CFGVAR(Color_CondsText, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_SniperLine, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_TracerLine, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_UberText, Color_t(255, 0, 255, 255));
+	CFGVAR(Color_UberBar, Color_t(255, 0, 255, 255));
+	CFGVAR(Color_UberOutline, Color_t(0, 0, 0, 255));
+	CFGVAR(Color_BacktrackSkeleton, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_AimbotFOV, Color_t(0, 0, 255, 255));
+	CFGVAR(Color_ProjFOV, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_MeleeFOV, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_OffscreenArrow, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Name, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_HealthText, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Skeleton, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_BuildingTeam, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_BuildingEnemy, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_BuildingName, Color_t(255, 255, 255, 255));
 #pragma endregion
 	CFGVAR(CurrentSection, 0);
 }

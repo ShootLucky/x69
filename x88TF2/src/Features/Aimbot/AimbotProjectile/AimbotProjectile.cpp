@@ -666,15 +666,23 @@ std::vector<Vec3> Sunflower2D(int number, int alpha)
 }
 
 bool DoesHitEntity(C_BaseEntity* Target, Vec3 Point, Vec3 predicted, float Distance) {
-    Vec3 max = Target->m_vecMaxs();
-    predicted.z += max.z / 2;
-    trace_t tr;
-    Ray_t ray;
-    ray.Init(Point, predicted);
-    CTraceFilterSimple filter(Target, COLLISION_GROUP_PROJECTILE);
-    I::EngineTrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
-    if (!tr.DidHit())
-        return true;
+    Vec3 mins = Target->m_vecMins();
+    Vec3 maxs = Target->m_vecMaxs();
+    Vec3 origin = Target->m_vecOrigin();
+    Vec3 feet = origin;
+    Vec3 body = origin; body.z += maxs.z / 2;
+    Vec3 head = origin; head.z += maxs.z - 10.f; // slight offset
+    std::vector<Vec3> hitPoints = { feet, body, head };
+    CTraceFilterWorldAndPropsOnly filter;
+    for (auto& hitPoint : hitPoints) {
+        trace_t tr;
+        Ray_t ray;
+        ray.Init(Point, hitPoint);
+        I::EngineTrace->TraceRay(ray, MASK_SHOT_HULL, &filter, &tr);
+        if (tr.fraction == 1.0f) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -777,7 +785,13 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                         }
                         Vec3 absPos = F::MovementSimulation->GetOrigin();
                         Vec3 worldSpaceCenter = absPos;
-                        worldSpaceCenter.z += (target.Entity->m_vecMins().z + target.Entity->m_vecMaxs().z) / 2;
+                        bool bTargetOnGround = F::MovementSimulation->IsSimulatedOnGround();
+                        if (bTargetOnGround) {
+                            worldSpaceCenter.z += 10.f; // Bias towards ground splash
+                        }
+                        else {
+                            worldSpaceCenter.z += (target.Entity->m_vecMins().z + target.Entity->m_vecMaxs().z) / 2;
+                        }
                         float wRadius = SDKUtils::AttribHookValue(146.0f, "mult_explosion_radius", pWeapon);
                         auto offset = Vec3(0.0f, 0.0f, 0.0f); // Placeholder for projectile offset; adjust as per your setup
                         Vec3 forward, right, up;
@@ -786,8 +800,10 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                         Vec3 shootPos = pLocal->GetShootPos() + (forward * offset.x) + (right * offset.y) + (up * offset.z);
                         std::vector<Vec3> optimal = Sunflower2D(CFG::Aimbot_Projectile_SplashPoints, 2);
                         float minDist = 10000.0f;
-                        float halfDist = pLocal->GetShootPos().DistTo(worldSpaceCenter) * 0.5f;
-                        float displacement = wRadius * 0.5;
+                        float planeDistFactor = bTargetOnGround ? 0.8f : 0.5f;
+                        float halfDist = pLocal->GetShootPos().DistTo(worldSpaceCenter) * planeDistFactor;
+                        float displacementFactor = bTargetOnGround ? 0.8f : 0.5f;
+                        float displacement = wRadius * displacementFactor;
                         std::deque<Vec3> newOptimal;
                         Vec3 nf, nr, nu;
                         for (auto& p : optimal) {
@@ -891,7 +907,13 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                 }
                 Vec3 absPos = target.Position;
                 Vec3 worldSpaceCenter = absPos;
-                worldSpaceCenter.z += (target.Entity->m_vecMins().z + target.Entity->m_vecMaxs().z) / 2;
+                bool bTargetOnGround = true; // For buildings, assume on ground
+                if (bTargetOnGround) {
+                    worldSpaceCenter.z += 10.f;
+                }
+                else {
+                    worldSpaceCenter.z += (target.Entity->m_vecMins().z + target.Entity->m_vecMaxs().z) / 2;
+                }
                 float wRadius = SDKUtils::AttribHookValue(146.0f, "mult_explosion_radius", pWeapon);
                 auto offset = Vec3(0.0f, 0.0f, 0.0f); // Placeholder for projectile offset; adjust as per your setup
                 Vec3 forward, right, up;
@@ -900,8 +922,10 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                 Vec3 shootPos = pLocal->GetShootPos() + (forward * offset.x) + (right * offset.y) + (up * offset.z);
                 std::vector<Vec3> optimal = Sunflower2D(CFG::Aimbot_Projectile_SplashPoints, 2);
                 float minDist = 10000.0f;
-                float halfDist = pLocal->GetShootPos().DistTo(worldSpaceCenter) * 0.5f;
-                float displacement = wRadius * 0.5;
+                float planeDistFactor = bTargetOnGround ? 0.8f : 0.5f;
+                float halfDist = pLocal->GetShootPos().DistTo(worldSpaceCenter) * planeDistFactor;
+                float displacementFactor = bTargetOnGround ? 0.8f : 0.5f;
+                float displacement = wRadius * displacementFactor;
                 std::deque<Vec3> newOptimal;
                 Vec3 nf, nr, nu;
                 for (auto& p : optimal) {

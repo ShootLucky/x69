@@ -3,6 +3,7 @@
 #include "CFG.h"
 #include "../Features/LagRecords/Backtrack.h"
 #include "../Features/Misc/Misc.h"
+#include "../src/Features/ESP/ESP.h"
 
 MAKE_HOOK(IBaseClientDLL_FrameStageNotify, Memory::GetVFunc(I::BaseClientDLL, 35), void, __fastcall,
 	void* ecx, ClientFrameStage_t curStage)
@@ -97,7 +98,7 @@ MAKE_HOOK(IBaseClientDLL_FrameStageNotify, Memory::GetVFunc(I::BaseClientDLL, 35
 	case FRAME_RENDER_START:
 	{
 		H::Input->Update();
-
+		gESP.Rain();
 		F::Misc->ViewModelOffsets();
 
 		//fake taunt stuff

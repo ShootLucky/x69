@@ -65,6 +65,7 @@
     <ClCompile Include="src\Hooks\CTFPlayerShared_InCond.cpp" />
     <ClCompile Include="src\Hooks\CTFPlayer_AvoidPlayers.cpp" />
     <ClCompile Include="src\Hooks\CTFViewModel_CalcViewModelView.cpp" />
+    <ClCompile Include="src\Hooks\WINAPI_WndProc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -233,5 +234,7 @@
     <ClInclude Include="src\SDK\TF2\utlmemory.h" />
     <ClInclude Include="src\SDK\TF2\utlblockmemory.h" />
     <ClInclude Include="src\SDK\TF2\NetVars\CTFPartyClient.h" />
+    <ClInclude Include="src\Hooks\WINAPI_WndProc.h" />
+    <ClInclude Include="src\SDK\TF2\CPredictionCopy.h" />
   </ItemGroup>
 </Project>

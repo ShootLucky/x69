@@ -10,6 +10,8 @@
 #include <filesystem> // For directory iteration
 #include "../src/SDK/SDK.h" // Assuming this includes necessary SDK headers for IGameEventListener2 and related
 #include "../../Features/PlayersList/PlayersList.h" // Added for Playerlist
+#include <functional>
+#include <cstdio>
 namespace menu {
     static int item_count = 1;
     static int item_countx3 = 12;
@@ -50,6 +52,50 @@ static std::string GetKeyName(int vk)
     char buf[16];
     snprintf(buf, sizeof(buf), "VK_%02X", vk & 0xFF);
     return std::string(buf);
+}
+Color_t HSVToRGB(float h, float s, float v) {
+    h = fmod(h, 360.0f);
+    if (h < 0) h += 360.0f;
+    int i = static_cast<int>(floor(h / 60.0f)) % 6;
+    float f = h / 60.0f - floor(h / 60.0f);
+    float p = v * (1.0f - s);
+    float q = v * (1.0f - f * s);
+    float t = v * (1.0f - (1.0f - f) * s);
+    float r, g, b;
+    switch (i) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    case 5: r = v; g = p; b = q; break;
+    default: r = g = b = 0; break;
+    }
+    return Color_t(static_cast<unsigned char>(r * 255), static_cast<unsigned char>(g * 255), static_cast<unsigned char>(b * 255), 255);
+}
+void RGBToHSV(const Color_t& rgb, float& h, float& s, float& v) {
+    float r = rgb.r / 255.0f;
+    float g = rgb.g / 255.0f;
+    float b = rgb.b / 255.0f;
+    float max_val = std::max({ r, g, b });
+    float min_val = std::min({ r, g, b });
+    v = max_val;
+    float delta = max_val - min_val;
+    s = (max_val == 0.0f) ? 0.0f : delta / max_val;
+    if (delta == 0.0f) {
+        h = 0.0f;
+    }
+    else {
+        if (max_val == r) {
+            h = 60.0f * ((g - b) / delta + (g < b ? 6.0f : 0.0f));
+        }
+        else if (max_val == g) {
+            h = 60.0f * ((b - r) / delta + 2.0f);
+        }
+        else {
+            h = 60.0f * ((r - g) / delta + 4.0f);
+        }
+    }
 }
 void text(int x, int* y, std::string text, text_type type, int alpha = 255) {
     if (menu::menu_locked)
@@ -213,9 +259,9 @@ void float_slider(int x, int* y, std::string text, float& option, float min_valu
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
     if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_LEFT) & 1)
-            option -= 1.0f;
+            option -= 0.15f;
         else if (GetAsyncKeyState(VK_RIGHT) & 1)
-            option += 1.f;
+            option += 0.15f;
     }
     option = std::clamp(option, min_value, max_value);
     std::ostringstream ss;
@@ -301,7 +347,7 @@ void text_input(int x, int* y, std::string text_label, std::string& input_str, i
     *y += 15;
 }
 // Button function without ON/OFF display - draws text and triggers on RIGHT key press
-void button(int x, int* y, std::string text, void (*action)(), int item_counts = 1) {
+void button(int x, int* y, std::string text, std::function<void()> action, int item_counts = 1) {
     int alpha = 255;
     if (menu::menu_locked)
         alpha = static_cast<int>(alpha * 0.f);
@@ -312,7 +358,7 @@ void button(int x, int* y, std::string text, void (*action)(), int item_counts =
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
     if (item_counts == menu::item_count && !menu::menu_locked) {
-        if (GetAsyncKeyState(VK_RIGHT) & 1) {
+        if (GetAsyncKeyState(VK_RETURN) & 1) {
             action();
         }
     }
@@ -449,8 +495,22 @@ void menu::render() {
     if (!menu_locked && menu::item_count == current_item) {
         H::Draw->String(font, x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
     }
-    combo(x, &y, "Section", &CFG::CurrentSection, std::vector<std::string>{ "Legit", "Visual", "Playerlist", "Misc" }, false, 255, current_item++);
+    combo(x, &y, "Section", &CFG::CurrentSection, std::vector<std::string>{ "Legit", "Visual", "Playerlist", "Misc", "Colors" }, false, 255, current_item++);
     int max_items = current_item - 1;
+    // Mouse input
+    static int mouse_x = 0, mouse_y = 0;
+    bool mouse_down = false;
+    if (!menu_locked) {
+        POINT p;
+        if (GetCursorPos(&p)) {
+            if (ScreenToClient(FindWindowA(nullptr, "Team Fortress 2"), &p)) {
+                mouse_x = p.x;
+                mouse_y = p.y;
+                mouse_down = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+            }
+        }
+    }
+    static Color_t copied_color = Color_t(0, 0, 0, 0);
     if (CFG::CurrentSection == 0) {
         // LEGIT / AIMBOT: divided into columns - Aimbot on left, Project Aimbot on center, Aimbot Combat on right
         int x_left = 150;
@@ -900,98 +960,143 @@ void menu::render() {
         }
         else if (visuals_sub_section == 2) { // Others
             y = start_y;
+            // Define column positions (adjust widths as needed)
+            int x_left_col = x_left;
+            int x_center_col = x_left + 200; // Example width
+            int x_right_col = x_center_col + 200; // Example width
+
+            // Separate y for each column
+            int y_left = start_y;
+            int y_center = start_y;
+            int y_right = start_y;
+
+            // --- Left Column: Player Vision (View Model, Thirdperson) ---
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "Tracer Effects", &CFG::BulletTracer, false, 255, current_sub_item++);
+            checkbox(x_left_col, &y_left, "View Model", &CFG::Visuals_ViewModel_Enable, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left_col, &y_left, "Offsets Forward", CFG::Visuals_ViewModel_Forward, -50.f, 50.f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left_col, &y_left, "Offsets Right", CFG::Visuals_ViewModel_Right, -50.f, 50.f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left_col, &y_left, "Offsets Up", CFG::Visuals_ViewModel_Up, -50.f, 50.f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left_col, &y_left, "Third Person", &CFG::Misc_ThirdPerson_Enable, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_left_col, &y_left, "Key Mode", &CFG::Misc_ThirdPerson_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            key_selector(x_left_col, &y_left, &CFG::Misc_ThirdPerson_Key, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left_col, &y_left, "Distance offsets", CFG::Misc_ThirdPerson_Distance, -50.f, 100.f, current_sub_item++); // Assuming range 0-100, adjust as needed
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left_col, &y_left, "Side Offsets", CFG::Misc_ThirdPerson_SideOffset, -50.f, 50.f, current_sub_item++); // Assuming range -50-50
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_left_col, &y_left, "Fov", CFG::Misc_ThirdPerson_Fov, 0.f, 120.f, current_sub_item++);
+
+            // Add space below left column for logs
+            y_left += 20; // Example distance in y (adjust as needed)
+
+            // Logs below left column
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_left_col, &y_left, "Logs", &CFG::Logs_Enable, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            multi_combo(x_left_col, &y_left, "Logs Type", &CFG::Logs_Type, std::vector<std::string>{"Chat", "Console", "Screen", "All"}, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            multi_combo(x_left_col, &y_left, "Players Logs Type", &CFG::PlayersLogs_Type, std::vector<std::string>{"Damage", "Respawn", "Enter", "Exit", "Playerlist", "Class"}, 255, current_sub_item++);
+
+            // --- Center Column: Weapons (Tracer Effects, Draw Path, Remove Scope/Zoom/Punch/Fire, Fov) ---
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center_col, &y_center, "Tracer Effects", &CFG::BulletTracer, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
             if (CFG::BulletTracer) {
-                combo(x_left, &y, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)" }, false, 255, current_sub_item++);
+                combo(x_center_col, &y_center, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)" }, false, 255, current_sub_item++);
             }
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            combo(x_left, &y, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted", "Line + Box" }, false, 255, current_sub_item++);
+            combo(x_center_col, &y_center, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted", "Line + Box" }, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "Logs", &CFG::Logs_Enable, false, 255, current_sub_item++);
+            checkbox(x_center_col, &y_center, "Remove punch", &CFG::Visuals_RemovePunch, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            multi_combo(x_left, &y, "Logs Type", &CFG::Logs_Type, std::vector<std::string>{"Chat", "Console", "Screen", "All"}, 255, current_sub_item++);
+            checkbox(x_center_col, &y_center, "Fov", &CFG::Visuals_CustomFov_Enable, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            multi_combo(x_left, &y, "Players Logs Type", &CFG::PlayersLogs_Type, std::vector<std::string>{"Damage", "Respawn", "Enter", "Exit", "Playerlist", "Class"}, 255, current_sub_item++);
+            float_slider(x_center_col, &y_center, "Fov Amount", CFG::Visuals_CustomFov_Amount, 0.f, 120.f, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "View Model", &CFG::Visuals_ViewModel_Enable, false, 255, current_sub_item++);
+            checkbox(x_center_col, &y_center, "Remove Scoped zoom", &CFG::Visuals_RemoveScopedZoom, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            float_slider(x_left, &y, "Offsets Forward", CFG::Visuals_ViewModel_Forward, -50.f, 50.f, current_sub_item++);
+            checkbox(x_center_col, &y_center, "Remove Scoped", &CFG::Visuals_RemoveScoped, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            float_slider(x_left, &y, "Offsets Right", CFG::Visuals_ViewModel_Right, -50.f, 50.f, current_sub_item++);
+            checkbox(x_center_col, &y_center, "Remove Fire", &CFG::Visuals_RemoveFire, false, 255, current_sub_item++);
+
+            // --- Right Column: Map (Rain) ---
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            float_slider(x_left, &y, "Offsets Up", CFG::Visuals_ViewModel_Up, -50.f, 50.f, current_sub_item++);
+            checkbox(x_right_col, &y_right, "Rain Map", &CFG::Visuals_Rain, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "Third Person", &CFG::Misc_ThirdPerson_Enable, false, 255, current_sub_item++);
+            float_slider(x_right_col, &y_right, "Radius", CFG::Visuals_Rain_Radius, 0.f, 100.f, current_sub_item++); // Assuming range 0-100, adjust as needed
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            combo(x_left, &y, "Key Mode", &CFG::Misc_ThirdPerson_KeyMode, std::vector<std::string>{"Hold", "Toggle", "Always On"}, false, 255, current_sub_item++);
+            float_slider(x_right_col, &y_right, "Width", CFG::Visuals_Rain_Width, 0.f, 10.f, current_sub_item++); // Assuming separate width and length
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            key_selector(x_left, &y, &CFG::Misc_ThirdPerson_Key, current_sub_item++);
+            float_slider(x_right_col, &y_right, "Length", CFG::Visuals_Rain_Length, 0.f, 100.f, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            float_slider(x_left, &y, "Distance offsets", CFG::Misc_ThirdPerson_Distance, -50.f, 100.f, current_sub_item++); // Assuming range 0-100, adjust as needed
+            float_slider(x_right_col, &y_right, "Wind Direction", CFG::Visuals_Rain_WindDirection, 0.f, 360.f, current_sub_item++); // 0-360 degrees
             if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            float_slider(x_left, &y, "Side Offsets", CFG::Misc_ThirdPerson_SideOffset, -50.f, 50.f, current_sub_item++); // Assuming range -50-50
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_left, &y, "Fov", CFG::Misc_ThirdPerson_Fov, 0.f, 120.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Remove punch", &CFG::Visuals_RemovePunch, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Fov", &CFG::Visuals_CustomFov_Enable, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_left, &y, "Fov Amount", CFG::Visuals_CustomFov_Amount, 0.f, 120.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Remove Scoped zoom", &CFG::Visuals_RemoveScopedZoom, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Remove Scoped", &CFG::Visuals_RemoveScoped, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left, &y, "Remove Fire", &CFG::Visuals_RemoveFire, false, 255, current_sub_item++);
+            float_slider(x_right_col, &y_right, "Wind Speed", CFG::Visuals_Rain_WindSpeed, 0.f, 50.f, current_sub_item++); // Assuming range 0-50
+
             max_items = current_sub_item - 1;
-        }
+            }
     }
     else if (CFG::CurrentSection == 2) { // Playerlist section
         int base_x = 150;
@@ -1186,6 +1291,163 @@ void menu::render() {
         }
         button(x_center, &y, "Load Config", LoadConfig, current_item++);
         max_items = current_item - 1;
+    }
+    else if (CFG::CurrentSection == 4) { // Colors section
+        int x_left = 150;
+        int x_center = x_left + 200;
+        int x_right = x_center + 200;
+        int start_y = y;
+        y = start_y;
+        struct ColorEntry {
+            std::string name;
+            Color_t* color;
+        };
+        std::vector<ColorEntry> color_entries;
+        color_entries.push_back(ColorEntry{ "Team Red", &CFG::Color_TeamRed });
+        color_entries.push_back(ColorEntry{ "Team Blue", &CFG::Color_TeamBlue });
+        color_entries.push_back(ColorEntry{ "Local", &CFG::Color_Local });
+        color_entries.push_back(ColorEntry{ "Ammo", &CFG::Color_Ammo });
+        color_entries.push_back(ColorEntry{ "Medkit", &CFG::Color_Medkit });
+        color_entries.push_back(ColorEntry{ "Flag", &CFG::Color_Flag });
+        color_entries.push_back(ColorEntry{ "Uber", &CFG::Color_Uber });
+        color_entries.push_back(ColorEntry{ "Outline", &CFG::Color_ESP_Outline });
+        color_entries.push_back(ColorEntry{ "Health Bar BG", &CFG::Color_HealthBarBG });
+        color_entries.push_back(ColorEntry{ "Health Low", &CFG::Color_HealthLow });
+        color_entries.push_back(ColorEntry{ "Health High", &CFG::Color_HealthHigh });
+        color_entries.push_back(ColorEntry{ "Overheal", &CFG::Color_Overheal });
+        color_entries.push_back(ColorEntry{ "Conds Text", &CFG::Color_CondsText });
+        color_entries.push_back(ColorEntry{ "Sniper Line", &CFG::Color_SniperLine });
+        color_entries.push_back(ColorEntry{ "Tracer Line", &CFG::Color_TracerLine });
+        color_entries.push_back(ColorEntry{ "Uber Text", &CFG::Color_UberText });
+        color_entries.push_back(ColorEntry{ "Uber Bar", &CFG::Color_UberBar });
+        color_entries.push_back(ColorEntry{ "Uber Outline", &CFG::Color_UberOutline });
+        color_entries.push_back(ColorEntry{ "Backtrack Skeleton", &CFG::Color_BacktrackSkeleton });
+        color_entries.push_back(ColorEntry{ "Aimbot FOV Circle", &CFG::Color_AimbotFOV });
+        color_entries.push_back(ColorEntry{ "Proj FOV Circle", &CFG::Color_ProjFOV });
+        color_entries.push_back(ColorEntry{ "Melee FOV Circle", &CFG::Color_MeleeFOV });
+        color_entries.push_back(ColorEntry{ "Offscreen Arrow", &CFG::Color_OffscreenArrow });
+        color_entries.push_back(ColorEntry{ "Name", &CFG::Color_Name });
+        color_entries.push_back(ColorEntry{ "Health Text", &CFG::Color_HealthText });
+        color_entries.push_back(ColorEntry{ "Skeleton", &CFG::Color_Skeleton });
+        color_entries.push_back(ColorEntry{ "Building Team", &CFG::Color_BuildingTeam });
+        color_entries.push_back(ColorEntry{ "Building Enemy", &CFG::Color_BuildingEnemy });
+        color_entries.push_back(ColorEntry{ "Building Name", &CFG::Color_BuildingName });
+        int num_colors = color_entries.size();
+        int num_rows = (num_colors + 2) / 3; // ceil(num / 3)
+        int base_item = current_item;
+        static int editing_color = -1;
+        static bool picker_open = false;
+        static int return_to_item = 1;
+        static int prev_editing_color = -1;
+        static bool last_mouse_down = false;
+        int max_name_width = 0;
+        for (const auto& entry : color_entries) {
+            int width = 0, height = 0;
+            wchar_t wname[1024] = {};
+            MultiByteToWideChar(CP_UTF8, 0, entry.name.c_str(), -1, wname, 1024);
+            I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, width, height);
+            if (width > max_name_width) max_name_width = width;
+        }
+        for (int row = 0; row < num_rows; ++row) {
+            for (int col = 0; col < 3; ++col) {
+                int idx = row * 3 + col;
+                if (idx >= num_colors) continue;
+                int col_x = x_left + col * 200;
+                int this_item = current_item;
+                if (!menu_locked && menu::item_count == this_item) {
+                    H::Draw->String(font, col_x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+                }
+                if (!menu_locked && menu::item_count == this_item && (GetAsyncKeyState(VK_RETURN) & 1)) {
+                    editing_color = idx;
+                    picker_open = true;
+                    return_to_item = this_item;
+                }
+                if (!menu_locked && mouse_down && !last_mouse_down && mouse_x >= col_x && mouse_x <= col_x + max_name_width + 25 && mouse_y >= y - 10 && mouse_y <= y + 5) {
+                    editing_color = idx;
+                    picker_open = true;
+                    return_to_item = this_item;
+                }
+                // Draw name first
+                H::Draw->String(font, col_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, color_entries[idx].name.c_str());
+                // Compute name width for this specific name
+                int name_width = 0, name_height = 0;
+                wchar_t wname[1024] = {};
+                MultiByteToWideChar(CP_UTF8, 0, color_entries[idx].name.c_str(), -1, wname, 1024);
+                I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, name_width, name_height);
+                // Draw square after the name
+                int square_size = name_height - 4; // proporcional ao texto
+                if (square_size < 8) square_size = 8; // limite mínimo
+
+                int square_x = col_x + name_width + 8;
+                int square_y = y + (name_height / 2) - (square_size / 2);
+
+
+                // outline
+                H::Draw->OutlinedRect(
+                    square_x - 1,
+                    square_y - 1,
+                    square_size + 2,
+                    square_size + 2,
+                    Color_t(0, 0, 0, 255)
+                );
+
+                // fill
+                H::Draw->Rect(
+                    square_x,
+                    square_y,
+                    square_size,
+                    square_size,
+                    *color_entries[idx].color
+                );
+
+                current_item++;
+            }
+            y += 15;
+        }
+        int max_color_item = base_item + num_colors - 1;
+        if (picker_open && editing_color >= 0 && editing_color < num_colors) {
+            if (prev_editing_color != editing_color) {
+                prev_editing_color = editing_color;
+            }
+            Color_t* cur_color = color_entries[editing_color].color;
+            int picker_x = x_left;
+            int picker_y = y + 20;
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            int r = static_cast<int>(cur_color->r);
+            int_slider(picker_x, &picker_y, "Red", r, 0, 255, current_item++);
+            cur_color->r = static_cast<unsigned char>(r);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            int g = static_cast<int>(cur_color->g);
+            int_slider(picker_x, &picker_y, "Green", g, 0, 255, current_item++);
+            cur_color->g = static_cast<unsigned char>(g);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            int b = static_cast<int>(cur_color->b);
+            int_slider(picker_x, &picker_y, "Blue", b, 0, 255, current_item++);
+            cur_color->b = static_cast<unsigned char>(b);
+            if (!menu_locked && menu::item_count == current_item) {
+                H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            int a = static_cast<int>(cur_color->a);
+            int_slider(picker_x, &picker_y, "Alpha", a, 0, 255, current_item++);
+            cur_color->a = static_cast<unsigned char>(a);
+            // Close with ESC
+            if (GetAsyncKeyState(VK_ESCAPE) & 1) {
+                picker_open = false;
+                menu::item_count = return_to_item;
+            }
+            max_items = current_item - 1;
+        }
+        else {
+            picker_open = false;
+            max_items = max_color_item;
+        }
+        last_mouse_down = mouse_down;
     }
     // Clamp item_count
     if (menu::item_count > max_items) menu::item_count = 1;
