@@ -11,6 +11,10 @@ class CAimbotHitscan
         bool WasMultiPointed = false;
     };
     std::vector<HitscanTarget_t> m_vecTargets = {};
+    bool m_bActive = false;
+    HitscanTarget_t m_LastTarget{};
+    bool m_bAutoShoot = false;
+    bool m_bLastShotMissed = false;
     int GetAimHitbox(C_TFWeaponBase* pWeapon);
     bool ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles);
     bool ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles);
@@ -23,5 +27,6 @@ class CAimbotHitscan
 public:
     bool IsFiring(CUserCmd* pCmd, C_TFWeaponBase* pWeapon);
     void Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
+    void DrawDebug();
 };
 MAKE_SINGLETON_SCOPED(CAimbotHitscan, AimbotHitscan, F);

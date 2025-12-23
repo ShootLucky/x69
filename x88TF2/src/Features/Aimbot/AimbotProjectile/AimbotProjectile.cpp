@@ -1,4 +1,4 @@
-#include "AimbotProjectile.h"
+﻿#include "AimbotProjectile.h"
 #include "CFG.h"
 #include "../src/Features/MovementSimulation/MovementSimulation.h"
 #include "../src/Features/ProjectileSim/ProjectileSim.h"
@@ -80,7 +80,7 @@ void DrawMovePath(const std::vector<Vec3>& vPath)
             {
                 // ===== BOX 3D no ponto de impacto =====
                 const Vec3& impactPos = vPath[n];
-                // Bounding box padr�o do player TF2
+                // Bounding box padrão do player TF2
                 const Vec3 mins{ -24.f, -24.f, 0.f };
                 const Vec3 maxs{ 24.f, 24.f, 82.f };
                 // Outline da box
@@ -106,9 +106,11 @@ void DrawMovePath(const std::vector<Vec3>& vPath)
     }
 }
 
-Vec3 GetOffsetShootPos(C_TFPlayer* local, C_TFWeaponBase* weapon, const CUserCmd* pCmd)
+Vec3 GetProjectileFirePos(C_TFPlayer* local, C_TFWeaponBase* weapon, const Vec3& angles)
 {
-    auto out{ local->GetShootPos() };
+    Vec3 out = local->GetShootPos();
+    Vec3 offset = { 0.0f, 0.0f, 0.0f };
+
     switch (weapon->GetWeaponID())
     {
     case TF_WEAPON_ROCKETLAUNCHER:
@@ -120,26 +122,35 @@ Vec3 GetOffsetShootPos(C_TFPlayer* local, C_TFWeaponBase* weapon, const CUserCmd
     case TF_WEAPON_CROSSBOW:
     case TF_WEAPON_FLAMETHROWER:
     case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
-    {
         if (weapon->m_iItemDefinitionIndex() != Soldier_m_TheOriginal)
         {
-            Vec3 vOffset = { 23.5f, 12.0f, -3.0f };
+            offset = { 23.5f, 12.0f, -3.0f };
             if (local->m_fFlags() & FL_DUCKING)
-                vOffset.z = 8.0f;
-            H::AimUtils->GetProjectileFireSetup(pCmd->viewangles, vOffset, &out);
+                offset.z = 8.0f;
         }
         break;
-    }
+
     case TF_WEAPON_COMPOUND_BOW:
-    {
-        Vec3 vOffset = { 20.5f, 12.0f, -3.0f };
+        offset = { 20.5f, 12.0f, -3.0f };
         if (local->m_fFlags() & FL_DUCKING)
-            vOffset.z = 8.0f;
-        H::AimUtils->GetProjectileFireSetup(pCmd->viewangles, vOffset, &out);
+            offset.z = 8.0f;
         break;
+
+    case TF_WEAPON_PIPEBOMBLAUNCHER:
+    case TF_WEAPON_GRENADELAUNCHER:
+    case TF_WEAPON_CANNON:
+        offset = { 16.0f, 8.0f, -6.0f };
+        break;
+
+    default:
+        return out; // No offset for other weapons
     }
-    default: break;
+
+    if (offset.x != 0.0f || offset.y != 0.0f || offset.z != 0.0f)
+    {
+        H::AimUtils->GetProjectileFireSetup(angles, offset, &out);
     }
+
     return out;
 }
 
@@ -602,41 +613,10 @@ bool CAimbotProjectile::CanArcReach(const Vec3& vFrom, const Vec3& vTo, const Ve
 
 bool CAimbotProjectile::CanSee(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const Vec3& vFrom, const Vec3& vTo, const ProjTarget_t& target, float flTimeToTarget)
 {
-    Vec3 vLocalPos = vFrom;
-    switch (pWeapon->GetWeaponID())
-    {
-    case TF_WEAPON_ROCKETLAUNCHER:
-    case TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT:
-    case TF_WEAPON_FLAREGUN:
-    case TF_WEAPON_FLAREGUN_REVENGE:
-    case TF_WEAPON_SYRINGEGUN_MEDIC:
-    case TF_WEAPON_FLAME_BALL:
-    case TF_WEAPON_CROSSBOW:
-    case TF_WEAPON_FLAMETHROWER:
-    case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
-    {
-        if (pWeapon->m_iItemDefinitionIndex() != Soldier_m_TheOriginal)
-        {
-            Vec3 vOffset = { 23.5f, 12.0f, -3.0f };
-            if (pLocal->m_fFlags() & FL_DUCKING)
-                vOffset.z = 8.0f;
-            H::AimUtils->GetProjectileFireSetup(target.AngleTo, vOffset, &vLocalPos);
-        }
-        break;
-    }
-    case TF_WEAPON_COMPOUND_BOW:
-    {
-        Vec3 vOffset = { 20.5f, 12.0f, -3.0f };
-        if (pLocal->m_fFlags() & FL_DUCKING)
-            vOffset.z = 8.0f;
-        H::AimUtils->GetProjectileFireSetup(target.AngleTo, vOffset, &vLocalPos);
-        break;
-    }
-    default: break;
-    }
+    Vec3 vLocalPos = GetProjectileFirePos(pLocal, pWeapon, target.AngleTo);
     if (m_CurProjInfo.GravityMod != 0.f)
     {
-        return CanArcReach(vFrom, vTo, target.AngleTo, flTimeToTarget, target.Entity);
+        return CanArcReach(vLocalPos, vTo, target.AngleTo, flTimeToTarget, target.Entity);
     }
     if (m_CurProjInfo.Flamethrower)
     {

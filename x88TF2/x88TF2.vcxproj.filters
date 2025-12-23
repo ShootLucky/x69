@@ -66,6 +66,19 @@
     <ClCompile Include="src\Hooks\CTFPlayer_AvoidPlayers.cpp" />
     <ClCompile Include="src\Hooks\CTFViewModel_CalcViewModelView.cpp" />
     <ClCompile Include="src\Hooks\WINAPI_WndProc.cpp" />
+    <ClCompile Include="src\Features\Chams\Chams.cpp" />
+    <ClCompile Include="src\Features\VisualUtils\VisualUtils.cpp" />
+    <ClCompile Include="src\Hooks\CMaterial_Uncache.cpp" />
+    <ClCompile Include="src\Hooks\CParticleSystemMgr_DrawRenderCache.cpp" />
+    <ClCompile Include="src\Hooks\IBaseClientDLL_LevelInitPostEntity.cpp" />
+    <ClCompile Include="src\Hooks\IBaseClientDLL_LevelShutdown.cpp" />
+    <ClCompile Include="src\Hooks\IMaterialSystem_FindTexture.cpp" />
+    <ClCompile Include="src\Hooks\ISurface_OnScreenSizeChanged.cpp" />
+    <ClCompile Include="src\Hooks\IVModelRender_DrawModelExecute.cpp" />
+    <ClCompile Include="src\Hooks\IVModelRender_ForcedMaterialOverride.cpp" />
+    <ClCompile Include="src\Features\Outlines\Outlines.cpp" />
+    <ClCompile Include="src\Hooks\CViewRender_DrawViewModels.cpp" />
+    <ClCompile Include="src\Features\SeedPred\SeedPred.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -236,5 +249,9 @@
     <ClInclude Include="src\SDK\TF2\NetVars\CTFPartyClient.h" />
     <ClInclude Include="src\Hooks\WINAPI_WndProc.h" />
     <ClInclude Include="src\SDK\TF2\CPredictionCopy.h" />
+    <ClInclude Include="src\Features\Chams\Chams.h" />
+    <ClInclude Include="src\Features\VisualUtils\VisualUtils.h" />
+    <ClInclude Include="src\Features\Outlines\Outlines.h" />
+    <ClInclude Include="src\Features\SeedPred\SeedPred.h" />
   </ItemGroup>
 </Project>

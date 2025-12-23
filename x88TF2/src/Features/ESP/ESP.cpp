@@ -52,13 +52,12 @@ void CESP::Shutdown()
 void CESP::Rain()
 {
     constexpr auto PRECIPITATION_INDEX = (MAX_EDICTS - 1);
-    constexpr auto WIND_INDEX = (MAX_EDICTS - 2);
     if (!CFG::Visuals_Rain)
     {
         if (RainEntity && RainEntity->GetClientNetworkable())
         {
             static const auto dwOff = NetVars::GetNetVar("CPrecipitation", "m_nPrecipType");
-            *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(RainEntity) + dwOff) = -1; // Set to invalid type to fully disable particles
+            *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(RainEntity) + dwOff) = 0;
             RainEntity->m_vecMins() = Vec3();
             RainEntity->m_vecMaxs() = Vec3();
             RainEntity->GetClientNetworkable()->PreDataUpdate(DATA_UPDATE_CREATED);
@@ -66,27 +65,9 @@ void CESP::Rain()
             RainEntity->GetClientNetworkable()->OnDataChanged(DATA_UPDATE_CREATED);
             RainEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
         }
-        // Disable wind if rain is off
-
-        if (WindEntity && WindEntity->GetClientNetworkable())
-        {
-            static const auto dwMinWindOff = NetVars::GetNetVar("CEnvWind", "m_iMinWind");
-            static const auto dwMaxWindOff = NetVars::GetNetVar("CEnvWind", "m_iMaxWind");
-            *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMinWindOff) = 0;
-            *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMaxWindOff) = 0;
-            WindEntity->GetClientNetworkable()->PreDataUpdate(DATA_UPDATE_CREATED);
-            WindEntity->GetClientNetworkable()->OnPreDataChanged(DATA_UPDATE_CREATED);
-            WindEntity->GetClientNetworkable()->OnDataChanged(DATA_UPDATE_CREATED);
-            WindEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
-        }
-
         return;
     }
-    // Get local player for centering rain
-    auto pLocal = H::Entities->GetLocal();
-    if (!pLocal)
-        return;
-    Vec3 center = pLocal->GetAbsOrigin();
+
     static ClientClass* pPrecipClass = nullptr;
     if (!pPrecipClass)
     {
@@ -99,14 +80,18 @@ void CESP::Rain()
             }
         }
     }
+
     const auto* pRainEntity = I::ClientEntityList->GetClientEntity(PRECIPITATION_INDEX);
+
     if (!pRainEntity)
     {
         if (!pPrecipClass || !pPrecipClass->m_pCreateFn)
             return;
+
         RainNetworkable = reinterpret_cast<IClientNetworkable * (__cdecl*)(int, int)>(pPrecipClass->m_pCreateFn)(PRECIPITATION_INDEX, 0);
         if (!RainNetworkable)
             return;
+
         RainEntity = static_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(PRECIPITATION_INDEX));
         if (!RainEntity || !RainEntity->GetClientNetworkable())
             return;
@@ -116,74 +101,18 @@ void CESP::Rain()
         RainEntity = static_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(PRECIPITATION_INDEX));
         RainNetworkable = RainEntity ? RainEntity->GetClientNetworkable() : nullptr;
     }
+
     if (RainEntity && RainEntity->GetClientNetworkable())
     {
         static const auto dwOff = NetVars::GetNetVar("CPrecipitation", "m_nPrecipType");
-        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(RainEntity) + dwOff) = CFG::Visuals_Rain - 1; // Assuming 1 = Rain, etc.
+        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(RainEntity) + dwOff) = CFG::Visuals_Rain - 1;
         RainEntity->GetClientNetworkable()->PreDataUpdate(DATA_UPDATE_CREATED);
         RainEntity->GetClientNetworkable()->OnPreDataChanged(DATA_UPDATE_CREATED);
-        // Set bounds based on radius
-        // Use large bounds like in the working code to avoid the NULL material error
         RainEntity->m_vecMins() = Vec3(-32768.0f, -32768.0f, -32768.0f);
         RainEntity->m_vecMaxs() = Vec3(32768.0f, 32768.0f, 32768.0f);
         RainEntity->GetClientNetworkable()->OnDataChanged(DATA_UPDATE_CREATED);
         RainEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
     }
-    // Handle env_wind for wind control - commented out for testing
-    /*
-    static ClientClass* pWindClass = nullptr;
-    if (!pWindClass)
-    {
-        for (auto pReturn = I::BaseClientDLL->GetAllClasses(); pReturn; pReturn = pReturn->m_pNext)
-        {
-            if (strcmp(pReturn->m_pNetworkName, "CEnvWind") == 0)
-            {
-                pWindClass = pReturn;
-                break;
-            }
-        }
-    }
-    const auto* pWindEntity = I::ClientEntityList->GetClientEntity(WIND_INDEX);
-    if (!pWindEntity)
-    {
-        if (!pWindClass || !pWindClass->m_pCreateFn)
-            return;
-        WindNetworkable = reinterpret_cast<IClientNetworkable * (__cdecl*)(int, int)>(pWindClass->m_pCreateFn)(WIND_INDEX, 0);
-        if (!WindNetworkable)
-            return;
-        WindEntity = static_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(WIND_INDEX));
-        if (!WindEntity || !WindEntity->GetClientNetworkable())
-            return;
-    }
-    else if (!WindEntity)
-    {
-        WindEntity = static_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(WIND_INDEX));
-        WindNetworkable = WindEntity ? WindEntity->GetClientNetworkable() : nullptr;
-    }
-    if (WindEntity && WindEntity->GetClientNetworkable())
-    {
-        static const auto dwMinWind = NetVars::GetNetVar("CEnvWind", "m_iMinWind");
-        static const auto dwMaxWind = NetVars::GetNetVar("CEnvWind", "m_iMaxWind");
-        static const auto dwMinGust = NetVars::GetNetVar("CEnvWind", "m_iMinGust");
-        static const auto dwMaxGust = NetVars::GetNetVar("CEnvWind", "m_iMaxGust");
-        static const auto dwGustDirChange = NetVars::GetNetVar("CEnvWind", "m_iGustDirChange");
-        static const auto dwInitialWindDir = NetVars::GetNetVar("CEnvWind", "m_iInitialWindDir");
-        float windSpeed = CFG::Visuals_Rain_WindSpeed;
-        int windSpeedInt = static_cast<int>(windSpeed);
-        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMinWind) = windSpeedInt;
-        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMaxWind) = windSpeedInt + 5; // Slight variation
-        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMinGust) = windSpeedInt + 10;
-        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwMaxGust) = windSpeedInt + 20;
-        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwGustDirChange) = static_cast<int>(CFG::Visuals_Rain_WindDirection);
-        *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(WindEntity) + dwInitialWindDir) = static_cast<int>(CFG::Visuals_Rain_WindDirection);
-        WindEntity->GetClientNetworkable()->PreDataUpdate(DATA_UPDATE_CREATED);
-        WindEntity->GetClientNetworkable()->OnPreDataChanged(DATA_UPDATE_CREATED);
-        WindEntity->GetClientNetworkable()->OnDataChanged(DATA_UPDATE_CREATED);
-        WindEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
-    }
-    */
-    // Note: Width and Length are hard-coded in particle creation and cannot be easily modified without patching the engine code.
-    // For now, they are not adjusted.
 }
 // Apenas desenha caixa (box ESP) — funções auxiliares simples
 void CESP::DrawBox(int left, int top, int w, int h, const Color_t& clr)

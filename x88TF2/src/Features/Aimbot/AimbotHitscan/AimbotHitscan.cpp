@@ -2,6 +2,30 @@
 #include "CFG.h"
 #include <array>
 #include <algorithm>
+
+const char* HitboxNames[HITBOX_MAX] = {
+    "Head",
+    "Neck",
+    "Lower Neck",
+    "Pelvis",
+    "Body",
+    "Thorax",
+    "Chest",
+    "Upper Chest",
+    "Right Thigh",
+    "Left Thigh",
+    "Right Calf",
+    "Left Calf",
+    "Right Foot",
+    "Left Foot",
+    "Right Hand",
+    "Left Hand",
+    "Right Upper Arm",
+    "Right Forearm",
+    "Left Upper Arm",
+    "Left Forearm"
+};
+
 int CAimbotHitscan::GetAimHitbox(C_TFWeaponBase* pWeapon)
 {
     switch (CFG::Aimbot_Hitscan_Hitbox)
@@ -17,6 +41,7 @@ int CAimbotHitscan::GetAimHitbox(C_TFWeaponBase* pWeapon)
     default: return HITBOX_PELVIS;
     }
 }
+
 bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     if (!CFG::Aimbot_Hitscan_Scan_Head)
@@ -41,23 +66,28 @@ bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target, const
         return false;
     const Vec3 vMins = pBox->bbmin;
     const Vec3 vMaxs = pBox->bbmax;
-    const float scale = 0.8f;
-    const std::array<Vec3, 7> vPoints = {
+    const float scale = 0.95f;
+    const std::array<Vec3, 9> vPoints = {
         Vec3(0.0f, 0.0f, 0.0f),
         Vec3(vMins.x * scale, 0.0f, 0.0f),
         Vec3(vMaxs.x * scale, 0.0f, 0.0f),
         Vec3(0.0f, vMins.y * scale, 0.0f),
         Vec3(0.0f, vMaxs.y * scale, 0.0f),
         Vec3(0.0f, 0.0f, vMins.z * scale),
-        Vec3(0.0f, 0.0f, vMaxs.z * scale)
+        Vec3(0.0f, 0.0f, vMaxs.z * scale),
+        Vec3(vMins.x * scale * 0.5f, vMins.y * scale * 0.5f, vMins.z * scale * 0.5f),
+        Vec3(vMaxs.x * scale * 0.5f, vMaxs.y * scale * 0.5f, vMaxs.z * scale * 0.5f)
     };
     const Vec3 vLocalPos = pLocal->GetShootPos();
     struct PointInfo_t
     {
         Vec3 Position;
         float FOVTo;
+        float DistToCenter;
     };
     std::vector<PointInfo_t> vecVisiblePoints = {};
+    Vec3 vCenter = {};
+    Math::VectorTransform(Vec3(0.0f, 0.0f, 0.0f), boneMatrix[pBox->bone], vCenter);
     for (const auto& vPoint : vPoints)
     {
         Vec3 vTransformed = {};
@@ -69,19 +99,21 @@ bool CAimbotHitscan::ScanHead(C_TFPlayer* pLocal, HitscanTarget_t& target, const
             continue;
         const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vTransformed);
         const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
-        vecVisiblePoints.push_back({ vTransformed, flFOVTo });
+        const float flDistToCenter = vTransformed.DistTo(vCenter);
+        vecVisiblePoints.push_back({ vTransformed, flFOVTo, flDistToCenter });
     }
     if (vecVisiblePoints.empty())
         return false;
     std::sort(vecVisiblePoints.begin(), vecVisiblePoints.end(), [](const PointInfo_t& a, const PointInfo_t& b)
         {
-            return a.FOVTo < b.FOVTo;
+            return a.DistToCenter < b.DistToCenter;
         });
     target.Position = vecVisiblePoints.front().Position;
     target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
     target.WasMultiPointed = true;
     return true;
 }
+
 bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     const bool bScanningBody = CFG::Aimbot_Hitscan_Scan_Body;
@@ -92,6 +124,15 @@ bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const
     const auto pPlayer = target.Entity->As<C_TFPlayer>();
     if (!pPlayer)
         return false;
+    const auto pModel = pPlayer->GetModel();
+    if (!pModel)
+        return false;
+    const auto pHDR = I::ModelInfoClient->GetStudiomodel(pModel);
+    if (!pHDR)
+        return false;
+    const auto pSet = pHDR->pHitboxSet(pPlayer->m_nHitboxSet());
+    if (!pSet)
+        return false;
     matrix3x4_t boneMatrix[128];
     if (!pPlayer->SetupBones(boneMatrix, 128, 0x100, I::GlobalVars->curtime))
         return false;
@@ -100,36 +141,81 @@ bool CAimbotHitscan::ScanBody(C_TFPlayer* pLocal, HitscanTarget_t& target, const
     {
         Vec3 Position;
         float FOVTo;
+        float DistToCenter;
     };
     std::vector<PointInfo_t> vecVisiblePoints = {};
-    for (int n = 1; n < pPlayer->GetNumOfHitboxes(); n++)
+    std::vector<int> vecHitboxes = {};
+    if (bScanningBody)
     {
-        if (n == target.AimedHitbox)
+        vecHitboxes.push_back(HITBOX_PELVIS);
+        vecHitboxes.push_back(HITBOX_BODY);
+        vecHitboxes.push_back(HITBOX_THORAX);
+        vecHitboxes.push_back(HITBOX_CHEST);
+        vecHitboxes.push_back(HITBOX_UPPER_CHEST);
+        vecHitboxes.push_back(HITBOX_LOWER_NECK);
+        vecHitboxes.push_back(HITBOX_NECK);
+    }
+    if (bScanningArms)
+    {
+        vecHitboxes.push_back(HITBOX_LEFT_UPPER_ARM);
+        vecHitboxes.push_back(HITBOX_LEFT_FOREARM);
+        vecHitboxes.push_back(HITBOX_RIGHT_UPPER_ARM);
+        vecHitboxes.push_back(HITBOX_RIGHT_FOREARM);
+    }
+    if (bScanningLegs)
+    {
+        vecHitboxes.push_back(HITBOX_LEFT_THIGH);
+        vecHitboxes.push_back(HITBOX_LEFT_CALF);
+        vecHitboxes.push_back(HITBOX_RIGHT_THIGH);
+        vecHitboxes.push_back(HITBOX_RIGHT_CALF);
+    }
+    const float scale = 0.95f;
+    for (int n : vecHitboxes)
+    {
+        const auto pBox = pSet->pHitbox(n);
+        if (!pBox)
             continue;
-        const int nHitboxGroup = pPlayer->GetHitboxGroup(n);
-        if (!bScanningBody && (nHitboxGroup == HITGROUP_CHEST || nHitboxGroup == HITGROUP_STOMACH))
-            continue;
-        if (!bScanningArms && (nHitboxGroup == HITGROUP_LEFTARM || nHitboxGroup == HITGROUP_RIGHTARM))
-            continue;
-        if (!bScanningLegs && (nHitboxGroup == HITGROUP_LEFTLEG || nHitboxGroup == HITGROUP_RIGHTLEG))
-            continue;
-        Vec3 vHitbox = pPlayer->GetHitboxPos(n);
-        if (!H::AimUtils->TraceEntityBullet(pPlayer, vLocalPos, vHitbox))
-            continue;
-        const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vHitbox);
-        const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
-        vecVisiblePoints.push_back({ vHitbox, flFOVTo });
+        const Vec3 vMins = pBox->bbmin;
+        const Vec3 vMaxs = pBox->bbmax;
+        const std::array<Vec3, 9> vPoints = {
+            Vec3(0.0f, 0.0f, 0.0f),
+            Vec3(vMins.x * scale, 0.0f, 0.0f),
+            Vec3(vMaxs.x * scale, 0.0f, 0.0f),
+            Vec3(0.0f, vMins.y * scale, 0.0f),
+            Vec3(0.0f, vMaxs.y * scale, 0.0f),
+            Vec3(0.0f, 0.0f, vMins.z * scale),
+            Vec3(0.0f, 0.0f, vMaxs.z * scale),
+            Vec3(vMins.x * scale * 0.5f, vMins.y * scale * 0.5f, vMins.z * scale * 0.5f),
+            Vec3(vMaxs.x * scale * 0.5f, vMaxs.y * scale * 0.5f, vMaxs.z * scale * 0.5f)
+        };
+        Vec3 vCenter = {};
+        Math::VectorTransform(Vec3(0.0f, 0.0f, 0.0f), boneMatrix[pBox->bone], vCenter);
+        for (const auto& vPoint : vPoints)
+        {
+            Vec3 vTransformed = {};
+            Math::VectorTransform(vPoint, boneMatrix[pBox->bone], vTransformed);
+            int nHitHitbox = -1;
+            if (!H::AimUtils->TraceEntityBullet(pPlayer, vLocalPos, vTransformed, &nHitHitbox))
+                continue;
+            if (nHitHitbox != n)
+                continue;
+            const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vTransformed);
+            const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+            const float flDistToCenter = vTransformed.DistTo(vCenter);
+            vecVisiblePoints.push_back({ vTransformed, flFOVTo, flDistToCenter });
+        }
     }
     if (vecVisiblePoints.empty())
         return false;
     std::sort(vecVisiblePoints.begin(), vecVisiblePoints.end(), [](const PointInfo_t& a, const PointInfo_t& b)
         {
-            return a.FOVTo < b.FOVTo;
+            return a.DistToCenter < b.DistToCenter;
         });
     target.Position = vecVisiblePoints.front().Position;
     target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
     return true;
 }
+
 bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
 {
     if (!CFG::Aimbot_Hitscan_Scan_Buildings)
@@ -142,8 +228,10 @@ bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, c
     {
         Vec3 Position;
         float FOVTo;
+        float DistToCenter;
     };
     std::vector<PointInfo_t> vecVisiblePoints = {};
+    Vec3 vCenter = pObject->GetAbsOrigin() + (pObject->m_vecMins() + pObject->m_vecMaxs()) * 0.5f;
     if (pObject->GetClassId() == ETFClassIds::CObjectSentrygun)
     {
         for (int n = 0; n < pObject->GetNumOfHitboxes(); n++)
@@ -153,20 +241,23 @@ bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, c
                 continue;
             const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vHitbox);
             const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
-            vecVisiblePoints.push_back({ vHitbox, flFOVTo });
+            const float flDistToCenter = vHitbox.DistTo(vCenter);
+            vecVisiblePoints.push_back({ vHitbox, flFOVTo, flDistToCenter });
         }
     }
     else
     {
         const Vec3 vMins = pObject->m_vecMins();
         const Vec3 vMaxs = pObject->m_vecMaxs();
-        const std::array<Vec3, 6> vPoints = {
+        const std::array<Vec3, 8> vPoints = {
             Vec3(vMins.x * 0.9f, ((vMins.y + vMaxs.y) * 0.5f), ((vMins.z + vMaxs.z) * 0.5f)),
             Vec3(vMaxs.x * 0.9f, ((vMins.y + vMaxs.y) * 0.5f), ((vMins.z + vMaxs.z) * 0.5f)),
             Vec3(((vMins.x + vMaxs.x) * 0.5f), vMins.y * 0.9f, ((vMins.z + vMaxs.z) * 0.5f)),
             Vec3(((vMins.x + vMaxs.x) * 0.5f), vMaxs.y * 0.9f, ((vMins.z + vMaxs.z) * 0.5f)),
             Vec3(((vMins.x + vMaxs.x) * 0.5f), ((vMins.y + vMaxs.y) * 0.5f), vMins.z * 0.9f),
-            Vec3(((vMins.x + vMaxs.x) * 0.5f), ((vMins.y + vMaxs.y) * 0.5f), vMaxs.z * 0.9f)
+            Vec3(((vMins.x + vMaxs.x) * 0.5f), ((vMins.y + vMaxs.y) * 0.5f), vMaxs.z * 0.9f),
+            Vec3(vMins.x * 0.9f, vMins.y * 0.9f, vMins.z * 0.9f),
+            Vec3(vMaxs.x * 0.9f, vMaxs.y * 0.9f, vMaxs.z * 0.9f)
         };
         const matrix3x4_t& transform = pObject->RenderableToWorldTransform();
         for (const auto& vPoint : vPoints)
@@ -177,19 +268,21 @@ bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, c
                 continue;
             const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vTransformed);
             const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
-            vecVisiblePoints.push_back({ vTransformed, flFOVTo });
+            const float flDistToCenter = vTransformed.DistTo(vCenter);
+            vecVisiblePoints.push_back({ vTransformed, flFOVTo, flDistToCenter });
         }
     }
     if (vecVisiblePoints.empty())
         return false;
     std::sort(vecVisiblePoints.begin(), vecVisiblePoints.end(), [](const PointInfo_t& a, const PointInfo_t& b)
         {
-            return a.FOVTo < b.FOVTo;
+            return a.DistToCenter < b.DistToCenter;
         });
     target.Position = vecVisiblePoints.front().Position;
     target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
     return true;
 }
+
 bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, HitscanTarget_t& outTarget)
 {
     const Vec3 vLocalPos = pLocal->GetShootPos();
@@ -230,59 +323,16 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
                 int nEndRecord = nRecords;
                 if (bFakeLatencyActive || (pLocal->m_iClass() == TF_CLASS_SNIPER && bIsSniperRifle) || bIsAmbassador)
                 {
-                    nStartRecord = std::max(1, nRecords - 5);
+                    nStartRecord = 1;
                     nEndRecord = nRecords;
-                    const int nPriorityRecord = nRecords - 3;
-                    if (nPriorityRecord >= 1 && nPriorityRecord < nRecords)
-                    {
-                        const LagRecord_t* lagRecord = F::LagRecords->GetRecord(pPlayer, nPriorityRecord);
-                        if (lagRecord && lagRecord->Player && lagRecord->SimulationTime > 0.0f)
-                        {
-                            F::LagRecordMatrixHelper->Set(lagRecord);
-                            Vec3 vPos = pPlayer->GetHitboxPos(nAimHitbox);
-                            bool bVisible = true;
-                            if (CFG::Aimbot_VisibleCheck)
-                            {
-                                bVisible = H::AimUtils->VisPos(pLocal, pPlayer, vLocalPos, vPos);
-                            }
-                            float flFOV = Math::CalcFov(vLocalAngles, Math::CalcAngle(vLocalPos, vPos));
-                            if (flFOV > CFG::Aimbot_FOV)
-                            {
-                                F::LagRecordMatrixHelper->Restore();
-                                continue;
-                            }
-                            float flDist = vLocalPos.DistTo(vPos);
-                            HitscanTarget_t tLag = {};
-                            tLag.Entity = pPlayer;
-                            tLag.Position = vPos;
-                            tLag.AngleTo = Math::CalcAngle(vLocalPos, vPos);
-                            tLag.FOVTo = flFOV;
-                            tLag.DistanceTo = flDist;
-                            tLag.AimedHitbox = nAimHitbox;
-                            tLag.SimulationTime = lagRecord->SimulationTime;
-                            tLag.LagRecord = lagRecord;
-                            if (bVisible)
-                            {
-                                m_vecTargets.push_back(tLag);
-                            }
-                            F::LagRecordMatrixHelper->Restore();
-                        }
-                    }
                 }
-                for (int n = nStartRecord; n < nEndRecord; n++)
+                for (int n = nStartRecord; n <= nEndRecord; n++)
                 {
-                    if ((bFakeLatencyActive || (pLocal->m_iClass() == TF_CLASS_SNIPER && bIsSniperRifle) || bIsAmbassador) && n == nRecords - 3)
-                        continue;
                     const LagRecord_t* lagRecord = F::LagRecords->GetRecord(pPlayer, n);
                     if (!lagRecord || !lagRecord->Player || lagRecord->SimulationTime <= 0.0f)
                         continue;
                     F::LagRecordMatrixHelper->Set(lagRecord);
                     Vec3 vPos = pPlayer->GetHitboxPos(nAimHitbox);
-                    bool bVisible = true;
-                    if (CFG::Aimbot_VisibleCheck)
-                    {
-                        bVisible = H::AimUtils->VisPos(pLocal, pPlayer, vLocalPos, vPos);
-                    }
                     float flFOV = Math::CalcFov(vLocalAngles, Math::CalcAngle(vLocalPos, vPos));
                     if (flFOV > CFG::Aimbot_FOV)
                     {
@@ -290,34 +340,45 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
                         continue;
                     }
                     float flDist = vLocalPos.DistTo(vPos);
-                    HitscanTarget_t tLag = {};
-                    tLag.Entity = pPlayer;
-                    tLag.Position = vPos;
-                    tLag.AngleTo = Math::CalcAngle(vLocalPos, vPos);
-                    tLag.FOVTo = flFOV;
-                    tLag.DistanceTo = flDist;
-                    tLag.AimedHitbox = nAimHitbox;
-                    tLag.SimulationTime = lagRecord->SimulationTime;
-                    tLag.LagRecord = lagRecord;
-                    if (bVisible)
+                    HitscanTarget_t t = {};
+                    t.Entity = pPlayer;
+                    t.Position = vPos;
+                    t.AngleTo = Math::CalcAngle(vLocalPos, vPos);
+                    t.FOVTo = flFOV;
+                    t.DistanceTo = flDist;
+                    t.AimedHitbox = nAimHitbox;
+                    t.SimulationTime = lagRecord->SimulationTime;
+                    t.LagRecord = lagRecord;
+                    bool bHasVisiblePoint = false;
+                    if (nAimHitbox == HITBOX_HEAD)
                     {
-                        m_vecTargets.push_back(tLag);
+                        bHasVisiblePoint = ScanHead(pLocal, t, vLocalAngles);
+                    }
+                    else
+                    {
+                        bHasVisiblePoint = ScanBody(pLocal, t, vLocalAngles);
+                    }
+                    if (!bHasVisiblePoint)
+                    {
+                        int nHitHitbox = -1;
+                        bHasVisiblePoint = H::AimUtils->TraceEntityBullet(pPlayer, vLocalPos, vPos, &nHitHitbox);
+                        if (nAimHitbox == HITBOX_HEAD && nHitHitbox != HITBOX_HEAD)
+                            bHasVisiblePoint = false;
+                    }
+                    bool bShouldAdd = !CFG::Aimbot_VisibleCheck || bHasVisiblePoint;
+                    if (bShouldAdd)
+                    {
+                        t.AngleTo = Math::CalcAngle(vLocalPos, t.Position);
+                        t.FOVTo = Math::CalcFov(vLocalAngles, t.AngleTo);
+                        t.DistanceTo = vLocalPos.DistTo(t.Position);
+                        m_vecTargets.push_back(t);
                     }
                     F::LagRecordMatrixHelper->Restore();
                 }
             }
-            const bool bFakeLatencyActive = F::LagRecords->GetFakeLatency() > 0.0f;
-            const int nWeaponID = pWeapon->GetWeaponID();
-            const bool bIsSniperRifle = (nWeaponID == TF_WEAPON_SNIPERRIFLE || nWeaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC || nWeaponID == TF_WEAPON_SNIPERRIFLE_DECAP);
-            const bool bIsAmbassador = (pWeapon->m_iItemDefinitionIndex() == Spy_m_TheAmbassador || pWeapon->m_iItemDefinitionIndex() == Spy_m_FestiveAmbassador);
-            if (CFG::Aimbot_TargetLagRecords ? !(bFakeLatencyActive || (pLocal->m_iClass() == TF_CLASS_SNIPER && bIsSniperRifle) || bIsAmbassador) : true)
+            else
             {
                 Vec3 vPos = pPlayer->GetHitboxPos(nAimHitbox);
-                bool bVisible = true;
-                if (CFG::Aimbot_VisibleCheck)
-                {
-                    bVisible = H::AimUtils->VisPos(pLocal, pPlayer, vLocalPos, vPos);
-                }
                 float flFOV = Math::CalcFov(vLocalAngles, Math::CalcAngle(vLocalPos, vPos));
                 if (flFOV > CFG::Aimbot_FOV)
                     continue;
@@ -331,8 +392,28 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
                 t.AimedHitbox = nAimHitbox;
                 t.SimulationTime = pPlayer->m_flSimulationTime();
                 t.LagRecord = nullptr;
-                if (bVisible)
+                bool bHasVisiblePoint = false;
+                if (nAimHitbox == HITBOX_HEAD)
                 {
+                    bHasVisiblePoint = ScanHead(pLocal, t, vLocalAngles);
+                }
+                else
+                {
+                    bHasVisiblePoint = ScanBody(pLocal, t, vLocalAngles);
+                }
+                if (!bHasVisiblePoint)
+                {
+                    int nHitHitbox = -1;
+                    bHasVisiblePoint = H::AimUtils->TraceEntityBullet(pPlayer, vLocalPos, vPos, &nHitHitbox);
+                    if (nAimHitbox == HITBOX_HEAD && nHitHitbox != HITBOX_HEAD)
+                        bHasVisiblePoint = false;
+                }
+                bool bShouldAdd = !CFG::Aimbot_VisibleCheck || bHasVisiblePoint;
+                if (bShouldAdd)
+                {
+                    t.AngleTo = Math::CalcAngle(vLocalPos, t.Position);
+                    t.FOVTo = Math::CalcFov(vLocalAngles, t.AngleTo);
+                    t.DistanceTo = vLocalPos.DistTo(t.Position);
                     m_vecTargets.push_back(t);
                 }
             }
@@ -348,11 +429,6 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
             if (pObject->m_bHasSapper() || pObject->m_bPlasmaDisable())
                 continue;
             Vec3 vPos = pObject->GetAbsOrigin() + (pObject->m_vecBuildMins() + pObject->m_vecBuildMaxs()) * 0.5f;
-            bool bVisible = true;
-            if (CFG::Aimbot_VisibleCheck)
-            {
-                bVisible = H::AimUtils->VisPos(pLocal, pObject, vLocalPos, vPos);
-            }
             float flFOV = Math::CalcFov(vLocalAngles, Math::CalcAngle(vLocalPos, vPos));
             if (flFOV > CFG::Aimbot_FOV)
                 continue;
@@ -366,8 +442,17 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
             t.AimedHitbox = -1;
             t.SimulationTime = -1.0f;
             t.LagRecord = nullptr;
-            if (bVisible)
+            bool bHasVisiblePoint = ScanBuilding(pLocal, t, vLocalAngles);
+            if (!bHasVisiblePoint)
             {
+                bHasVisiblePoint = H::AimUtils->TraceEntityBullet(pObject, vLocalPos, vPos);
+            }
+            bool bShouldAdd = !CFG::Aimbot_VisibleCheck || bHasVisiblePoint;
+            if (bShouldAdd)
+            {
+                t.AngleTo = Math::CalcAngle(vLocalPos, t.Position);
+                t.FOVTo = Math::CalcFov(vLocalAngles, t.AngleTo);
+                t.DistanceTo = vLocalPos.DistTo(t.Position);
                 m_vecTargets.push_back(t);
             }
         }
@@ -375,44 +460,10 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Hits
     F::AimbotCommon->Sort(m_vecTargets, CFG::Aimbot_Hitscan_Sort);
     if (m_vecTargets.empty())
         return false;
-    for (auto& t : m_vecTargets)
-    {
-        if (t.Entity->GetClassId() == ETFClassIds::CTFPlayer)
-        {
-            if (t.LagRecord)
-            {
-                F::LagRecordMatrixHelper->Set(t.LagRecord);
-            }
-            if (ScanHead(pLocal, t, vLocalAngles) || ScanBody(pLocal, t, vLocalAngles))
-            {
-                t.AngleTo = Math::CalcAngle(vLocalPos, t.Position);
-                t.FOVTo = Math::CalcFov(vLocalAngles, t.AngleTo);
-                t.DistanceTo = vLocalPos.DistTo(t.Position);
-            }
-            if (t.LagRecord)
-            {
-                F::LagRecordMatrixHelper->Restore();
-            }
-        }
-        else
-        {
-            if (ScanBuilding(pLocal, t, vLocalAngles))
-            {
-                t.AngleTo = Math::CalcAngle(vLocalPos, t.Position);
-                t.FOVTo = Math::CalcFov(vLocalAngles, t.AngleTo);
-                t.DistanceTo = vLocalPos.DistTo(t.Position);
-            }
-        }
-    }
-    m_vecTargets.erase(std::remove_if(m_vecTargets.begin(), m_vecTargets.end(), [](const HitscanTarget_t& t) {
-        return t.FOVTo > CFG::Aimbot_FOV;
-        }), m_vecTargets.end());
-    F::AimbotCommon->Sort(m_vecTargets, CFG::Aimbot_Hitscan_Sort);
-    if (m_vecTargets.empty())
-        return false;
     outTarget = m_vecTargets.front();
     return true;
 }
+
 bool CAimbotHitscan::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
     static bool bToggled = false;
@@ -431,6 +482,7 @@ bool CAimbotHitscan::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWea
     }
     return bDown;
 }
+
 void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles)
 {
     Vec3 vOldAngles = pCmd->viewangles;
@@ -439,7 +491,7 @@ void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles
     vDelta.y = Math::NormalizeAngle(vDelta.y);
     vDelta.z = Math::NormalizeAngle(vDelta.z);
     float fSmoothing = CFG::Aimbot_Hitscan_Smoothing;
-    if (CFG::Aimbot_Hitscan_Mode == 1) fSmoothing = 0.0f;
+    if (CFG::Aimbot_Hitscan_Mode == 1) fSmoothing = 1.0f; // Slight smoothing for silent
     Vec3 vStep;
     if (fSmoothing <= 0.0f)
     {
@@ -469,104 +521,77 @@ void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vAngles
         G::bSilentAngles = true;
     }
 }
+
 bool CAimbotHitscan::ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const HitscanTarget_t& target)
 {
     if (!CFG::Aimbot_AutoShoot)
         return false;
     if (!G::bCanPrimaryAttack)
         return false;
+    const int nWeaponID = pWeapon->GetWeaponID();
+    const bool bIsSniperRifle = (nWeaponID == TF_WEAPON_SNIPERRIFLE || nWeaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC || nWeaponID == TF_WEAPON_SNIPERRIFLE_DECAP);
+    if (bIsSniperRifle)
+    {
+        if (CFG::Aimbot_WaitForHeadshot && target.AimedHitbox == HITBOX_HEAD)
+        {
+            if (!G::bCanHeadshot)
+                return false;
+        }
+        if (CFG::Aimbot_WaitForCharge)
+        {
+            float flCharge = pWeapon->As<C_TFSniperRifle>()->m_flChargedDamage();
+            if (flCharge < 50.0f)
+                return false;
+        }
+    }
     if (target.Entity->GetClassId() != ETFClassIds::CTFPlayer)
         return true;
     const auto pPlayer = target.Entity->As<C_TFPlayer>();
-    int nHealth = pPlayer->m_iHealth();
-    if (CFG::Aimbot_WaitForHeadshot && H::AimUtils->IsWeaponCapableOfHeadshot(pWeapon))
-    {
-        if (!G::bCanHeadshot)
-            return false;
-    }
-    if (CFG::Aimbot_WaitForCharge && pWeapon->GetWeaponID() == TF_WEAPON_SNIPERRIFLE) {
-        auto sniper = reinterpret_cast<C_TFSniperRifle*>(pWeapon);
-        if (sniper->m_flChargedDamage() < 50.0f)
-            return false;
-    }
-    if (CFG::Aimbot_SmoothAutoShoot && (CFG::Aimbot_Hitscan_Mode == 1 || CFG::Aimbot_Hitscan_Mode == 2))
+    if (CFG::Aimbot_SmoothAutoShoot && CFG::Aimbot_Hitscan_Mode != 0)
     {
         Vec3 vForward = {};
         Math::AngleVectors(pCmd->viewangles, &vForward);
         const Vec3 vTraceStart = pLocal->GetShootPos();
         const Vec3 vTraceEnd = vTraceStart + (vForward * 8192.0f);
-        if (target.Entity->GetClassId() == ETFClassIds::CTFPlayer)
+        if (target.LagRecord)
         {
-            const auto pPlayer = target.Entity->As<C_TFPlayer>();
-            if (!target.LagRecord)
-            {
-                int nHitHitbox = -1;
-                if (!H::AimUtils->TraceEntityBullet(pPlayer, vTraceStart, vTraceEnd, &nHitHitbox))
-                    return false;
-                if (target.AimedHitbox == HITBOX_HEAD)
-                {
-                    if (nHitHitbox != HITBOX_HEAD)
-                        return false;
-                }
-            }
-            else
-            {
-                F::LagRecordMatrixHelper->Set(target.LagRecord);
-                int nHitHitbox = -1;
-                if (!H::AimUtils->TraceEntityBullet(pPlayer, vTraceStart, vTraceEnd, &nHitHitbox))
-                {
-                    F::LagRecordMatrixHelper->Restore();
-                    return false;
-                }
-                if (target.AimedHitbox == HITBOX_HEAD)
-                {
-                    if (nHitHitbox != HITBOX_HEAD)
-                    {
-                        F::LagRecordMatrixHelper->Restore();
-                        return false;
-                    }
-                }
-                F::LagRecordMatrixHelper->Restore();
-            }
+            F::LagRecordMatrixHelper->Set(target.LagRecord);
         }
-        else
+        int nHitHitbox = -1;
+        bool bHits = H::AimUtils->TraceEntityBullet(pPlayer, vTraceStart, vTraceEnd, &nHitHitbox);
+        if (target.AimedHitbox == HITBOX_HEAD && nHitHitbox != HITBOX_HEAD)
+            bHits = false;
+        if (target.LagRecord)
         {
-            if (!H::AimUtils->TraceEntityBullet(target.Entity, vTraceStart, vTraceEnd, nullptr))
-                return false;
+            F::LagRecordMatrixHelper->Restore();
         }
+        if (!bHits)
+            return false;
     }
     return true;
 }
+
 void CAimbotHitscan::HandleFire(CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
 {
     if (!pWeapon->HasPrimaryAmmoForShot())
         return;
-    if (pWeapon->GetWeaponID() == TF_WEAPON_SNIPERRIFLE_CLASSIC)
-    {
-        if (G::nOldButtons & IN_ATTACK)
-        {
-            pCmd->buttons &= ~IN_ATTACK;
-        }
-        else
-        {
-            pCmd->buttons |= IN_ATTACK;
-        }
-    }
-    else
-    {
-        pCmd->buttons |= IN_ATTACK;
-    }
+    pCmd->buttons |= IN_ATTACK;
 }
+
 bool CAimbotHitscan::IsFiring(CUserCmd* pCmd, C_TFWeaponBase* pWeapon)
 {
     if (!pWeapon->HasPrimaryAmmoForShot())
         return false;
-    if (pWeapon->GetWeaponID() == TF_WEAPON_SNIPERRIFLE_CLASSIC)
-        return !(pCmd->buttons & IN_ATTACK) && (G::nOldButtons & IN_ATTACK);
+    const int nWeaponID = pWeapon->GetWeaponID();
+    if (nWeaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC)
+        return (G::nOldButtons & IN_ATTACK) && !(pCmd->buttons & IN_ATTACK);
     return (pCmd->buttons & IN_ATTACK) && G::bCanPrimaryAttack;
 }
+
 void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
+    m_bActive = false;
+    m_LastTarget = {};
     if (!CFG::Aimbot_Enable)
         return;
     if (Shifting::bShifting && !Shifting::bShiftingWarp)
@@ -584,38 +609,88 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
             if (target.FOVTo > CFG::Aimbot_FOV)
                 return;
             G::nTargetIndex = target.Entity->entindex();
-            if (CFG::Aimbot_AutoScope
-                && !pLocal->IsZoomed() && pLocal->m_iClass() == TF_CLASS_SNIPER && pWeapon->GetSlot() == WEAPON_SLOT_PRIMARY && G::bCanPrimaryAttack)
+            const bool bIsSniperRifle = (weaponID == TF_WEAPON_SNIPERRIFLE || weaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC || weaponID == TF_WEAPON_SNIPERRIFLE_DECAP);
+            if (bIsSniperRifle && CFG::Aimbot_AutoScope && !pLocal->IsZoomed() && G::bCanPrimaryAttack)
             {
                 pCmd->buttons |= IN_ATTACK2;
                 return;
             }
             Aim(pCmd, pLocal, target.AngleTo);
-            if (CFG::Aimbot_AutoShoot && pWeapon->GetWeaponID() == TF_WEAPON_SNIPERRIFLE_CLASSIC)
-                pCmd->buttons |= IN_ATTACK;
-            if (ShouldFire(pCmd, pLocal, pWeapon, target))
+            if (CFG::Aimbot_AutoShoot)
             {
-                HandleFire(pCmd, pWeapon);
+                if (weaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC)
+                {
+                    auto pSniper = pWeapon->As<C_TFSniperRifleClassic>();
+                    float flCharge = pSniper->m_flChargedDamage();
+                    float flRequired = (target.AimedHitbox == HITBOX_HEAD) ? 150.0f : 0.1f;
+                    if (CFG::Aimbot_WaitForCharge)
+                        flRequired = std::max(flRequired, 50.0f);
+                    if (flCharge < flRequired)
+                    {
+                        pCmd->buttons |= IN_ATTACK;
+                    }
+                    else if (ShouldFire(pCmd, pLocal, pWeapon, target))
+                    {
+                        pCmd->buttons &= ~IN_ATTACK;
+                    }
+                }
+                else
+                {
+                    if (ShouldFire(pCmd, pLocal, pWeapon, target))
+                    {
+                        HandleFire(pCmd, pWeapon);
+                    }
+                }
             }
             const bool bIsFiring = IsFiring(pCmd, pWeapon);
             G::bFiring = bIsFiring;
             if (bIsFiring)
             {
-                if (CFG::Misc_AccuracyImprovements)
-                {
-                    if (target.Entity->GetClassId() == ETFClassIds::CTFPlayer)
-                    {
-                        pCmd->tick_count = TIME_TO_TICKS(target.SimulationTime + SDKUtils::GetLerp());
-                    }
-                }
-                else
-                {
-                    if (target.LagRecord)
-                    {
-                        pCmd->tick_count = TIME_TO_TICKS(target.SimulationTime + SDKUtils::GetLerp());
-                    }
-                }
+                pCmd->tick_count = TIME_TO_TICKS(target.SimulationTime + SDKUtils::GetLerp() + F::LagRecords->GetFakeLatency());
             }
+            m_bActive = true;
+            m_LastTarget = target;
+            m_bAutoShoot = CFG::Aimbot_AutoShoot;
+        }
+    }
+}
+
+void CAimbotHitscan::DrawDebug()
+{
+    int x = 10;
+    int y = 200;
+    Color_t white{ 255, 255, 255, 255 };
+    H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white, POS_DEFAULT, "Aimbot: %s", m_bActive ? "Active" : "Inactive");
+    y += 15;
+    H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white, POS_DEFAULT, "Auto Shoot: %s", m_bAutoShoot ? "On" : "Off");
+    y += 15;
+    if (m_LastTarget.Entity)
+    {
+        if (m_LastTarget.Entity->GetClassId() == ETFClassIds::CTFPlayer)
+        {
+            auto pPlayer = m_LastTarget.Entity->As<C_TFPlayer>();
+            player_info_t info{};
+            if (I::EngineClient->GetPlayerInfo(pPlayer->entindex(), &info))
+            {
+                H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white, POS_DEFAULT, "Target: %s", info.name);
+                y += 15;
+            }
+        }
+        else
+        {
+            H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white, POS_DEFAULT, "Target: Building");
+            y += 15;
+        }
+        if (m_LastTarget.AimedHitbox >= 0 && m_LastTarget.AimedHitbox < HITBOX_MAX)
+        {
+            H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white, POS_DEFAULT, "Hitbox: %s", HitboxNames[m_LastTarget.AimedHitbox]);
+            y += 15;
+        }
+        Vec3 screen;
+        if (H::Draw->W2S(m_LastTarget.Position, screen))
+        {
+            H::Draw->Line(screen.x - 5, screen.y - 5, screen.x + 5, screen.y + 5, Color_t(255, 0, 0, 255));
+            H::Draw->Line(screen.x + 5, screen.y - 5, screen.x - 5, screen.y + 5, Color_t(255, 0, 0, 255));
         }
     }
 }

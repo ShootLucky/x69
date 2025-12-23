@@ -88,6 +88,10 @@ namespace CFG
 	CFGVAR(Aimbot_Hitscan_Scan_Buildings, true);
 	CFGVAR(Aimbot_Projectile_SplashBot, false);
 	CFGVAR(Aimbot_Projectile_SplashPoints, 80.0f);
+	CFGVAR(Aimbot_Active, false);
+	CFGVAR(Aimbot_Hitscan_Active, false);
+	CFGVAR(Aimbot_Hitscan_Target_LagRecords, false);
+	CFGVAR(Aimbot_Melee_Target_LagRecords, false);
 #pragma endregion
 #pragma region ESP
 	CFGVAR(ESP_Enable, false);
@@ -153,6 +157,82 @@ namespace CFG
 	CFGVAR(ESP_Tracer, false);
 	CFGVAR(ESP_Uber, false);
 	CFGVAR(ESP_UberBar, false);
+	CFGVAR(Visuals_Disable_Dropped_Weapons, false);
+	CFGVAR(Visuals_Disable_Wearables, false);
+	CFGVAR(Visuals_Night_Mode, 0.f);
+	CFGVAR(Visuals_Simple_Models, false);
+	CFGVAR(Visuals_World_Modulation_Mode, 0);
+	CFGVAR(Visuals_Chat_Player_List_Info, false);
+	CFGVAR(Visuals_Flat_Textures, false);
+#pragma endregion
+#pragma region Materials
+	CFGVAR(Materials_Active, false);
+	CFGVAR(Materials_Buildings_Active, false);
+	CFGVAR(Materials_Buildings_Alpha, 1.0f);
+	CFGVAR(Materials_Buildings_Ignore_Enemies, false);
+	CFGVAR(Materials_Buildings_Ignore_Local, false);
+	CFGVAR(Materials_Buildings_Ignore_Teammates, false);
+	CFGVAR(Materials_Buildings_Material, 0);
+	CFGVAR(Materials_Buildings_No_Depth, false);
+	CFGVAR(Materials_Buildings_Show_Teammate_Dispensers, false);
+	CFGVAR(Materials_Players_Active, false);
+	CFGVAR(Materials_Players_Alpha, 1.0f);
+	CFGVAR(Materials_Players_Ignore_Enemies, false);
+	CFGVAR(Materials_Players_Ignore_Friends, false);
+	CFGVAR(Materials_Players_Ignore_LagRecords, false);
+	CFGVAR(Materials_Players_Ignore_Local, false);
+	CFGVAR(Materials_Players_Ignore_Teammates, false);
+	CFGVAR(Materials_Players_LagRecords_Style, 0);
+	CFGVAR(Materials_Players_Material, 0);
+	CFGVAR(Materials_Players_No_Depth, false);
+	CFGVAR(Materials_Players_Show_Teammate_Medics, false);
+	CFGVAR(Materials_World_Active, false);
+	CFGVAR(Materials_World_Alpha, 1.0f);
+	CFGVAR(Materials_World_Ignore_AmmoPacks, false);
+	CFGVAR(Materials_World_Ignore_EnemyProjectiles, false);
+	CFGVAR(Materials_World_Ignore_Halloween_Gift, false);
+	CFGVAR(Materials_World_Ignore_HealthPacks, false);
+	CFGVAR(Materials_World_Ignore_LocalProjectiles, false);
+	CFGVAR(Materials_World_Ignore_MVM_Money, false);
+	CFGVAR(Materials_World_Ignore_TeammateProjectiles, false);
+	CFGVAR(Materials_World_Material, 0);
+	CFGVAR(Materials_World_No_Depth, false);
+	CFGVAR(Materials_ViewModel_Active, false);
+	CFGVAR(Materials_ViewModel_Hands_Alpha, 1.0f);
+	CFGVAR(Materials_ViewModel_Hands_Material, 0);
+	CFGVAR(Materials_ViewModel_Weapon_Alpha, 1.0f);
+	CFGVAR(Materials_ViewModel_Weapon_Material, 0);
+	CFGVAR(Materials_Hands_Active, false);
+	CFGVAR(Materials_Hands_Alpha, 1.0f);
+	CFGVAR(Materials_Hands_Material, 0);
+	CFGVAR(Materials_Hands_No_Depth, false);
+#pragma endregion
+#pragma region Outlines
+	CFGVAR(Outlines_Active, false);
+	CFGVAR(Outlines_Style, 0);
+	CFGVAR(Outlines_Bloom_Amount, 1.0f);
+	CFGVAR(Outlines_Players_Alpha, 1.0f);
+	CFGVAR(Outlines_Buildings_Alpha, 1.0f);
+	CFGVAR(Outlines_World_Active, false);
+	CFGVAR(Outlines_World_Alpha, 1.0f);
+	CFGVAR(Outlines_World_Ignore_AmmoPacks, false);
+	CFGVAR(Outlines_World_Ignore_EnemyProjectiles, false);
+	CFGVAR(Outlines_World_Ignore_Halloween_Gift, false);
+	CFGVAR(Outlines_World_Ignore_HealthPacks, false);
+	CFGVAR(Outlines_World_Ignore_LocalProjectiles, false);
+	CFGVAR(Outlines_World_Ignore_MVM_Money, false);
+	CFGVAR(Outlines_World_Ignore_TeammateProjectiles, false);
+	CFGVAR(Outlines_Players_Ignore_Friends, false);
+	CFGVAR(Outlines_Buildings_Active, false);
+	CFGVAR(Outlines_Buildings_Ignore_Enemies, false);
+	CFGVAR(Outlines_Buildings_Ignore_Local, false);
+	CFGVAR(Outlines_Buildings_Ignore_Teammates, false);
+	CFGVAR(Outlines_Buildings_Show_Teammate_Dispensers, false);
+	CFGVAR(Outlines_Players_Active, false);
+	CFGVAR(Outlines_Players_Ignore_Enemies, false);
+	CFGVAR(Outlines_Players_Ignore_Local, false);
+	CFGVAR(Outlines_Players_Ignore_Teammates, false);
+	CFGVAR(Outlines_Players_Show_Teammate_Medics, false);
 #pragma endregion
 #pragma region Misc
 	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key Misc_AntiAFK_Enable
@@ -181,6 +261,7 @@ namespace CFG
 	CFGVAR(Misc_ThirdPerson_Key, 0);
 	CFGVAR(Misc_ThirdPerson_KeyMode, 0);
 	CFGVAR(Misc_ThirdPerson_SideOffset, 0.f);
+	CFGVAR(Misc_Clean_Screenshot, false);
 #pragma endregion
 #pragma region Colors
 	CFGVAR(Color_TeamRed, Color_t(255, 0, 0, 255));
@@ -212,6 +293,24 @@ namespace CFG
 	CFGVAR(Color_BuildingTeam, Color_t(0, 255, 0, 255));
 	CFGVAR(Color_BuildingEnemy, Color_t(255, 0, 0, 255));
 	CFGVAR(Color_BuildingName, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_AmmoPack, Color_t(255, 215, 0, 255));
+	CFGVAR(Color_Cheater, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_Enemy, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_Friend, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Halloween_Gift, Color_t(255, 165, 0, 255));
+	CFGVAR(Color_HealthPack, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Invisible, Color_t(128, 128, 128, 255));
+	CFGVAR(Color_Invulnerable, Color_t(255, 215, 0, 255));
+	CFGVAR(Color_MVM_Money, Color_t(0, 255, 255, 255));
+	CFGVAR(Color_OverHeal, Color_t(0, 0, 255, 255));
+	CFGVAR(Color_RetardLegit, Color_t(255, 255, 0, 255));
+	CFGVAR(Color_Target, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Teammate, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Hands, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Hands_Sheen, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Props, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Weapon, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Weapon_Sheen, Color_t(255, 255, 255, 255));
 #pragma endregion
 	CFGVAR(CurrentSection, 0);
 }

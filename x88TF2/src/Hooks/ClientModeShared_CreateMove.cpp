@@ -85,11 +85,12 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	F::Misc->AutoStrafe(pCmd);
 	F::Misc->AutoRocketJump(pCmd);
 	F::Misc->AntiAFK(pCmd);
-	F::Misc->ViewModelOffsets();
+
 
 	// FakeLag (run BEFORE aimbot so it can unchoke before simulation)
 	if (pWeapon)
 	{
+
 	}
 
 	F::EnginePrediction->Start(pCmd);
@@ -104,6 +105,8 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 		F::Aimbot->Run(pCmd);
 	}
 	F::EnginePrediction->End();
+
+
 
 	//nTicksTargetSame
 	{
