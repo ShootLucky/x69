@@ -262,6 +262,8 @@ namespace CFG
 	CFGVAR(Misc_ThirdPerson_KeyMode, 0);
 	CFGVAR(Misc_ThirdPerson_SideOffset, 0.f);
 	CFGVAR(Misc_Clean_Screenshot, false);
+	CFGVAR(Exploits_SeedPred_Active, false);
+	CFGVAR(Exploits_SeedPred_DrawIndicator, false);
 #pragma endregion
 #pragma region Colors
 	CFGVAR(Color_TeamRed, Color_t(255, 0, 0, 255));

@@ -395,7 +395,9 @@
     <ClCompile Include="src\Hooks\CTFPlayer_UpdateClientSideAnimation.cpp" />
     <ClCompile Include="src\Hooks\CTFViewModel_CalcViewModelView.cpp" />
     <ClCompile Include="src\Hooks\CTFWeaponBase_GetTracerType.cpp" />
+    <ClCompile Include="src\Hooks\CUserMessages_DispatchUserMessage.cpp" />
     <ClCompile Include="src\Hooks\CViewRender_DrawViewModels.cpp" />
+    <ClCompile Include="src\Hooks\FX_FireBullets.cpp" />
     <ClCompile Include="src\Hooks\IBaseClientDLL_FrameStageNotify.cpp" />
     <ClCompile Include="src\Hooks\IBaseClientDLL_LevelInitPostEntity.cpp" />
     <ClCompile Include="src\Hooks\IBaseClientDLL_LevelShutdown.cpp" />

@@ -1,6 +1,6 @@
 #include "SeedPred.h"
 
-#include "CFG.h"
+#include "../CFG.h"
 #include <vector>
 #include <algorithm>
 #include <ranges>

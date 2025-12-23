@@ -2,6 +2,7 @@
 
 #include "../Features/Chams/Chams.h"
 #include "../Features/Outlines/Outlines.h"
+#include "../Features/SeedPred/SeedPred.h"
 
 MAKE_HOOK(IBaseClientDLL_LevelShutdown, Memory::GetVFunc(I::BaseClientDLL, 7), void, __fastcall,
 	void* ecx)
@@ -13,6 +14,7 @@ MAKE_HOOK(IBaseClientDLL_LevelShutdown, Memory::GetVFunc(I::BaseClientDLL, 7), v
 
 	F::Materials->CleanUp();
 	F::Outlines->CleanUp();
+	F::SeedPred->Reset();
 
 	G::mapVelFixRecords.clear();
 

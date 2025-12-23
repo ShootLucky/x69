@@ -54,7 +54,6 @@
     <ClCompile Include="src\Hooks\IVEngineClient013_ClientCmd.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_BaseInterpolatePart1.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_InterpolateServerEntities.cpp" />
-    <ClCompile Include="src\Hooks\INetChannel_SendNetMsg.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_AddVar.cpp" />
     <ClCompile Include="src\Hooks\CBasePlayer_CalcPlayerView.cpp" />
     <ClCompile Include="src\Hooks\CPrediction_RunCommand.cpp" />
@@ -79,6 +78,9 @@
     <ClCompile Include="src\Features\Outlines\Outlines.cpp" />
     <ClCompile Include="src\Hooks\CViewRender_DrawViewModels.cpp" />
     <ClCompile Include="src\Features\SeedPred\SeedPred.cpp" />
+    <ClCompile Include="src\Hooks\INetChannel_SendNetMsg.cpp" />
+    <ClCompile Include="src\Hooks\CUserMessages_DispatchUserMessage.cpp" />
+    <ClCompile Include="src\Hooks\FX_FireBullets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />

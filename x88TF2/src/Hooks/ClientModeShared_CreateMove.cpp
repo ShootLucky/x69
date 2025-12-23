@@ -2,6 +2,7 @@
 #include "../Features/Misc/Misc.h"
 #include "../Features/Aimbot/Aimbot.h"
 #include "../Features/EnginePrediction/EnginePrediction.h"
+#include "../Features/SeedPred/SeedPred.h"
 
 MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21), bool, __fastcall,
 	CClientModeShared* ecx, float flInputSampleTime, CUserCmd* pCmd)
@@ -9,7 +10,6 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	G::bSilentAngles = false;
 	G::bPSilentAngles = false;
 	G::bFiring = false;
-	G::CurrentUserCmd = pCmd;
 
 	if (!pCmd || !pCmd->command_number)
 	{
@@ -24,6 +24,10 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 		I::ClientState->lastoutgoingcommand + I::ClientState->chokedcommands
 	);
 
+	{
+
+	}
+
 	if (Shifting::bRecharging)
 	{
 		if (pCmd->buttons & IN_JUMP)
@@ -36,27 +40,19 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 
 	bool* pSendPacket = reinterpret_cast<bool*>(uintptr_t(_AddressOfReturnAddress()) + 0x128);
 
-	// OPTIMIZATION: Cache angles and movement for later restoration
-	const Vec3 vOldAngles = pCmd->viewangles;
-	const float flOldSide = pCmd->sidemove;
-	const float flOldForward = pCmd->forwardmove;
+	Vec3 vOldAngles = pCmd->viewangles;
+	float flOldSide = pCmd->sidemove;
+	float flOldForward = pCmd->forwardmove;
 
-	// OPTIMIZATION: Cache entity pointers once (used multiple times below)
-	auto pLocal = H::Entities->GetLocal();
-	auto pWeapon = H::Entities->GetWeapon();
-
-	// Cache weapon capabilities (used by multiple features)
-	if (pLocal && pWeapon)
+	if (auto pLocal = H::Entities->GetLocal())
 	{
-		G::bCanPrimaryAttack = pWeapon->CanPrimaryAttack(pLocal);
-		G::bCanSecondaryAttack = pWeapon->CanSecondaryAttack(pLocal);
-		G::bCanHeadshot = pWeapon->CanHeadShot(pLocal);
-	}
-	else
-	{
-		G::bCanPrimaryAttack = false;
-		G::bCanSecondaryAttack = false;
-		G::bCanHeadshot = false;
+		if (auto pWeapon = H::Entities->GetWeapon())
+		{
+			//TODO?: do we really need to cache these?
+			G::bCanPrimaryAttack = pWeapon->CanPrimaryAttack(pLocal);
+			G::bCanSecondaryAttack = pWeapon->CanSecondaryAttack(pLocal);
+			G::bCanHeadshot = pWeapon->CanHeadShot(pLocal);
+		}
 	}
 
 	//nTicksSinceCanFire
@@ -77,28 +73,21 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			else G::nTicksSinceCanFire = 0;
 		}
 	}
-	// OPTIMIZATION: Early exit if no local player (rare but possible)
-	if (!pLocal)
-		return CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 
 	F::Misc->Bunnyhop(pCmd);
 	F::Misc->AutoStrafe(pCmd);
 	F::Misc->AutoRocketJump(pCmd);
-	F::Misc->AntiAFK(pCmd);
 
-
-	// FakeLag (run BEFORE aimbot so it can unchoke before simulation)
-	if (pWeapon)
-	{
-
-	}
 
 	F::EnginePrediction->Start(pCmd);
 	{
 		{
-			if ((pLocal->m_fFlags() & FL_ONGROUND) && !(F::EnginePrediction->flags & FL_ONGROUND))
+			if (C_TFPlayer* const local{ H::Entities->GetLocal() })
 			{
-				*pSendPacket = false;
+				if ((local->m_fFlags() & FL_ONGROUND) && !(F::EnginePrediction->flags & FL_ONGROUND))
+				{
+					*pSendPacket = false;
+				}
 			}
 		}
 
@@ -106,7 +95,7 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	}
 	F::EnginePrediction->End();
 
-
+	F::SeedPred->AdjustAngles(pCmd);
 
 	//nTicksTargetSame
 	{
