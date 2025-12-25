@@ -1,3 +1,4 @@
+// cfg.h
 #pragma once
 #include "Utils/Config/Config.h"
 namespace CFG
@@ -175,6 +176,7 @@ namespace CFG
 	CFGVAR(Materials_Buildings_Material, 0);
 	CFGVAR(Materials_Buildings_No_Depth, false);
 	CFGVAR(Materials_Buildings_Show_Teammate_Dispensers, false);
+	CFGVAR(Materials_Buildings_TwoModels, 0);
 	CFGVAR(Materials_Players_Active, false);
 	CFGVAR(Materials_Players_Alpha, 1.0f);
 	CFGVAR(Materials_Players_Ignore_Enemies, false);
@@ -186,6 +188,7 @@ namespace CFG
 	CFGVAR(Materials_Players_Material, 0);
 	CFGVAR(Materials_Players_No_Depth, false);
 	CFGVAR(Materials_Players_Show_Teammate_Medics, false);
+	CFGVAR(Materials_Players_TwoModels, 0);
 	CFGVAR(Materials_World_Active, false);
 	CFGVAR(Materials_World_Alpha, 1.0f);
 	CFGVAR(Materials_World_Ignore_AmmoPacks, false);
@@ -197,6 +200,7 @@ namespace CFG
 	CFGVAR(Materials_World_Ignore_TeammateProjectiles, false);
 	CFGVAR(Materials_World_Material, 0);
 	CFGVAR(Materials_World_No_Depth, false);
+	CFGVAR(Materials_World_TwoModels, 0);
 	CFGVAR(Materials_ViewModel_Active, false);
 	CFGVAR(Materials_ViewModel_Hands_Alpha, 1.0f);
 	CFGVAR(Materials_ViewModel_Hands_Material, 0);
@@ -206,6 +210,17 @@ namespace CFG
 	CFGVAR(Materials_Hands_Alpha, 1.0f);
 	CFGVAR(Materials_Hands_Material, 0);
 	CFGVAR(Materials_Hands_No_Depth, false);
+	CFGVAR(Materials_Hands_TwoModels, 0);
+	CFGVAR(Materials_Weapons_Active, false);
+	CFGVAR(Materials_Weapons_Alpha, 1.0f);
+	CFGVAR(Materials_Weapons_Material, 0);
+	CFGVAR(Materials_Weapons_No_Depth, false);
+	CFGVAR(Materials_Weapons_TwoModels, 0);
+	CFGVAR(Materials_Players_HiddenMaterial, false);
+	CFGVAR(Materials_Buildings_HiddenMaterial, false);
+	CFGVAR(Materials_World_HiddenMaterial, false);
+	CFGVAR(Materials_Hands_HiddenMaterial, false);
+	CFGVAR(Materials_Weapons_HiddenMaterial, false);
 #pragma endregion
 #pragma region Outlines
 	CFGVAR(Outlines_Active, false);
@@ -313,6 +328,34 @@ namespace CFG
 	CFGVAR(Color_Props, Color_t(255, 255, 255, 255));
 	CFGVAR(Color_Weapon, Color_t(255, 255, 255, 255));
 	CFGVAR(Color_Weapon_Sheen, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Weapons, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Players_Friends, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Players_LagRecords, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Players_Local, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Players_Overlay_Local, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Players_Overlay_Friends, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Players_Teammates, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Players_Overlay_Teammates, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Players_Enemies, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_Players_Overlay_Enemies, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_Buildings_Local, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Buildings_Overlay_Local, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Buildings_Teammates, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Buildings_Overlay_Teammates, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Buildings_Enemies, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_Buildings_Overlay_Enemies, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_HealthPack_Overlay, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_AmmoPack_Overlay, Color_t(255, 215, 0, 255));
+	CFGVAR(Color_Halloween_Gift_Overlay, Color_t(255, 165, 0, 255));
+	CFGVAR(Color_MVM_Money_Overlay, Color_t(0, 255, 255, 255));
+	CFGVAR(Color_Projectiles_Local, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Projectiles_Overlay_Local, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Projectiles_Teammates, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Projectiles_Overlay_Teammates, Color_t(0, 255, 0, 255));
+	CFGVAR(Color_Projectiles_Enemies, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_Projectiles_Overlay_Enemies, Color_t(255, 0, 0, 255));
+	CFGVAR(Color_Hands_Overlay, Color_t(255, 255, 255, 255));
+	CFGVAR(Color_Weapons_Overlay, Color_t(255, 255, 255, 255));
 #pragma endregion
 	CFGVAR(CurrentSection, 0);
 }

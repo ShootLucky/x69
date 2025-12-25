@@ -1090,275 +1090,334 @@ void menu::render() {
             float_slider(x_right_col, &y_right, "Wind Speed", CFG::Visuals_Rain_WindSpeed, 0.f, 50.f, current_sub_item++); // Assuming range 0-50
             max_items = current_sub_item - 1;
         }
-        else if (visuals_sub_section == 3) { // Chams
-            y = start_y;
-            // Define column positions (adjust widths as needed)
-            int x_left_col = x_left;
-            int x_center_col = x_left + 200; // Example width
-            int x_right_col = x_center_col + 200; // Example width
-            int x_hands_col = x_right_col + 200; // New column for Hands
-            // Separate y for each column
-            int y_left = start_y;
-            int y_center = start_y;
-            int y_right = start_y;
-            int y_hands = start_y;
-            // --- Left Column: Players Materials ---
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Players Active", &CFG::Materials_Players_Active, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            combo(x_left_col, &y_left, "Players Material", &CFG::Materials_Players_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic"}, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_left_col, &y_left, "Players Alpha", CFG::Materials_Players_Alpha, 0.f, 1.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Players No Depth", &CFG::Materials_Players_No_Depth, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore Local", &CFG::Materials_Players_Ignore_Local, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore Friends", &CFG::Materials_Players_Ignore_Friends, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore Teammates", &CFG::Materials_Players_Ignore_Teammates, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Show Teammate Medics", &CFG::Materials_Players_Show_Teammate_Medics, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore Enemies", &CFG::Materials_Players_Ignore_Enemies, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore LagRecords", &CFG::Materials_Players_Ignore_LagRecords, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            combo(x_left_col, &y_left, "LagRecords Style", &CFG::Materials_Players_LagRecords_Style, std::vector<std::string>{"Flat", "Shaded"}, false, 255, current_sub_item++);
-            // --- Center Column: Buildings Materials ---
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Buildings Active", &CFG::Materials_Buildings_Active, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            combo(x_center_col, &y_center, "Buildings Material", &CFG::Materials_Buildings_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic"}, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_center_col, &y_center, "Buildings Alpha", CFG::Materials_Buildings_Alpha, 0.f, 1.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Buildings No Depth", &CFG::Materials_Buildings_No_Depth, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Ignore Local", &CFG::Materials_Buildings_Ignore_Local, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Ignore Teammates", &CFG::Materials_Buildings_Ignore_Teammates, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Show Teammate Dispensers", &CFG::Materials_Buildings_Show_Teammate_Dispensers, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Ignore Enemies", &CFG::Materials_Buildings_Ignore_Enemies, false, 255, current_sub_item++);
-            // --- Right Column: World Materials ---
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "World Active", &CFG::Materials_World_Active, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            combo(x_right_col, &y_right, "World Material", &CFG::Materials_World_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic"}, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_right_col, &y_right, "World Alpha", CFG::Materials_World_Alpha, 0.f, 1.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "World No Depth", &CFG::Materials_World_No_Depth, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore HealthPacks", &CFG::Materials_World_Ignore_HealthPacks, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore AmmoPacks", &CFG::Materials_World_Ignore_AmmoPacks, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore Halloween Gift", &CFG::Materials_World_Ignore_Halloween_Gift, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore MVM Money", &CFG::Materials_World_Ignore_MVM_Money, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore Local Projectiles", &CFG::Materials_World_Ignore_LocalProjectiles, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore Teammate Projectiles", &CFG::Materials_World_Ignore_TeammateProjectiles, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore Enemy Projectiles", &CFG::Materials_World_Ignore_EnemyProjectiles, false, 255, current_sub_item++);
-            // --- Hands Column: Hands Materials ---
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_hands_col, &y_hands, "Hands Active", &CFG::Materials_Hands_Active, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            combo(x_hands_col, &y_hands, "Hands Material", &CFG::Materials_Hands_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic"}, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_hands_col, &y_hands, "Hands Alpha", CFG::Materials_Hands_Alpha, 0.f, 1.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_hands_col, &y_hands, "Hands No Depth", &CFG::Materials_Hands_No_Depth, false, 255, current_sub_item++);
-            max_items = current_sub_item - 1;
+
+else if (visuals_sub_section == 3) { // Chams
+    y = start_y;
+    // Define column positions (adjust widths as needed)
+    int x_left_col = x_left;
+    int x_center_col = x_left + 200; // Example width
+    int x_right_col = x_center_col + 200; // Example width
+    int x_hands_col = x_right_col + 200; // New column for Hands
+    // Separate y for each column
+    int y_left = start_y;
+    int y_center = start_y;
+    int y_right = start_y;
+    int y_hands = start_y;
+    // --- Left Column: Players Materials ---
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Players Active", &CFG::Materials_Players_Active, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_left_col, &y_left, "Players Material", &CFG::Materials_Players_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel"}, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Players Hidden Material", &CFG::Materials_Players_HiddenMaterial, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    float_slider(x_left_col, &y_left, "Players Alpha", CFG::Materials_Players_Alpha, 0.f, 1.f, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Players No Depth", &CFG::Materials_Players_No_Depth, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_left_col, &y_left, "Players Two Models", &CFG::Materials_Players_TwoModels, std::vector<std::string>{"Off", "Overlay", "KSOverlay", "EsoOverlay", "FlatOverlay"}, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Ignore Local", &CFG::Materials_Players_Ignore_Local, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Ignore Friends", &CFG::Materials_Players_Ignore_Friends, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Ignore Teammates", &CFG::Materials_Players_Ignore_Teammates, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Show Teammate Medics", &CFG::Materials_Players_Show_Teammate_Medics, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Ignore Enemies", &CFG::Materials_Players_Ignore_Enemies, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_left_col, &y_left, "Ignore LagRecords", &CFG::Materials_Players_Ignore_LagRecords, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_left_col, &y_left, "LagRecords Style", &CFG::Materials_Players_LagRecords_Style, std::vector<std::string>{"Flat", "Shaded"}, false, 255, current_sub_item++);
+    // --- Center Column: Buildings Materials ---
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_center_col, &y_center, "Buildings Active", &CFG::Materials_Buildings_Active, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_center_col, &y_center, "Buildings Material", &CFG::Materials_Buildings_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel"}, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_center_col, &y_center, "Buildings Hidden Material", &CFG::Materials_Buildings_HiddenMaterial, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    float_slider(x_center_col, &y_center, "Buildings Alpha", CFG::Materials_Buildings_Alpha, 0.f, 1.f, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_center_col, &y_center, "Buildings No Depth", &CFG::Materials_Buildings_No_Depth, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_center_col, &y_center, "Buildings Two Models", &CFG::Materials_Buildings_TwoModels, std::vector<std::string>{"Off", "Overlay", "KSOverlay", "EsoOverlay", "FlatOverlay"}, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_center_col, &y_center, "Ignore Local", &CFG::Materials_Buildings_Ignore_Local, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_center_col, &y_center, "Ignore Teammates", &CFG::Materials_Buildings_Ignore_Teammates, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_center_col, &y_center, "Show Teammate Dispensers", &CFG::Materials_Buildings_Show_Teammate_Dispensers, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_center_col, &y_center, "Ignore Enemies", &CFG::Materials_Buildings_Ignore_Enemies, false, 255, current_sub_item++);
+    // --- Right Column: World Materials ---
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "World Active", &CFG::Materials_World_Active, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_right_col, &y_right, "World Material", &CFG::Materials_World_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel"}, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "World Hidden Material", &CFG::Materials_World_HiddenMaterial, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    float_slider(x_right_col, &y_right, "World Alpha", CFG::Materials_World_Alpha, 0.f, 1.f, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "World No Depth", &CFG::Materials_World_No_Depth, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_right_col, &y_right, "World Two Models", &CFG::Materials_World_TwoModels, std::vector<std::string>{"Off", "Overlay", "KSOverlay", "EsoOverlay", "FlatOverlay"}, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "Ignore HealthPacks", &CFG::Materials_World_Ignore_HealthPacks, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "Ignore AmmoPacks", &CFG::Materials_World_Ignore_AmmoPacks, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "Ignore Halloween Gift", &CFG::Materials_World_Ignore_Halloween_Gift, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "Ignore MVM Money", &CFG::Materials_World_Ignore_MVM_Money, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "Ignore Local Projectiles", &CFG::Materials_World_Ignore_LocalProjectiles, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "Ignore Teammate Projectiles", &CFG::Materials_World_Ignore_TeammateProjectiles, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_right_col, &y_right, "Ignore Enemy Projectiles", &CFG::Materials_World_Ignore_EnemyProjectiles, false, 255, current_sub_item++);
+    // Menu part
+                // --- Hands Column: Hands Materials ---
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_hands_col, &y_hands, "Hands Active", &CFG::Materials_Hands_Active, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_hands_col, &y_hands, "Hands Material", &CFG::Materials_Hands_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel"}, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_hands_col, &y_hands, "Hands Hidden Material", &CFG::Materials_Hands_HiddenMaterial, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    float_slider(x_hands_col, &y_hands, "Hands Alpha", CFG::Materials_Hands_Alpha, 0.f, 1.f, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_hands_col, &y_hands, "Hands No Depth", &CFG::Materials_Hands_No_Depth, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_hands_col, &y_hands, "Hands Two Models", &CFG::Materials_Hands_TwoModels, std::vector<std::string>{"Off", "Overlay", "KSOverlay", "EsoOverlay", "FlatOverlay"}, false, 255, current_sub_item++);
+    // --- Weapons ---
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_hands_col, &y_hands, "Weapons Active", &CFG::Materials_Weapons_Active, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_hands_col, &y_hands, "Weapons Material", &CFG::Materials_Weapons_Material, std::vector<std::string>{"Off", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel"}, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_hands_col, &y_hands, "Weapons Hidden Material", &CFG::Materials_Weapons_HiddenMaterial, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    float_slider(x_hands_col, &y_hands, "Weapons Alpha", CFG::Materials_Weapons_Alpha, 0.f, 1.f, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    checkbox(x_hands_col, &y_hands, "Weapons No Depth", &CFG::Materials_Weapons_No_Depth, false, 255, current_sub_item++);
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_hands_col - 25, y_hands, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_hands_col, &y_hands, "Weapons Two Models", &CFG::Materials_Weapons_TwoModels, std::vector<std::string>{"Off", "Overlay", "KSOverlay", "EsoOverlay", "FlatOverlay"}, false, 255, current_sub_item++);
+    max_items = current_sub_item - 1;
+    }
+else if (visuals_sub_section == 4) { // Outlines
+        y = start_y;
+        // Define column positions (adjust widths as needed)
+        int x_left_col = x_left;
+        int x_center_col = x_left + 200; // Example width
+        int x_right_col = x_center_col + 200; // Example width
+        // Separate y for each column
+        int y_left = start_y;
+        int y_center = start_y;
+        int y_right = start_y;
+        // --- Left Column: Global & Players Outlines ---
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        else if (visuals_sub_section == 4) { // Outlines
-            y = start_y;
-            // Define column positions (adjust widths as needed)
-            int x_left_col = x_left;
-            int x_center_col = x_left + 200; // Example width
-            int x_right_col = x_center_col + 200; // Example width
-            // Separate y for each column
-            int y_left = start_y;
-            int y_center = start_y;
-            int y_right = start_y;
-            // --- Left Column: Global & Players Outlines ---
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Outlines Active", &CFG::Outlines_Active, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            combo(x_left_col, &y_left, "Outlines Style", &CFG::Outlines_Style, std::vector<std::string>{"Bloom", "Stencil", "Glow"}, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_left_col, &y_left, "Bloom Amount", CFG::Outlines_Bloom_Amount, 0.f, 5.f, current_sub_item++);
-            y_left += 20; // Space for Players
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_left_col, &y_left, "Players Alpha", CFG::Outlines_Players_Alpha, 0.f, 1.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Players Active", &CFG::Outlines_Players_Active, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore Local", &CFG::Outlines_Players_Ignore_Local, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore Friends", &CFG::Outlines_Players_Ignore_Friends, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore Teammates", &CFG::Outlines_Players_Ignore_Teammates, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Show Teammate Medics", &CFG::Outlines_Players_Show_Teammate_Medics, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_left_col, &y_left, "Ignore Enemies", &CFG::Outlines_Players_Ignore_Enemies, false, 255, current_sub_item++);
-            // --- Center Column: Buildings Outlines ---
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_center_col, &y_center, "Buildings Alpha", CFG::Outlines_Buildings_Alpha, 0.f, 1.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Buildings Active", &CFG::Outlines_Buildings_Active, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Ignore Local", &CFG::Outlines_Buildings_Ignore_Local, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Ignore Teammates", &CFG::Outlines_Buildings_Ignore_Teammates, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Show Teammate Dispensers", &CFG::Outlines_Buildings_Show_Teammate_Dispensers, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_center_col, &y_center, "Ignore Enemies", &CFG::Outlines_Buildings_Ignore_Enemies, false, 255, current_sub_item++);
-            // --- Right Column: World Outlines ---
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "World Active", &CFG::Outlines_World_Active, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            float_slider(x_right_col, &y_right, "World Alpha", CFG::Outlines_World_Alpha, 0.f, 1.f, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore HealthPacks", &CFG::Outlines_World_Ignore_HealthPacks, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore AmmoPacks", &CFG::Outlines_World_Ignore_AmmoPacks, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore Halloween Gift", &CFG::Outlines_World_Ignore_Halloween_Gift, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore MVM Money", &CFG::Outlines_World_Ignore_MVM_Money, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore Local Projectiles", &CFG::Outlines_World_Ignore_LocalProjectiles, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore Teammate Projectiles", &CFG::Outlines_World_Ignore_TeammateProjectiles, false, 255, current_sub_item++);
-            if (!menu_locked && menu::item_count == current_sub_item) {
-                H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            checkbox(x_right_col, &y_right, "Ignore Enemy Projectiles", &CFG::Outlines_World_Ignore_EnemyProjectiles, false, 255, current_sub_item++);
-            max_items = current_sub_item - 1;
+        checkbox(x_left_col, &y_left, "Outlines Active", &CFG::Outlines_Active, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_left_col, &y_left, "Outlines Style", &CFG::Outlines_Style, std::vector<std::string>{"Bloom", "Stencil", "Glow"}, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_left_col, &y_left, "Bloom Amount", CFG::Outlines_Bloom_Amount, 0.f, 5.f, current_sub_item++);
+        y_left += 20; // Space for Players
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_left_col, &y_left, "Players Alpha", CFG::Outlines_Players_Alpha, 0.f, 1.f, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left_col, &y_left, "Players Active", &CFG::Outlines_Players_Active, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left_col, &y_left, "Ignore Local", &CFG::Outlines_Players_Ignore_Local, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left_col, &y_left, "Ignore Friends", &CFG::Outlines_Players_Ignore_Friends, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left_col, &y_left, "Ignore Teammates", &CFG::Outlines_Players_Ignore_Teammates, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left_col, &y_left, "Show Teammate Medics", &CFG::Outlines_Players_Show_Teammate_Medics, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_left_col, &y_left, "Ignore Enemies", &CFG::Outlines_Players_Ignore_Enemies, false, 255, current_sub_item++);
+        // --- Center Column: Buildings Outlines ---
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_center_col, &y_center, "Buildings Alpha", CFG::Outlines_Buildings_Alpha, 0.f, 1.f, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center_col, &y_center, "Buildings Active", &CFG::Outlines_Buildings_Active, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center_col, &y_center, "Ignore Local", &CFG::Outlines_Buildings_Ignore_Local, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center_col, &y_center, "Ignore Teammates", &CFG::Outlines_Buildings_Ignore_Teammates, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center_col, &y_center, "Show Teammate Dispensers", &CFG::Outlines_Buildings_Show_Teammate_Dispensers, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_center_col, &y_center, "Ignore Enemies", &CFG::Outlines_Buildings_Ignore_Enemies, false, 255, current_sub_item++);
+        // --- Right Column: World Outlines ---
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right_col, &y_right, "World Active", &CFG::Outlines_World_Active, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        float_slider(x_right_col, &y_right, "World Alpha", CFG::Outlines_World_Alpha, 0.f, 1.f, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right_col, &y_right, "Ignore HealthPacks", &CFG::Outlines_World_Ignore_HealthPacks, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right_col, &y_right, "Ignore AmmoPacks", &CFG::Outlines_World_Ignore_AmmoPacks, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right_col, &y_right, "Ignore Halloween Gift", &CFG::Outlines_World_Ignore_Halloween_Gift, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right_col, &y_right, "Ignore MVM Money", &CFG::Outlines_World_Ignore_MVM_Money, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right_col, &y_right, "Ignore Local Projectiles", &CFG::Outlines_World_Ignore_LocalProjectiles, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right_col, &y_right, "Ignore Teammate Projectiles", &CFG::Outlines_World_Ignore_TeammateProjectiles, false, 255, current_sub_item++);
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_right_col - 25, y_right, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        checkbox(x_right_col, &y_right, "Ignore Enemy Projectiles", &CFG::Outlines_World_Ignore_EnemyProjectiles, false, 255, current_sub_item++);
+        max_items = current_sub_item - 1;
         }
     }
     else if (CFG::CurrentSection == 2) { // Playerlist section
@@ -1569,40 +1628,98 @@ void menu::render() {
         int x_right = x_center + 200;
         int start_y = y;
         y = start_y;
+        static int color_sub_section = 0;
+        int current_sub_item = current_item;
+        if (!menu_locked && menu::item_count == current_sub_item) {
+            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        combo(x_left, &y, "Sub Section", &color_sub_section, std::vector<std::string>{"ESP", "Chams", "Outlines"}, false, 255, current_sub_item++);
         struct ColorEntry {
             std::string name;
             Color_t* color;
         };
         std::vector<ColorEntry> color_entries;
-        color_entries.push_back(ColorEntry{ "Team Red", &CFG::Color_TeamRed });
-        color_entries.push_back(ColorEntry{ "Team Blue", &CFG::Color_TeamBlue });
-        color_entries.push_back(ColorEntry{ "Local", &CFG::Color_Local });
-        color_entries.push_back(ColorEntry{ "Ammo", &CFG::Color_Ammo });
-        color_entries.push_back(ColorEntry{ "Medkit", &CFG::Color_Medkit });
-        color_entries.push_back(ColorEntry{ "Flag", &CFG::Color_Flag });
-        color_entries.push_back(ColorEntry{ "Uber", &CFG::Color_Uber });
-        color_entries.push_back(ColorEntry{ "Outline", &CFG::Color_ESP_Outline });
-        color_entries.push_back(ColorEntry{ "Health Bar BG", &CFG::Color_HealthBarBG });
-        color_entries.push_back(ColorEntry{ "Health Low", &CFG::Color_HealthLow });
-        color_entries.push_back(ColorEntry{ "Health High", &CFG::Color_HealthHigh });
-        color_entries.push_back(ColorEntry{ "Overheal", &CFG::Color_Overheal });
-        color_entries.push_back(ColorEntry{ "Conds Text", &CFG::Color_CondsText });
-        color_entries.push_back(ColorEntry{ "Sniper Line", &CFG::Color_SniperLine });
-        color_entries.push_back(ColorEntry{ "Tracer Line", &CFG::Color_TracerLine });
-        color_entries.push_back(ColorEntry{ "Uber Text", &CFG::Color_UberText });
-        color_entries.push_back(ColorEntry{ "Uber Bar", &CFG::Color_UberBar });
-        color_entries.push_back(ColorEntry{ "Uber Outline", &CFG::Color_UberOutline });
-        color_entries.push_back(ColorEntry{ "Backtrack Skeleton", &CFG::Color_BacktrackSkeleton });
-        color_entries.push_back(ColorEntry{ "Aimbot FOV Circle", &CFG::Color_AimbotFOV });
-        color_entries.push_back(ColorEntry{ "Proj FOV Circle", &CFG::Color_ProjFOV });
-        color_entries.push_back(ColorEntry{ "Melee FOV Circle", &CFG::Color_MeleeFOV });
-        color_entries.push_back(ColorEntry{ "Offscreen Arrow", &CFG::Color_OffscreenArrow });
-        color_entries.push_back(ColorEntry{ "Name", &CFG::Color_Name });
-        color_entries.push_back(ColorEntry{ "Health Text", &CFG::Color_HealthText });
-        color_entries.push_back(ColorEntry{ "Skeleton", &CFG::Color_Skeleton });
-        color_entries.push_back(ColorEntry{ "Building Team", &CFG::Color_BuildingTeam });
-        color_entries.push_back(ColorEntry{ "Building Enemy", &CFG::Color_BuildingEnemy });
-        color_entries.push_back(ColorEntry{ "Building Name", &CFG::Color_BuildingName });
+        if (color_sub_section == 0) { // ESP
+            color_entries.push_back(ColorEntry{ "Team Red", &CFG::Color_TeamRed });
+            color_entries.push_back(ColorEntry{ "Team Blue", &CFG::Color_TeamBlue });
+            color_entries.push_back(ColorEntry{ "Local", &CFG::Color_Local });
+            color_entries.push_back(ColorEntry{ "Ammo", &CFG::Color_Ammo });
+            color_entries.push_back(ColorEntry{ "Medkit", &CFG::Color_Medkit });
+            color_entries.push_back(ColorEntry{ "Flag", &CFG::Color_Flag });
+            color_entries.push_back(ColorEntry{ "Uber", &CFG::Color_Uber });
+            color_entries.push_back(ColorEntry{ "ESP Outline", &CFG::Color_ESP_Outline });
+            color_entries.push_back(ColorEntry{ "Health Bar BG", &CFG::Color_HealthBarBG });
+            color_entries.push_back(ColorEntry{ "Health Low", &CFG::Color_HealthLow });
+            color_entries.push_back(ColorEntry{ "Health High", &CFG::Color_HealthHigh });
+            color_entries.push_back(ColorEntry{ "Overheal", &CFG::Color_Overheal });
+            color_entries.push_back(ColorEntry{ "Conds Text", &CFG::Color_CondsText });
+            color_entries.push_back(ColorEntry{ "Sniper Line", &CFG::Color_SniperLine });
+            color_entries.push_back(ColorEntry{ "Tracer Line", &CFG::Color_TracerLine });
+            color_entries.push_back(ColorEntry{ "Uber Text", &CFG::Color_UberText });
+            color_entries.push_back(ColorEntry{ "Uber Bar", &CFG::Color_UberBar });
+            color_entries.push_back(ColorEntry{ "Uber Outline", &CFG::Color_UberOutline });
+            color_entries.push_back(ColorEntry{ "Backtrack Skeleton", &CFG::Color_BacktrackSkeleton });
+            color_entries.push_back(ColorEntry{ "Aimbot FOV", &CFG::Color_AimbotFOV });
+            color_entries.push_back(ColorEntry{ "Proj FOV", &CFG::Color_ProjFOV });
+            color_entries.push_back(ColorEntry{ "Melee FOV", &CFG::Color_MeleeFOV });
+            color_entries.push_back(ColorEntry{ "Offscreen Arrow", &CFG::Color_OffscreenArrow });
+            color_entries.push_back(ColorEntry{ "Name", &CFG::Color_Name });
+            color_entries.push_back(ColorEntry{ "Health Text", &CFG::Color_HealthText });
+            color_entries.push_back(ColorEntry{ "Skeleton", &CFG::Color_Skeleton });
+            color_entries.push_back(ColorEntry{ "Building Team", &CFG::Color_BuildingTeam });
+            color_entries.push_back(ColorEntry{ "Building Enemy", &CFG::Color_BuildingEnemy });
+            color_entries.push_back(ColorEntry{ "Building Name", &CFG::Color_BuildingName });
+            color_entries.push_back(ColorEntry{ "Ammo Pack", &CFG::Color_AmmoPack });
+            color_entries.push_back(ColorEntry{ "Cheater", &CFG::Color_Cheater });
+            color_entries.push_back(ColorEntry{ "Enemy", &CFG::Color_Enemy });
+            color_entries.push_back(ColorEntry{ "Friend", &CFG::Color_Friend });
+            color_entries.push_back(ColorEntry{ "Halloween Gift", &CFG::Color_Halloween_Gift });
+            color_entries.push_back(ColorEntry{ "Health Pack", &CFG::Color_HealthPack });
+            color_entries.push_back(ColorEntry{ "Invisible", &CFG::Color_Invisible });
+            color_entries.push_back(ColorEntry{ "Invulnerable", &CFG::Color_Invulnerable });
+            color_entries.push_back(ColorEntry{ "MVM Money", &CFG::Color_MVM_Money });
+            color_entries.push_back(ColorEntry{ "Over Heal", &CFG::Color_OverHeal });
+            color_entries.push_back(ColorEntry{ "Retard Legit", &CFG::Color_RetardLegit });
+            color_entries.push_back(ColorEntry{ "Target", &CFG::Color_Target });
+            color_entries.push_back(ColorEntry{ "Teammate", &CFG::Color_Teammate });
+        }
+        else if (color_sub_section == 1) { // Chams
+            color_entries.push_back(ColorEntry{ "Hands", &CFG::Color_Hands });
+            color_entries.push_back(ColorEntry{ "Hands Overlay", &CFG::Color_Hands_Overlay });
+            color_entries.push_back(ColorEntry{ "Hands Sheen", &CFG::Color_Hands_Sheen });
+            color_entries.push_back(ColorEntry{ "Props", &CFG::Color_Props });
+            color_entries.push_back(ColorEntry{ "Weapon", &CFG::Color_Weapon });
+            color_entries.push_back(ColorEntry{ "Weapon Sheen", &CFG::Color_Weapon_Sheen });
+            color_entries.push_back(ColorEntry{ "Weapons", &CFG::Color_Weapons });
+            color_entries.push_back(ColorEntry{ "Weapons Overlay", &CFG::Color_Weapons_Overlay });
+            color_entries.push_back(ColorEntry{ "Players Friends", &CFG::Color_Players_Friends });
+            color_entries.push_back(ColorEntry{ "Players LagRecords", &CFG::Color_Players_LagRecords });
+            color_entries.push_back(ColorEntry{ "Players Local", &CFG::Color_Players_Local });
+            color_entries.push_back(ColorEntry{ "Players Overlay Local", &CFG::Color_Players_Overlay_Local });
+            color_entries.push_back(ColorEntry{ "Players Overlay Friends", &CFG::Color_Players_Overlay_Friends });
+            color_entries.push_back(ColorEntry{ "Players Teammates", &CFG::Color_Players_Teammates });
+            color_entries.push_back(ColorEntry{ "Players Overlay Teammates", &CFG::Color_Players_Overlay_Teammates });
+            color_entries.push_back(ColorEntry{ "Players Enemies", &CFG::Color_Players_Enemies });
+            color_entries.push_back(ColorEntry{ "Players Overlay Enemies", &CFG::Color_Players_Overlay_Enemies });
+            color_entries.push_back(ColorEntry{ "Buildings Local", &CFG::Color_Buildings_Local });
+            color_entries.push_back(ColorEntry{ "Buildings Overlay Local", &CFG::Color_Buildings_Overlay_Local });
+            color_entries.push_back(ColorEntry{ "Buildings Teammates", &CFG::Color_Buildings_Teammates });
+            color_entries.push_back(ColorEntry{ "Buildings Overlay Teammates", &CFG::Color_Buildings_Overlay_Teammates });
+            color_entries.push_back(ColorEntry{ "Buildings Enemies", &CFG::Color_Buildings_Enemies });
+            color_entries.push_back(ColorEntry{ "Buildings Overlay Enemies", &CFG::Color_Buildings_Overlay_Enemies });
+            color_entries.push_back(ColorEntry{ "Projectiles Local", &CFG::Color_Projectiles_Local });
+            color_entries.push_back(ColorEntry{ "Projectiles Overlay Local", &CFG::Color_Projectiles_Overlay_Local });
+            color_entries.push_back(ColorEntry{ "Projectiles Teammates", &CFG::Color_Projectiles_Teammates });
+            color_entries.push_back(ColorEntry{ "Projectiles Overlay Teammates", &CFG::Color_Projectiles_Overlay_Teammates });
+            color_entries.push_back(ColorEntry{ "Projectiles Enemies", &CFG::Color_Projectiles_Enemies });
+            color_entries.push_back(ColorEntry{ "Projectiles Overlay Enemies", &CFG::Color_Projectiles_Overlay_Enemies });
+        }
+        else if (color_sub_section == 2) { // Outlines
+            color_entries.push_back(ColorEntry{ "Ammo Pack Overlay", &CFG::Color_AmmoPack_Overlay });
+            color_entries.push_back(ColorEntry{ "Health Pack Overlay", &CFG::Color_HealthPack_Overlay });
+            color_entries.push_back(ColorEntry{ "Halloween Gift Overlay", &CFG::Color_Halloween_Gift_Overlay });
+            color_entries.push_back(ColorEntry{ "MVM Money Overlay", &CFG::Color_MVM_Money_Overlay });
+        }
         int num_colors = color_entries.size();
         int num_rows = (num_colors + 2) / 3; // ceil(num / 3)
         int base_item = current_item;
@@ -1648,11 +1765,8 @@ void menu::render() {
                 // Draw square after the name
                 int square_size = name_height - 4; // proporcional ao texto
                 if (square_size < 8) square_size = 8; // limite mínimo
-
                 int square_x = col_x + name_width + 8;
                 int square_y = y + (name_height / 2) - (square_size / 2);
-
-
                 // outline
                 H::Draw->OutlinedRect(
                     square_x - 1,
@@ -1661,7 +1775,6 @@ void menu::render() {
                     square_size + 2,
                     Color_t(0, 0, 0, 255)
                 );
-
                 // fill
                 H::Draw->Rect(
                     square_x,
@@ -1670,7 +1783,6 @@ void menu::render() {
                     square_size,
                     *color_entries[idx].color
                 );
-
                 current_item++;
             }
             y += 15;
@@ -1719,8 +1831,8 @@ void menu::render() {
             max_items = max_color_item;
         }
         last_mouse_down = mouse_down;
-    }
-    // Clamp item_count
-    if (menu::item_count > max_items) menu::item_count = 1;
-    if (menu::item_count < 1) menu::item_count = max_items;
+        }
+        // Clamp item_count
+        if (menu::item_count > max_items) menu::item_count = 1;
+        if (menu::item_count < 1) menu::item_count = max_items;
 }
