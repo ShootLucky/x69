@@ -1,3 +1,4 @@
+// MovementSimulation.h
 #pragma once
 
 #include "../src/SDK/SDK.h"
@@ -60,8 +61,64 @@ class CMovementSimulation
         void Restore(C_TFPlayer* pPlayer);
     };
 
+    class CPlayerDataCurrent
+    {
+    public:
+        Vec3 m_vecOrigin{};
+        Vec3 m_vecVelocity{};
+        Vec3 m_vecBaseVelocity{};
+        Vec3 m_vecViewOffset{};
+        C_BaseEntity* m_hGroundEntity{};
+        int m_fFlags{};
+        float m_flDucktime{};
+        float m_flDuckJumpTime{};
+        bool m_bDucked{};
+        bool m_bDucking{};
+        bool m_bInDuckJump{};
+        float m_flModelScale{};
+        int m_nButtons{};
+        float m_flLastMovementStunChange{};
+        float m_flStunLerpTarget{};
+        bool m_bStunNeedsFadeOut{};
+        float m_flPrevTauntYaw{};
+        float m_flTauntYaw{};
+        float m_flCurrentTauntMoveSpeed{};
+        int m_iKartState{};
+        float m_flVehicleReverseTime{};
+        float m_flHypeMeter{};
+        float m_flMaxspeed{};
+        int m_nAirDucked{};
+        bool m_bJumping{};
+        int m_iAirDash{};
+        float m_flWaterJumpTime{};
+        float m_flSwimSoundTime{};
+        int m_surfaceProps{};
+        void* m_pSurfaceData{};
+        float m_surfaceFriction{};
+        char m_chTextureType{};
+        Vec3 m_vecPunchAngle{};
+        Vec3 m_vecPunchAngleVel{};
+        float m_flJumpTime{};
+        unsigned char m_MoveType{};
+        unsigned char m_MoveCollide{};
+        Vec3 m_vecLadderNormal{};
+        float m_flGravity{};
+        unsigned char m_nWaterLevel{};
+        unsigned char m_nWaterType{};
+        float m_flFallVelocity{};
+        int m_nPlayerCond{};
+        int m_nPlayerCondEx{};
+        int m_nPlayerCondEx2{};
+        int m_nPlayerCondEx3{};
+        int m_nPlayerCondEx4{};
+        int _condition_bits{};
+
+        void UpdateFromPlayer(C_TFPlayer* pPlayer);
+    };
+
 private:
     CPlayerDataBackup m_PlayerDataBackup{};
+    CPlayerDataCurrent m_PlayerDataCurrent{};
     C_TFPlayer* m_pPlayer{};
     CMoveData m_MoveData{};
     bool m_bRunning{};

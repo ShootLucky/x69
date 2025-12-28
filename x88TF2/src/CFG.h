@@ -356,6 +356,22 @@ namespace CFG
 	CFGVAR(Color_Projectiles_Overlay_Enemies, Color_t(255, 0, 0, 255));
 	CFGVAR(Color_Hands_Overlay, Color_t(255, 255, 255, 255));
 	CFGVAR(Color_Weapons_Overlay, Color_t(255, 255, 255, 255));
+	CFGVAR(Outlines_Color_Teammates, Color_t(0, 255, 0, 255));
+	CFGVAR(Outlines_Color_LocalPlayer, Color_t(255, 255, 255, 255));
+	CFGVAR(Outlines_Color_Friends, Color_t(0, 255, 0, 255));
+	CFGVAR(Outlines_Color_TeammateMedics, Color_t(0, 255, 0, 255));
+	CFGVAR(Outlines_Color_Enemies, Color_t(255, 0, 0, 255));
+	CFGVAR(Outlines_Color_LocalBuildings, Color_t(255, 255, 255, 255));
+	CFGVAR(Outlines_Color_TeammateDispensers, Color_t(0, 255, 0, 255));
+	CFGVAR(Outlines_Color_TeammateBuildings, Color_t(0, 255, 0, 255));
+	CFGVAR(Outlines_Color_EnemyBuildings, Color_t(255, 0, 0, 255));
+	CFGVAR(Outlines_Color_HealthPack, Color_t(0, 255, 0, 255));
+	CFGVAR(Outlines_Color_AmmoPack, Color_t(255, 215, 0, 255));
+	CFGVAR(Outlines_Color_Halloween_Gift, Color_t(255, 165, 0, 255));
+	CFGVAR(Outlines_Color_MVM_Money, Color_t(0, 255, 255, 255));
+	CFGVAR(Outlines_Color_LocalProjectiles, Color_t(255, 255, 255, 255));
+	CFGVAR(Outlines_Color_TeammateProjectiles, Color_t(0, 255, 0, 255));
+	CFGVAR(Outlines_Color_EnemyProjectiles, Color_t(255, 0, 0, 255));
 #pragma endregion
 	CFGVAR(CurrentSection, 0);
 }

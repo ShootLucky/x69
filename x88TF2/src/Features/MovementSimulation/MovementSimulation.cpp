@@ -1,3 +1,4 @@
+// MovementSimulation.cpp
 #include "MovementSimulation.h"
 
 #include "../LagRecords/Backtrack.h"
@@ -108,6 +109,58 @@ void CMovementSimulation::CPlayerDataBackup::Restore(C_TFPlayer* pPlayer)
 	pPlayer->_condition_bits() = _condition_bits;
 }
 
+void CMovementSimulation::CPlayerDataCurrent::UpdateFromPlayer(C_TFPlayer* pPlayer)
+{
+	m_vecOrigin = pPlayer->m_vecOrigin();
+	m_vecVelocity = pPlayer->m_vecVelocity();
+	m_vecBaseVelocity = pPlayer->m_vecBaseVelocity();
+	m_vecViewOffset = pPlayer->m_vecViewOffset();
+	m_hGroundEntity = pPlayer->m_hGroundEntity();
+	m_fFlags = pPlayer->m_fFlags();
+	m_flDucktime = pPlayer->m_flDucktime();
+	m_flDuckJumpTime = pPlayer->m_flDuckJumpTime();
+	m_bDucked = pPlayer->m_bDucked();
+	m_bDucking = pPlayer->m_bDucking();
+	m_bInDuckJump = pPlayer->m_bInDuckJump();
+	m_flModelScale = pPlayer->m_flModelScale();
+	m_nButtons = pPlayer->m_nButtons();
+	m_flLastMovementStunChange = pPlayer->m_flLastMovementStunChange();
+	m_flStunLerpTarget = pPlayer->m_flStunLerpTarget();
+	m_bStunNeedsFadeOut = pPlayer->m_bStunNeedsFadeOut();
+	m_flPrevTauntYaw = pPlayer->m_flPrevTauntYaw();
+	m_flTauntYaw = pPlayer->m_flTauntYaw();
+	m_flCurrentTauntMoveSpeed = pPlayer->m_flCurrentTauntMoveSpeed();
+	m_iKartState = pPlayer->m_iKartState();
+	m_flVehicleReverseTime = pPlayer->m_flVehicleReverseTime();
+	m_flHypeMeter = pPlayer->m_flHypeMeter();
+	m_flMaxspeed = pPlayer->m_flMaxspeed();
+	m_nAirDucked = pPlayer->m_nAirDucked();
+	m_bJumping = pPlayer->m_bJumping();
+	m_iAirDash = pPlayer->m_iAirDash();
+	m_flWaterJumpTime = pPlayer->m_flWaterJumpTime();
+	m_flSwimSoundTime = pPlayer->m_flSwimSoundTime();
+	m_surfaceProps = pPlayer->m_surfaceProps();
+	m_pSurfaceData = pPlayer->m_pSurfaceData();
+	m_surfaceFriction = pPlayer->m_surfaceFriction();
+	m_chTextureType = pPlayer->m_chTextureType();
+	m_vecPunchAngle = pPlayer->m_vecPunchAngle();
+	m_vecPunchAngleVel = pPlayer->m_vecPunchAngleVel();
+	m_flJumpTime = pPlayer->m_flJumpTime();
+	m_MoveType = pPlayer->m_MoveType();
+	m_MoveCollide = pPlayer->m_MoveCollide();
+	m_vecLadderNormal = pPlayer->m_vecLadderNormal();
+	m_flGravity = pPlayer->m_flGravity();
+	m_nWaterLevel = pPlayer->m_nWaterLevel_C_BaseEntity();
+	m_nWaterType = pPlayer->m_nWaterType();
+	m_flFallVelocity = pPlayer->m_flFallVelocity();
+	m_nPlayerCond = pPlayer->m_nPlayerCond();
+	m_nPlayerCondEx = pPlayer->m_nPlayerCondEx();
+	m_nPlayerCondEx2 = pPlayer->m_nPlayerCondEx2();
+	m_nPlayerCondEx3 = pPlayer->m_nPlayerCondEx3();
+	m_nPlayerCondEx4 = pPlayer->m_nPlayerCondEx4();
+	_condition_bits = pPlayer->_condition_bits();
+}
+
 void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveData)
 {
 	if (!pPlayer || !pMoveData)
@@ -120,26 +173,38 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
 	pMoveData->m_vecAbsOrigin = pPlayer->m_vecOrigin();
 	pMoveData->m_flMaxSpeed = pPlayer->TeamFortress_CalculateMaxSpeed();
 
-	if (m_PlayerDataBackup.m_fFlags & FL_DUCKING)
+	if (m_PlayerDataCurrent.m_fFlags & FL_DUCKING)
 		pMoveData->m_flMaxSpeed *= 0.3333f;
 
 	pMoveData->m_flClientMaxSpeed = pMoveData->m_flMaxSpeed;
 
-	pMoveData->m_vecViewAngles = { 0.0f, Math::VelocityToAngles(pMoveData->m_vecVelocity).y, 0.0f };
+	float yaw = 0.0f;
+	if (F::LagRecords->HasRecords(pPlayer))
+	{
+		auto rec = F::LagRecords->GetRecord(pPlayer, 0);
+		if (rec)
+		{
+			yaw = rec->EyeAngles.y;
+		}
+	}
+	else
+	{
+		yaw = Math::VelocityToAngles(pMoveData->m_vecVelocity).y;
+	}
+	pMoveData->m_vecViewAngles = { 0.0f, yaw, 0.0f };
+
+	Vec3 vForward = {}, vRight = {};
+	Math::AngleVectors(pMoveData->m_vecViewAngles, &vForward, &vRight, nullptr);
 
 	if (CFG::Aimbot_Projectile_PredictionMethod == 0)
 	{
 		pMoveData->m_flForwardMove = 450.0f;
 		pMoveData->m_flSideMove = 0.0f;
 	}
-
 	else
 	{
-		Vec3 vForward = {}, vRight = {};
-		Math::AngleVectors(pMoveData->m_vecViewAngles, &vForward, &vRight, nullptr);
-
-		pMoveData->m_flForwardMove = (pMoveData->m_vecVelocity.y - vRight.y / vRight.x * pMoveData->m_vecVelocity.x) / (vForward.y - vRight.y / vRight.x * vForward.x);
-		pMoveData->m_flSideMove = (pMoveData->m_vecVelocity.x - vForward.x * pMoveData->m_flForwardMove) / vRight.x;
+		pMoveData->m_flForwardMove = pMoveData->m_vecVelocity.Dot(vForward);
+		pMoveData->m_flSideMove = pMoveData->m_vecVelocity.Dot(vRight);
 	}
 
 	const float flSpeed = pPlayer->m_vecVelocity().Length2D();
@@ -162,14 +227,10 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
 	m_flYawTurnRate = 0.0f;
 
 	// Ground strafe prediction - further enhanced with Amalgam-inspired improvements for accuracy
-	if (CFG::Aimbot_Projectile_GroundStrafePrediction && (m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && F::LagRecords->HasRecords(pPlayer))
+	if (CFG::Aimbot_Projectile_GroundStrafePrediction && (m_PlayerDataCurrent.m_fFlags & FL_ONGROUND) && F::LagRecords->HasRecords(pPlayer))
 	{
 		// Lowered min speed threshold for better detection of slower strafes
 		const float flMinSpeed = m_MoveData.m_flMaxSpeed * 0.3f;
-		if (m_MoveData.m_vecVelocity.Length2D() < flMinSpeed)
-		{
-			return;
-		}
 
 		// Increased to 10 samples for more robust detection and smoother averaging
 		const auto pRecord0 = F::LagRecords->GetRecord(pPlayer, 0);
@@ -185,36 +246,74 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
 
 		if (pRecord0 && pRecord1 && pRecord2 && pRecord3 && pRecord4 && pRecord5 && pRecord6 && pRecord7 && pRecord8 && pRecord9)
 		{
-			// Vector-based rotation calculation (Amalgam/jvnkbinv1 inspired)
-			auto CalculateRotationAngle = [](const Vec3& v1, const Vec3& v2) -> float
+			if (!(pRecord0->Flags & FL_ONGROUND) || !(pRecord1->Flags & FL_ONGROUND) || !(pRecord2->Flags & FL_ONGROUND) ||
+				!(pRecord3->Flags & FL_ONGROUND) || !(pRecord4->Flags & FL_ONGROUND) || !(pRecord5->Flags & FL_ONGROUND) ||
+				!(pRecord6->Flags & FL_ONGROUND) || !(pRecord7->Flags & FL_ONGROUND) || !(pRecord8->Flags & FL_ONGROUND) ||
+				!(pRecord9->Flags & FL_ONGROUND))
+			{
+				return;
+			}
+
+			auto GetNormal = [&](const LagRecord_t* rec) -> Vec3
 				{
-					const float len1 = v1.Length2D();
-					const float len2 = v2.Length2D();
+					Vec3 start = rec->AbsOrigin;
+					start.z += 1.0f;
+					Vec3 end = rec->AbsOrigin;
+					end.z -= 32.0f;
+
+					trace_t trace{};
+					Ray_t ray;
+					ray.Init(start, end);
+					CTraceFilterSimple filter(pPlayer, COLLISION_GROUP_NONE);
+					I::EngineTrace->TraceRay(ray, MASK_SOLID_BRUSHONLY, &filter, &trace);
+
+					if (trace.fraction < 1.0f && !trace.startsolid)
+					{
+						return trace.plane.normal;
+					}
+
+					return { 0.0f, 0.0f, 1.0f };
+				};
+
+			// Vector-based rotation calculation (Amalgam/jvnkbinv1 inspired)
+			auto CalculateRotationAngle = [](const Vec3& v1, const Vec3& v2, const Vec3& n) -> float
+				{
+					Vec3 v1_proj = v1 - n * v1.Dot(n);
+					Vec3 v2_proj = v2 - n * v2.Dot(n);
+
+					float len1 = v1_proj.Length();
+					float len2 = v2_proj.Length();
 
 					if (len1 < 0.01f || len2 < 0.01f)
 						return 0.0f;
 
-					const float nx1 = v1.x / len1;
-					const float ny1 = v1.y / len1;
-					const float nx2 = v2.x / len2;
-					const float ny2 = v2.y / len2;
+					v1_proj.Normalize();
+					v2_proj.Normalize();
 
-					const float sin_theta = nx1 * ny2 - ny1 * nx2;
-					const float cos_theta = nx1 * nx2 + ny1 * ny2;
+					float cos_theta = v1_proj.Dot(v2_proj);
+					Vec3 cross = v1_proj.Cross(v2_proj);
+					float sin_theta = cross.Length() * (cross.Dot(n) >= 0.0f ? 1.0f : -1.0f);
 
-					return atan2f(sin_theta, cos_theta) * (180.0f / 3.14159265f);
+					return atan2f(sin_theta, cos_theta) * (180.0f / PI);
 				};
 
+			Vec3 current_normal = GetNormal(pRecord0);
+			Vec3 current_vel_proj = m_MoveData.m_vecVelocity - current_normal * (m_MoveData.m_vecVelocity.Dot(current_normal));
+			if (current_vel_proj.Length() < flMinSpeed)
+			{
+				return;
+			}
+
 			// Calculate more rotation deltas
-			const float flDelta0 = CalculateRotationAngle(pRecord1->Velocity, pRecord0->Velocity);
-			const float flDelta1 = CalculateRotationAngle(pRecord2->Velocity, pRecord1->Velocity);
-			const float flDelta2 = CalculateRotationAngle(pRecord3->Velocity, pRecord2->Velocity);
-			const float flDelta3 = CalculateRotationAngle(pRecord4->Velocity, pRecord3->Velocity);
-			const float flDelta4 = CalculateRotationAngle(pRecord5->Velocity, pRecord4->Velocity);
-			const float flDelta5 = CalculateRotationAngle(pRecord6->Velocity, pRecord5->Velocity);
-			const float flDelta6 = CalculateRotationAngle(pRecord7->Velocity, pRecord6->Velocity);
-			const float flDelta7 = CalculateRotationAngle(pRecord8->Velocity, pRecord7->Velocity);
-			const float flDelta8 = CalculateRotationAngle(pRecord9->Velocity, pRecord8->Velocity);
+			const float flDelta0 = CalculateRotationAngle(pRecord1->Velocity, pRecord0->Velocity, GetNormal(pRecord0));
+			const float flDelta1 = CalculateRotationAngle(pRecord2->Velocity, pRecord1->Velocity, GetNormal(pRecord1));
+			const float flDelta2 = CalculateRotationAngle(pRecord3->Velocity, pRecord2->Velocity, GetNormal(pRecord2));
+			const float flDelta3 = CalculateRotationAngle(pRecord4->Velocity, pRecord3->Velocity, GetNormal(pRecord3));
+			const float flDelta4 = CalculateRotationAngle(pRecord5->Velocity, pRecord4->Velocity, GetNormal(pRecord4));
+			const float flDelta5 = CalculateRotationAngle(pRecord6->Velocity, pRecord5->Velocity, GetNormal(pRecord5));
+			const float flDelta6 = CalculateRotationAngle(pRecord7->Velocity, pRecord6->Velocity, GetNormal(pRecord6));
+			const float flDelta7 = CalculateRotationAngle(pRecord8->Velocity, pRecord7->Velocity, GetNormal(pRecord7));
+			const float flDelta8 = CalculateRotationAngle(pRecord9->Velocity, pRecord8->Velocity, GetNormal(pRecord8));
 
 			// Stricter rejection for large deltas on ground (reduced from 45 to 35 for accuracy)
 			if (fabsf(flDelta0) > 35.0f || fabsf(flDelta1) > 35.0f || fabsf(flDelta2) > 35.0f ||
@@ -259,7 +358,7 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
 			}
 
 			// Improved speed ratio clamping for better low-speed accuracy
-			const float flSpeedRatio = std::clamp(m_MoveData.m_vecVelocity.Length2D() / m_MoveData.m_flMaxSpeed, 0.4f, 1.0f);
+			const float flSpeedRatio = std::clamp(current_vel_proj.Length() / m_MoveData.m_flMaxSpeed, 0.4f, 1.0f);
 
 			// Adjusted clamp range for ground
 			m_flYawTurnRate = std::clamp(flWeightedAvg * flSpeedRatio, -18.0f, 18.0f);
@@ -267,7 +366,7 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
 	}
 
 	// Air strafe prediction - further enhanced with Amalgam-inspired improvements for accuracy
-	if (CFG::Aimbot_Projectile_AdvancedAirStrafe && !(m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && F::LagRecords->HasRecords(pPlayer))
+	if (CFG::Aimbot_Projectile_AdvancedAirStrafe && !(m_PlayerDataCurrent.m_fFlags & FL_ONGROUND) && F::LagRecords->HasRecords(pPlayer))
 	{
 		// Increased to 10 samples for air as well
 		const LagRecord_t* rec0{ F::LagRecords->GetRecord(pPlayer, 0) };
@@ -300,7 +399,7 @@ void CMovementSimulation::SetupMoveData(C_TFPlayer* pPlayer, CMoveData* pMoveDat
 					const float sin_theta = nx1 * ny2 - ny1 * nx2;
 					const float cos_theta = nx1 * nx2 + ny1 * ny2;
 
-					return atan2f(sin_theta, cos_theta) * (180.0f / 3.14159265f);
+					return atan2f(sin_theta, cos_theta) * (180.0f / PI);
 				};
 
 			// More deltas
@@ -379,6 +478,7 @@ bool CMovementSimulation::Initialize(C_TFPlayer* pPlayer)
 
 	//store player's data
 	m_PlayerDataBackup.Store(m_pPlayer);
+	m_PlayerDataCurrent.UpdateFromPlayer(m_pPlayer);
 
 	//store vars
 	m_bOldInPrediction = I::Prediction->m_bInPrediction;
@@ -404,13 +504,6 @@ bool CMovementSimulation::Initialize(C_TFPlayer* pPlayer)
 
 		if (pPlayer->m_fFlags() & FL_ONGROUND)
 			pPlayer->m_vecOrigin().z += 0.03125f * 3.0f; //to prevent getting stuck in the ground
-
-		//for some reason if xy vel is zero it doesn't predict
-		if (fabsf(pPlayer->m_vecVelocity().x) < 0.01f)
-			pPlayer->m_vecVelocity().x = 0.015f;
-
-		if (fabsf(pPlayer->m_vecVelocity().y) < 0.01f)
-			pPlayer->m_vecVelocity().y = 0.015f;
 
 		if ((pPlayer->m_fFlags() & FL_ONGROUND) || pPlayer->m_hGroundEntity().Get())
 		{
@@ -452,58 +545,188 @@ void CMovementSimulation::RunTick(float flTimeToTarget)
 		return;
 	}
 
+	m_PlayerDataCurrent.UpdateFromPlayer(m_pPlayer);
+
 	//make sure frametime and prediction vars are right
 	I::Prediction->m_bInPrediction = true;
 	I::Prediction->m_bFirstTimePredicted = false;
 	I::GlobalVars->frametime = I::Prediction->m_bEnginePaused ? 0.0f : TICK_INTERVAL;
 
-	// Early exit for stationary grounded players (performance optimization)
-	if (m_MoveData.m_vecVelocity.Length() < 15.0f && (m_pPlayer->m_fFlags() & FL_ONGROUND))
+	bool isStationary = false;
+
+	if (F::LagRecords->HasRecords(m_pPlayer))
 	{
-		return;
+		float avgVel = 0.0f;
+		int countVel = 0;
+		float maxVelChange = 0.0f;
+		float minDot = 1.0f;
+		int countDir = 0;
+
+		for (int i = 0; i < 5; ++i)
+		{
+			auto rec = F::LagRecords->GetRecord(m_pPlayer, i);
+			if (!rec) break;
+			avgVel += rec->Velocity.Length2D();
+			countVel++;
+
+			if (i < 4)
+			{
+				auto nextRec = F::LagRecords->GetRecord(m_pPlayer, i + 1);
+				if (nextRec)
+				{
+					float velChange = (rec->Velocity - nextRec->Velocity).Length2D();
+					maxVelChange = std::max(maxVelChange, velChange);
+
+					float len1 = rec->Velocity.Length2D();
+					float len2 = nextRec->Velocity.Length2D();
+					if (len1 > 3.0f && len2 > 3.0f)
+					{
+						Vec3 v1 = rec->Velocity;
+						v1.z = 0.0f;
+						v1.Normalize();
+						Vec3 v2 = nextRec->Velocity;
+						v2.z = 0.0f;
+						v2.Normalize();
+						float dot = v1.Dot(v2);
+						minDot = std::min(minDot, dot);
+						countDir++;
+					}
+				}
+			}
+		}
+		if (countVel > 0)
+		{
+			avgVel /= countVel;
+		}
+
+		isStationary = (avgVel < 5.0f && maxVelChange < 3.0f && (countDir == 0 || minDot > 0.95f));
+
+		// Additional position delta check
+		auto rec0 = F::LagRecords->GetRecord(m_pPlayer, 0);
+		auto rec4 = F::LagRecords->GetRecord(m_pPlayer, 4);
+		if (rec0 && rec4)
+		{
+			float posDelta = (rec0->AbsOrigin - rec4->AbsOrigin).Length2D();
+			if (posDelta > 5.0f)
+			{
+				isStationary = false;
+			}
+		}
+	}
+	else
+	{
+		// Fallback if no records
+		float velLen2D = m_PlayerDataCurrent.m_vecVelocity.Length2D();
+		isStationary = velLen2D < 5.0f;
 	}
 
-	// Apply strafe prediction with enhanced Amalgam-style corrections
-	float flCorrection = 0.0f;
-	const bool bIsGrounded = (m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && (m_pPlayer->m_fFlags() & FL_ONGROUND);
-	const bool bIsAirborne = !(m_PlayerDataBackup.m_fFlags & FL_ONGROUND) && !(m_pPlayer->m_fFlags() & FL_ONGROUND);
-
-	if (m_flYawTurnRate != 0.0f)
-	{
-		if (CFG::Aimbot_Projectile_GroundStrafePrediction && bIsGrounded)
-		{
-			// Ground strafe: Apply with adjusted time-based scaling for longer predictions
-			m_MoveData.m_vecViewAngles.y += m_flYawTurnRate * Math::RemapValClamped(flTimeToTarget, 0.0f, 1.0f, 1.0f, 0.6f);
+	if (isStationary) {
+		if (m_PlayerDataCurrent.m_fFlags & FL_ONGROUND) {
+			// Truly stationary on ground: no change needed
+			return;
 		}
-		else if (CFG::Aimbot_Projectile_AdvancedAirStrafe && bIsAirborne)
-		{
-			// Air strafe: Apply 90-degree correction with slight adjustment for accuracy
-			flCorrection = 90.0f * (m_flYawTurnRate > 0.0f ? 1.0f : -1.0f);
-			m_MoveData.m_vecViewAngles.y += m_flYawTurnRate + flCorrection;
+		else {
+			// Stationary in air: set moves to 0 and let engine handle gravity
+			m_MoveData.m_flForwardMove = 0.0f;
+			m_MoveData.m_flSideMove = 0.0f;
 		}
 	}
 
 	// Duck speed reduction (Amalgam technique)
 	float flOldMaxSpeed = m_MoveData.m_flClientMaxSpeed;
-	if (m_pPlayer->m_bDucked() && (m_pPlayer->m_fFlags() & FL_ONGROUND) && (m_pPlayer->m_nWaterLevel() < 2))
+	if (m_pPlayer->m_bDucked() && (m_PlayerDataCurrent.m_fFlags & FL_ONGROUND) && (m_PlayerDataCurrent.m_nWaterLevel < 2))
 	{
 		m_MoveData.m_flClientMaxSpeed /= 3.0f;
 	}
 
 	m_bRunning = true;
 
-	I::GameMovement->ProcessMovement(m_pPlayer, &m_MoveData);
+	const int NUM_SUBSTEPS = 4;
+	float original_frametime = I::GlobalVars->frametime;
+	float sub_frametime = original_frametime / static_cast<float>(NUM_SUBSTEPS);
+	I::GlobalVars->frametime = sub_frametime;
+
+	// Precompute total adjustments
+	float totalGroundAdjustment = 0.0f;
+	float totalAirCorrection = 0.0f;
+	float totalAirTurn = 0.0f;
+	const bool bIsGroundedInitial = (m_PlayerDataCurrent.m_fFlags & FL_ONGROUND);
+	const bool bIsAirborneInitial = !bIsGroundedInitial;
+
+	if (m_flYawTurnRate != 0.0f)
+	{
+		if (CFG::Aimbot_Projectile_GroundStrafePrediction && bIsGroundedInitial)
+		{
+			totalGroundAdjustment = m_flYawTurnRate * Math::RemapValClamped(flTimeToTarget, 0.0f, 1.0f, 1.0f, 0.6f);
+		}
+		else if (CFG::Aimbot_Projectile_AdvancedAirStrafe && bIsAirborneInitial)
+		{
+			totalAirTurn = m_flYawTurnRate;
+		}
+	}
+
+	float subGroundAdjustment = totalGroundAdjustment / static_cast<float>(NUM_SUBSTEPS);
+	float airSign = (totalAirTurn > 0.0f ? 1.0f : -1.0f);
+	float baseAirTurnRate = totalAirTurn;
+	float airaccel = I::CVar->FindVar("sv_airaccelerate")->GetFloat();
+
+	for (int substep = 0; substep < NUM_SUBSTEPS; ++substep)
+	{
+		// Update current state before each substep
+		m_PlayerDataCurrent.UpdateFromPlayer(m_pPlayer);
+
+		// Re-evaluate grounded/airborne for this substep
+		const bool bIsGrounded = (m_PlayerDataCurrent.m_fFlags & FL_ONGROUND);
+		const bool bIsAirborne = !bIsGrounded;
+
+		// Apply fractional adjustment for this substep
+		float flSubCorrection = 0.0f;
+		if (m_flYawTurnRate != 0.0f)
+		{
+			if (CFG::Aimbot_Projectile_GroundStrafePrediction && bIsGrounded)
+			{
+				m_MoveData.m_vecViewAngles.y += subGroundAdjustment;
+			}
+			else if (CFG::Aimbot_Projectile_AdvancedAirStrafe && bIsAirborne)
+			{
+				float accel_dt = airaccel * 30.0f * sub_frametime;
+				float current_speed2d = m_MoveData.m_vecVelocity.Length2D();
+				if (current_speed2d < 0.01f) current_speed2d = 0.01f;
+				float max_sub_turn = RAD2DEG(atanf(accel_dt / current_speed2d));
+
+				float sub_turn = baseAirTurnRate * (sub_frametime / TICK_INTERVAL);
+				sub_turn = std::clamp(sub_turn, -max_sub_turn, max_sub_turn);
+
+				float vel_angle = Math::VelocityToAngles(m_MoveData.m_vecVelocity).y;
+				flSubCorrection = 90.0f * airSign;
+				m_MoveData.m_vecViewAngles.y = vel_angle + flSubCorrection + sub_turn;
+			}
+		}
+
+		// Re-setup forward/side move based on current view angles
+		Vec3 vForward = {}, vRight = {};
+		Math::AngleVectors(m_MoveData.m_vecViewAngles, &vForward, &vRight, nullptr);
+		m_MoveData.m_flForwardMove = m_MoveData.m_vecVelocity.Dot(vForward);
+		m_MoveData.m_flSideMove = m_MoveData.m_vecVelocity.Dot(vRight);
+
+		// Process the substep
+		I::GameMovement->ProcessMovement(m_pPlayer, &m_MoveData);
+
+		// Remove sub-correction after substep
+		if (flSubCorrection != 0.0f)
+		{
+			m_MoveData.m_vecViewAngles.y -= flSubCorrection;
+		}
+	}
+
+	I::GlobalVars->frametime = original_frametime;
 
 	m_bRunning = false;
 
 	// Restore max speed
 	m_MoveData.m_flClientMaxSpeed = flOldMaxSpeed;
 
-	// Remove air strafe correction after simulation
-	if (flCorrection != 0.0f)
-	{
-		m_MoveData.m_vecViewAngles.y -= flCorrection;
-	}
+	m_PlayerDataCurrent.UpdateFromPlayer(m_pPlayer);
 }
 
 const Vec3& CMovementSimulation::GetSimulatedVelocity() const
@@ -519,7 +742,7 @@ const Vec3& CMovementSimulation::GetOrigin() const
 
 bool CMovementSimulation::IsSimulatedOnGround() const
 {
-	return (m_PlayerDataBackup.m_fFlags & FL_ONGROUND) != 0;
+	return (m_PlayerDataCurrent.m_fFlags & FL_ONGROUND) != 0;
 }
 
 const Vec3& CMovementSimulation::GetSimulatedOrigin() const

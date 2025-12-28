@@ -1622,217 +1622,233 @@ else if (visuals_sub_section == 4) { // Outlines
         button(x_center, &y, "Load Config", LoadConfig, current_item++);
         max_items = current_item - 1;
     }
-    else if (CFG::CurrentSection == 4) { // Colors section
-        int x_left = 150;
-        int x_center = x_left + 200;
-        int x_right = x_center + 200;
-        int start_y = y;
-        y = start_y;
-        static int color_sub_section = 0;
-        int current_sub_item = current_item;
-        if (!menu_locked && menu::item_count == current_sub_item) {
-            H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-        }
-        combo(x_left, &y, "Sub Section", &color_sub_section, std::vector<std::string>{"ESP", "Chams", "Outlines"}, false, 255, current_sub_item++);
-        struct ColorEntry {
-            std::string name;
-            Color_t* color;
-        };
-        std::vector<ColorEntry> color_entries;
-        if (color_sub_section == 0) { // ESP
-            color_entries.push_back(ColorEntry{ "Team Red", &CFG::Color_TeamRed });
-            color_entries.push_back(ColorEntry{ "Team Blue", &CFG::Color_TeamBlue });
-            color_entries.push_back(ColorEntry{ "Local", &CFG::Color_Local });
-            color_entries.push_back(ColorEntry{ "Ammo", &CFG::Color_Ammo });
-            color_entries.push_back(ColorEntry{ "Medkit", &CFG::Color_Medkit });
-            color_entries.push_back(ColorEntry{ "Flag", &CFG::Color_Flag });
-            color_entries.push_back(ColorEntry{ "Uber", &CFG::Color_Uber });
-            color_entries.push_back(ColorEntry{ "ESP Outline", &CFG::Color_ESP_Outline });
-            color_entries.push_back(ColorEntry{ "Health Bar BG", &CFG::Color_HealthBarBG });
-            color_entries.push_back(ColorEntry{ "Health Low", &CFG::Color_HealthLow });
-            color_entries.push_back(ColorEntry{ "Health High", &CFG::Color_HealthHigh });
-            color_entries.push_back(ColorEntry{ "Overheal", &CFG::Color_Overheal });
-            color_entries.push_back(ColorEntry{ "Conds Text", &CFG::Color_CondsText });
-            color_entries.push_back(ColorEntry{ "Sniper Line", &CFG::Color_SniperLine });
-            color_entries.push_back(ColorEntry{ "Tracer Line", &CFG::Color_TracerLine });
-            color_entries.push_back(ColorEntry{ "Uber Text", &CFG::Color_UberText });
-            color_entries.push_back(ColorEntry{ "Uber Bar", &CFG::Color_UberBar });
-            color_entries.push_back(ColorEntry{ "Uber Outline", &CFG::Color_UberOutline });
-            color_entries.push_back(ColorEntry{ "Backtrack Skeleton", &CFG::Color_BacktrackSkeleton });
-            color_entries.push_back(ColorEntry{ "Aimbot FOV", &CFG::Color_AimbotFOV });
-            color_entries.push_back(ColorEntry{ "Proj FOV", &CFG::Color_ProjFOV });
-            color_entries.push_back(ColorEntry{ "Melee FOV", &CFG::Color_MeleeFOV });
-            color_entries.push_back(ColorEntry{ "Offscreen Arrow", &CFG::Color_OffscreenArrow });
-            color_entries.push_back(ColorEntry{ "Name", &CFG::Color_Name });
-            color_entries.push_back(ColorEntry{ "Health Text", &CFG::Color_HealthText });
-            color_entries.push_back(ColorEntry{ "Skeleton", &CFG::Color_Skeleton });
-            color_entries.push_back(ColorEntry{ "Building Team", &CFG::Color_BuildingTeam });
-            color_entries.push_back(ColorEntry{ "Building Enemy", &CFG::Color_BuildingEnemy });
-            color_entries.push_back(ColorEntry{ "Building Name", &CFG::Color_BuildingName });
-            color_entries.push_back(ColorEntry{ "Ammo Pack", &CFG::Color_AmmoPack });
-            color_entries.push_back(ColorEntry{ "Cheater", &CFG::Color_Cheater });
-            color_entries.push_back(ColorEntry{ "Enemy", &CFG::Color_Enemy });
-            color_entries.push_back(ColorEntry{ "Friend", &CFG::Color_Friend });
-            color_entries.push_back(ColorEntry{ "Halloween Gift", &CFG::Color_Halloween_Gift });
-            color_entries.push_back(ColorEntry{ "Health Pack", &CFG::Color_HealthPack });
-            color_entries.push_back(ColorEntry{ "Invisible", &CFG::Color_Invisible });
-            color_entries.push_back(ColorEntry{ "Invulnerable", &CFG::Color_Invulnerable });
-            color_entries.push_back(ColorEntry{ "MVM Money", &CFG::Color_MVM_Money });
-            color_entries.push_back(ColorEntry{ "Over Heal", &CFG::Color_OverHeal });
-            color_entries.push_back(ColorEntry{ "Retard Legit", &CFG::Color_RetardLegit });
-            color_entries.push_back(ColorEntry{ "Target", &CFG::Color_Target });
-            color_entries.push_back(ColorEntry{ "Teammate", &CFG::Color_Teammate });
-        }
-        else if (color_sub_section == 1) { // Chams
-            color_entries.push_back(ColorEntry{ "Hands", &CFG::Color_Hands });
-            color_entries.push_back(ColorEntry{ "Hands Overlay", &CFG::Color_Hands_Overlay });
-            color_entries.push_back(ColorEntry{ "Hands Sheen", &CFG::Color_Hands_Sheen });
-            color_entries.push_back(ColorEntry{ "Props", &CFG::Color_Props });
-            color_entries.push_back(ColorEntry{ "Weapon", &CFG::Color_Weapon });
-            color_entries.push_back(ColorEntry{ "Weapon Sheen", &CFG::Color_Weapon_Sheen });
-            color_entries.push_back(ColorEntry{ "Weapons", &CFG::Color_Weapons });
-            color_entries.push_back(ColorEntry{ "Weapons Overlay", &CFG::Color_Weapons_Overlay });
-            color_entries.push_back(ColorEntry{ "Players Friends", &CFG::Color_Players_Friends });
-            color_entries.push_back(ColorEntry{ "Players LagRecords", &CFG::Color_Players_LagRecords });
-            color_entries.push_back(ColorEntry{ "Players Local", &CFG::Color_Players_Local });
-            color_entries.push_back(ColorEntry{ "Players Overlay Local", &CFG::Color_Players_Overlay_Local });
-            color_entries.push_back(ColorEntry{ "Players Overlay Friends", &CFG::Color_Players_Overlay_Friends });
-            color_entries.push_back(ColorEntry{ "Players Teammates", &CFG::Color_Players_Teammates });
-            color_entries.push_back(ColorEntry{ "Players Overlay Teammates", &CFG::Color_Players_Overlay_Teammates });
-            color_entries.push_back(ColorEntry{ "Players Enemies", &CFG::Color_Players_Enemies });
-            color_entries.push_back(ColorEntry{ "Players Overlay Enemies", &CFG::Color_Players_Overlay_Enemies });
-            color_entries.push_back(ColorEntry{ "Buildings Local", &CFG::Color_Buildings_Local });
-            color_entries.push_back(ColorEntry{ "Buildings Overlay Local", &CFG::Color_Buildings_Overlay_Local });
-            color_entries.push_back(ColorEntry{ "Buildings Teammates", &CFG::Color_Buildings_Teammates });
-            color_entries.push_back(ColorEntry{ "Buildings Overlay Teammates", &CFG::Color_Buildings_Overlay_Teammates });
-            color_entries.push_back(ColorEntry{ "Buildings Enemies", &CFG::Color_Buildings_Enemies });
-            color_entries.push_back(ColorEntry{ "Buildings Overlay Enemies", &CFG::Color_Buildings_Overlay_Enemies });
-            color_entries.push_back(ColorEntry{ "Projectiles Local", &CFG::Color_Projectiles_Local });
-            color_entries.push_back(ColorEntry{ "Projectiles Overlay Local", &CFG::Color_Projectiles_Overlay_Local });
-            color_entries.push_back(ColorEntry{ "Projectiles Teammates", &CFG::Color_Projectiles_Teammates });
-            color_entries.push_back(ColorEntry{ "Projectiles Overlay Teammates", &CFG::Color_Projectiles_Overlay_Teammates });
-            color_entries.push_back(ColorEntry{ "Projectiles Enemies", &CFG::Color_Projectiles_Enemies });
-            color_entries.push_back(ColorEntry{ "Projectiles Overlay Enemies", &CFG::Color_Projectiles_Overlay_Enemies });
-        }
-        else if (color_sub_section == 2) { // Outlines
-            color_entries.push_back(ColorEntry{ "Ammo Pack Overlay", &CFG::Color_AmmoPack_Overlay });
-            color_entries.push_back(ColorEntry{ "Health Pack Overlay", &CFG::Color_HealthPack_Overlay });
-            color_entries.push_back(ColorEntry{ "Halloween Gift Overlay", &CFG::Color_Halloween_Gift_Overlay });
-            color_entries.push_back(ColorEntry{ "MVM Money Overlay", &CFG::Color_MVM_Money_Overlay });
-        }
-        int num_colors = color_entries.size();
-        int num_rows = (num_colors + 2) / 3; // ceil(num / 3)
-        int base_item = current_item;
-        static int editing_color = -1;
-        static bool picker_open = false;
-        static int return_to_item = 1;
-        static int prev_editing_color = -1;
-        static bool last_mouse_down = false;
-        int max_name_width = 0;
-        for (const auto& entry : color_entries) {
-            int width = 0, height = 0;
+else if (CFG::CurrentSection == 4) { // Colors section
+    int x_left = 150;
+    int x_center = x_left + 200;
+    int x_right = x_center + 200;
+    int start_y = y;
+    y = start_y;
+    static int color_sub_section = 0;
+    int current_sub_item = current_item;
+    if (!menu_locked && menu::item_count == current_sub_item) {
+        H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+    }
+    combo(x_left, &y, "Sub Section", &color_sub_section, std::vector<std::string>{"ESP", "Chams", "Outlines"}, false, 255, current_sub_item++);
+    struct ColorEntry {
+        std::string name;
+        Color_t* color;
+    };
+    std::vector<ColorEntry> color_entries;
+    if (color_sub_section == 0) { // ESP
+        color_entries.push_back(ColorEntry{ "Team Red", &CFG::Color_TeamRed });
+        color_entries.push_back(ColorEntry{ "Team Blue", &CFG::Color_TeamBlue });
+        color_entries.push_back(ColorEntry{ "Local", &CFG::Color_Local });
+        color_entries.push_back(ColorEntry{ "Ammo", &CFG::Color_Ammo });
+        color_entries.push_back(ColorEntry{ "Medkit", &CFG::Color_Medkit });
+        color_entries.push_back(ColorEntry{ "Flag", &CFG::Color_Flag });
+        color_entries.push_back(ColorEntry{ "Uber", &CFG::Color_Uber });
+        color_entries.push_back(ColorEntry{ "ESP Outline", &CFG::Color_ESP_Outline });
+        color_entries.push_back(ColorEntry{ "Health Bar BG", &CFG::Color_HealthBarBG });
+        color_entries.push_back(ColorEntry{ "Health Low", &CFG::Color_HealthLow });
+        color_entries.push_back(ColorEntry{ "Health High", &CFG::Color_HealthHigh });
+        color_entries.push_back(ColorEntry{ "Overheal", &CFG::Color_Overheal });
+        color_entries.push_back(ColorEntry{ "Conds Text", &CFG::Color_CondsText });
+        color_entries.push_back(ColorEntry{ "Sniper Line", &CFG::Color_SniperLine });
+        color_entries.push_back(ColorEntry{ "Tracer Line", &CFG::Color_TracerLine });
+        color_entries.push_back(ColorEntry{ "Uber Text", &CFG::Color_UberText });
+        color_entries.push_back(ColorEntry{ "Uber Bar", &CFG::Color_UberBar });
+        color_entries.push_back(ColorEntry{ "Uber Outline", &CFG::Color_UberOutline });
+        color_entries.push_back(ColorEntry{ "Backtrack Skeleton", &CFG::Color_BacktrackSkeleton });
+        color_entries.push_back(ColorEntry{ "Aimbot FOV", &CFG::Color_AimbotFOV });
+        color_entries.push_back(ColorEntry{ "Proj FOV", &CFG::Color_ProjFOV });
+        color_entries.push_back(ColorEntry{ "Melee FOV", &CFG::Color_MeleeFOV });
+        color_entries.push_back(ColorEntry{ "Offscreen Arrow", &CFG::Color_OffscreenArrow });
+        color_entries.push_back(ColorEntry{ "Name", &CFG::Color_Name });
+        color_entries.push_back(ColorEntry{ "Health Text", &CFG::Color_HealthText });
+        color_entries.push_back(ColorEntry{ "Skeleton", &CFG::Color_Skeleton });
+        color_entries.push_back(ColorEntry{ "Building Team", &CFG::Color_BuildingTeam });
+        color_entries.push_back(ColorEntry{ "Building Enemy", &CFG::Color_BuildingEnemy });
+        color_entries.push_back(ColorEntry{ "Building Name", &CFG::Color_BuildingName });
+        color_entries.push_back(ColorEntry{ "Ammo Pack", &CFG::Color_AmmoPack });
+        color_entries.push_back(ColorEntry{ "Cheater", &CFG::Color_Cheater });
+        color_entries.push_back(ColorEntry{ "Enemy", &CFG::Color_Enemy });
+        color_entries.push_back(ColorEntry{ "Friend", &CFG::Color_Friend });
+        color_entries.push_back(ColorEntry{ "Halloween Gift", &CFG::Color_Halloween_Gift });
+        color_entries.push_back(ColorEntry{ "Health Pack", &CFG::Color_HealthPack });
+        color_entries.push_back(ColorEntry{ "Invisible", &CFG::Color_Invisible });
+        color_entries.push_back(ColorEntry{ "Invulnerable", &CFG::Color_Invulnerable });
+        color_entries.push_back(ColorEntry{ "MVM Money", &CFG::Color_MVM_Money });
+        color_entries.push_back(ColorEntry{ "Over Heal", &CFG::Color_OverHeal });
+        color_entries.push_back(ColorEntry{ "Retard Legit", &CFG::Color_RetardLegit });
+        color_entries.push_back(ColorEntry{ "Target", &CFG::Color_Target });
+        color_entries.push_back(ColorEntry{ "Teammate", &CFG::Color_Teammate });
+    }
+    else if (color_sub_section == 1) { // Chams
+        color_entries.push_back(ColorEntry{ "Hands", &CFG::Color_Hands });
+        color_entries.push_back(ColorEntry{ "Hands Overlay", &CFG::Color_Hands_Overlay });
+        color_entries.push_back(ColorEntry{ "Hands Sheen", &CFG::Color_Hands_Sheen });
+        color_entries.push_back(ColorEntry{ "Props", &CFG::Color_Props });
+        color_entries.push_back(ColorEntry{ "Weapon", &CFG::Color_Weapon });
+        color_entries.push_back(ColorEntry{ "Weapon Sheen", &CFG::Color_Weapon_Sheen });
+        color_entries.push_back(ColorEntry{ "Weapons", &CFG::Color_Weapons });
+        color_entries.push_back(ColorEntry{ "Weapons Overlay", &CFG::Color_Weapons_Overlay });
+        color_entries.push_back(ColorEntry{ "Players Friends", &CFG::Color_Players_Friends });
+        color_entries.push_back(ColorEntry{ "Players LagRecords", &CFG::Color_Players_LagRecords });
+        color_entries.push_back(ColorEntry{ "Players Local", &CFG::Color_Players_Local });
+        color_entries.push_back(ColorEntry{ "Players Overlay Local", &CFG::Color_Players_Overlay_Local });
+        color_entries.push_back(ColorEntry{ "Players Overlay Friends", &CFG::Color_Players_Overlay_Friends });
+        color_entries.push_back(ColorEntry{ "Players Teammates", &CFG::Color_Players_Teammates });
+        color_entries.push_back(ColorEntry{ "Players Overlay Teammates", &CFG::Color_Players_Overlay_Teammates });
+        color_entries.push_back(ColorEntry{ "Players Enemies", &CFG::Color_Players_Enemies });
+        color_entries.push_back(ColorEntry{ "Players Overlay Enemies", &CFG::Color_Players_Overlay_Enemies });
+        color_entries.push_back(ColorEntry{ "Buildings Local", &CFG::Color_Buildings_Local });
+        color_entries.push_back(ColorEntry{ "Buildings Overlay Local", &CFG::Color_Buildings_Overlay_Local });
+        color_entries.push_back(ColorEntry{ "Buildings Teammates", &CFG::Color_Buildings_Teammates });
+        color_entries.push_back(ColorEntry{ "Buildings Overlay Teammates", &CFG::Color_Buildings_Overlay_Teammates });
+        color_entries.push_back(ColorEntry{ "Buildings Enemies", &CFG::Color_Buildings_Enemies });
+        color_entries.push_back(ColorEntry{ "Buildings Overlay Enemies", &CFG::Color_Buildings_Overlay_Enemies });
+        color_entries.push_back(ColorEntry{ "Projectiles Local", &CFG::Color_Projectiles_Local });
+        color_entries.push_back(ColorEntry{ "Projectiles Overlay Local", &CFG::Color_Projectiles_Overlay_Local });
+        color_entries.push_back(ColorEntry{ "Projectiles Teammates", &CFG::Color_Projectiles_Teammates });
+        color_entries.push_back(ColorEntry{ "Projectiles Overlay Teammates", &CFG::Color_Projectiles_Overlay_Teammates });
+        color_entries.push_back(ColorEntry{ "Projectiles Enemies", &CFG::Color_Projectiles_Enemies });
+        color_entries.push_back(ColorEntry{ "Projectiles Overlay Enemies", &CFG::Color_Projectiles_Overlay_Enemies });
+        color_entries.push_back(ColorEntry{ "Ammo Pack Overlay", &CFG::Color_AmmoPack_Overlay });
+        color_entries.push_back(ColorEntry{ "Health Pack Overlay", &CFG::Color_HealthPack_Overlay });
+        color_entries.push_back(ColorEntry{ "Halloween Gift Overlay", &CFG::Color_Halloween_Gift_Overlay });
+        color_entries.push_back(ColorEntry{ "MVM Money Overlay", &CFG::Color_MVM_Money_Overlay });
+    }
+    else if (color_sub_section == 2) { // Outlines
+        color_entries.push_back(ColorEntry{ "Teammates", &CFG::Outlines_Color_Teammates });
+        color_entries.push_back(ColorEntry{ "Local Player", &CFG::Outlines_Color_LocalPlayer });
+        color_entries.push_back(ColorEntry{ "Friends", &CFG::Outlines_Color_Friends });
+        color_entries.push_back(ColorEntry{ "Teammate Medics", &CFG::Outlines_Color_TeammateMedics });
+        color_entries.push_back(ColorEntry{ "Enemies", &CFG::Outlines_Color_Enemies });
+        color_entries.push_back(ColorEntry{ "Local Buildings", &CFG::Outlines_Color_LocalBuildings });
+        color_entries.push_back(ColorEntry{ "Teammate Dispensers", &CFG::Outlines_Color_TeammateDispensers });
+        color_entries.push_back(ColorEntry{ "Teammate Buildings", &CFG::Outlines_Color_TeammateBuildings });
+        color_entries.push_back(ColorEntry{ "Enemy Buildings", &CFG::Outlines_Color_EnemyBuildings });
+        color_entries.push_back(ColorEntry{ "Health Pack", &CFG::Outlines_Color_HealthPack });
+        color_entries.push_back(ColorEntry{ "Ammo Pack", &CFG::Outlines_Color_AmmoPack });
+        color_entries.push_back(ColorEntry{ "Halloween Gift", &CFG::Outlines_Color_Halloween_Gift });
+        color_entries.push_back(ColorEntry{ "MVM Money", &CFG::Outlines_Color_MVM_Money });
+        color_entries.push_back(ColorEntry{ "Local Projectiles", &CFG::Outlines_Color_LocalProjectiles });
+        color_entries.push_back(ColorEntry{ "Teammate Projectiles", &CFG::Outlines_Color_TeammateProjectiles });
+        color_entries.push_back(ColorEntry{ "Enemy Projectiles", &CFG::Outlines_Color_EnemyProjectiles });
+    }
+    int num_colors = color_entries.size();
+    int num_rows = (num_colors + 2) / 3; // ceil(num / 3)
+    int base_item = current_item;
+    static int editing_color = -1;
+    static bool picker_open = false;
+    static int return_to_item = 1;
+    static int prev_editing_color = -1;
+    static bool last_mouse_down = false;
+    int max_name_width = 0;
+    for (const auto& entry : color_entries) {
+        int width = 0, height = 0;
+        wchar_t wname[1024] = {};
+        MultiByteToWideChar(CP_UTF8, 0, entry.name.c_str(), -1, wname, 1024);
+        I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, width, height);
+        if (width > max_name_width) max_name_width = width;
+    }
+    for (int row = 0; row < num_rows; ++row) {
+        for (int col = 0; col < 3; ++col) {
+            int idx = row * 3 + col;
+            if (idx >= num_colors) continue;
+            int col_x = x_left + col * 200;
+            int this_item = current_item;
+            if (!menu_locked && menu::item_count == this_item) {
+                H::Draw->String(font, col_x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            if (!menu_locked && menu::item_count == this_item && (GetAsyncKeyState(VK_RETURN) & 1)) {
+                editing_color = idx;
+                picker_open = true;
+                return_to_item = this_item;
+            }
+            if (!menu_locked && mouse_down && !last_mouse_down && mouse_x >= col_x && mouse_x <= col_x + max_name_width + 25 && mouse_y >= y - 10 && mouse_y <= y + 5) {
+                editing_color = idx;
+                picker_open = true;
+                return_to_item = this_item;
+            }
+            // Draw name first
+            H::Draw->String(font, col_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, color_entries[idx].name.c_str());
+            // Compute name width for this specific name
+            int name_width = 0, name_height = 0;
             wchar_t wname[1024] = {};
-            MultiByteToWideChar(CP_UTF8, 0, entry.name.c_str(), -1, wname, 1024);
-            I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, width, height);
-            if (width > max_name_width) max_name_width = width;
+            MultiByteToWideChar(CP_UTF8, 0, color_entries[idx].name.c_str(), -1, wname, 1024);
+            I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, name_width, name_height);
+            // Draw square after the name
+            int square_size = name_height - 4; // proporcional ao texto
+            if (square_size < 8) square_size = 8; // limite mínimo
+            int square_x = col_x + name_width + 8;
+            int square_y = y + (name_height / 2) - (square_size / 2);
+            // outline
+            H::Draw->OutlinedRect(
+                square_x - 1,
+                square_y - 1,
+                square_size + 2,
+                square_size + 2,
+                Color_t(0, 0, 0, 255)
+            );
+            // fill
+            H::Draw->Rect(
+                square_x,
+                square_y,
+                square_size,
+                square_size,
+                *color_entries[idx].color
+            );
+            current_item++;
         }
-        for (int row = 0; row < num_rows; ++row) {
-            for (int col = 0; col < 3; ++col) {
-                int idx = row * 3 + col;
-                if (idx >= num_colors) continue;
-                int col_x = x_left + col * 200;
-                int this_item = current_item;
-                if (!menu_locked && menu::item_count == this_item) {
-                    H::Draw->String(font, col_x - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-                }
-                if (!menu_locked && menu::item_count == this_item && (GetAsyncKeyState(VK_RETURN) & 1)) {
-                    editing_color = idx;
-                    picker_open = true;
-                    return_to_item = this_item;
-                }
-                if (!menu_locked && mouse_down && !last_mouse_down && mouse_x >= col_x && mouse_x <= col_x + max_name_width + 25 && mouse_y >= y - 10 && mouse_y <= y + 5) {
-                    editing_color = idx;
-                    picker_open = true;
-                    return_to_item = this_item;
-                }
-                // Draw name first
-                H::Draw->String(font, col_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, color_entries[idx].name.c_str());
-                // Compute name width for this specific name
-                int name_width = 0, name_height = 0;
-                wchar_t wname[1024] = {};
-                MultiByteToWideChar(CP_UTF8, 0, color_entries[idx].name.c_str(), -1, wname, 1024);
-                I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, name_width, name_height);
-                // Draw square after the name
-                int square_size = name_height - 4; // proporcional ao texto
-                if (square_size < 8) square_size = 8; // limite mínimo
-                int square_x = col_x + name_width + 8;
-                int square_y = y + (name_height / 2) - (square_size / 2);
-                // outline
-                H::Draw->OutlinedRect(
-                    square_x - 1,
-                    square_y - 1,
-                    square_size + 2,
-                    square_size + 2,
-                    Color_t(0, 0, 0, 255)
-                );
-                // fill
-                H::Draw->Rect(
-                    square_x,
-                    square_y,
-                    square_size,
-                    square_size,
-                    *color_entries[idx].color
-                );
-                current_item++;
-            }
-            y += 15;
+        y += 15;
+    }
+    int max_color_item = base_item + num_colors - 1;
+    if (picker_open && editing_color >= 0 && editing_color < num_colors) {
+        if (prev_editing_color != editing_color) {
+            prev_editing_color = editing_color;
         }
-        int max_color_item = base_item + num_colors - 1;
-        if (picker_open && editing_color >= 0 && editing_color < num_colors) {
-            if (prev_editing_color != editing_color) {
-                prev_editing_color = editing_color;
-            }
-            Color_t* cur_color = color_entries[editing_color].color;
-            int picker_x = x_left;
-            int picker_y = y + 20;
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            int r = static_cast<int>(cur_color->r);
-            int_slider(picker_x, &picker_y, "Red", r, 0, 255, current_item++);
-            cur_color->r = static_cast<unsigned char>(r);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            int g = static_cast<int>(cur_color->g);
-            int_slider(picker_x, &picker_y, "Green", g, 0, 255, current_item++);
-            cur_color->g = static_cast<unsigned char>(g);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            int b = static_cast<int>(cur_color->b);
-            int_slider(picker_x, &picker_y, "Blue", b, 0, 255, current_item++);
-            cur_color->b = static_cast<unsigned char>(b);
-            if (!menu_locked && menu::item_count == current_item) {
-                H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
-            }
-            int a = static_cast<int>(cur_color->a);
-            int_slider(picker_x, &picker_y, "Alpha", a, 0, 255, current_item++);
-            cur_color->a = static_cast<unsigned char>(a);
-            // Close with ESC
-            if (GetAsyncKeyState(VK_ESCAPE) & 1) {
-                picker_open = false;
-                menu::item_count = return_to_item;
-            }
-            max_items = current_item - 1;
+        Color_t* cur_color = color_entries[editing_color].color;
+        int picker_x = x_left;
+        int picker_y = y + 20;
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
-        else {
+        int r = static_cast<int>(cur_color->r);
+        int_slider(picker_x, &picker_y, "Red", r, 0, 255, current_item++);
+        cur_color->r = static_cast<unsigned char>(r);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        int g = static_cast<int>(cur_color->g);
+        int_slider(picker_x, &picker_y, "Green", g, 0, 255, current_item++);
+        cur_color->g = static_cast<unsigned char>(g);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        int b = static_cast<int>(cur_color->b);
+        int_slider(picker_x, &picker_y, "Blue", b, 0, 255, current_item++);
+        cur_color->b = static_cast<unsigned char>(b);
+        if (!menu_locked && menu::item_count == current_item) {
+            H::Draw->String(font, picker_x - 25, picker_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+        }
+        int a = static_cast<int>(cur_color->a);
+        int_slider(picker_x, &picker_y, "Alpha", a, 0, 255, current_item++);
+        cur_color->a = static_cast<unsigned char>(a);
+        // Close with ESC
+        if (GetAsyncKeyState(VK_ESCAPE) & 1) {
             picker_open = false;
-            max_items = max_color_item;
+            menu::item_count = return_to_item;
         }
-        last_mouse_down = mouse_down;
-        }
-        // Clamp item_count
-        if (menu::item_count > max_items) menu::item_count = 1;
-        if (menu::item_count < 1) menu::item_count = max_items;
+        max_items = current_item - 1;
+    }
+    else {
+        picker_open = false;
+        max_items = max_color_item;
+    }
+    last_mouse_down = mouse_down;
+    }
+    // Clamp item_count
+    if (menu::item_count > max_items) menu::item_count = 1;
+    if (menu::item_count < 1) menu::item_count = max_items;
 }

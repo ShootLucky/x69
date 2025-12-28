@@ -201,7 +201,27 @@ void COutlines::RunModels()
 					continue;
 			}
 
-			const auto entColor = F::VisualUtils->GetEntityColor(pLocal, pPlayer);
+			Color_t entColor;
+			if (bIsLocal) {
+				entColor = CFG::Outlines_Color_LocalPlayer;
+			}
+			else if (bIsFriend) {
+				entColor = CFG::Outlines_Color_Friends;
+			}
+			else {
+				const int nPlayerTeam = pPlayer->m_iTeamNum();
+				if (nPlayerTeam == nLocalTeam) {
+					if (pPlayer->m_iClass() == TF_CLASS_MEDIC && CFG::Outlines_Players_Show_Teammate_Medics) {
+						entColor = CFG::Outlines_Color_TeammateMedics;
+					}
+					else {
+						entColor = CFG::Outlines_Color_Teammates;
+					}
+				}
+				else {
+					entColor = CFG::Outlines_Color_Enemies;
+				}
+			}
 
 			m_vecOutlineEntities.emplace_back(OutlineEntity_t{ pPlayer, entColor, CFG::Outlines_Players_Alpha });
 
@@ -268,7 +288,21 @@ void COutlines::RunModels()
 			if (!F::VisualUtils->IsOnScreen(pLocal, pBuilding))
 				continue;
 
-			const auto entColor = F::VisualUtils->GetEntityColor(pLocal, pBuilding);
+			Color_t entColor;
+			if (bIsLocal) {
+				entColor = CFG::Outlines_Color_LocalBuildings;
+			}
+			else if (pBuilding->m_iTeamNum() == pLocal->m_iTeamNum()) {
+				if (pBuilding->GetClassId() == ETFClassIds::CObjectDispenser && CFG::Outlines_Buildings_Show_Teammate_Dispensers) {
+					entColor = CFG::Outlines_Color_TeammateDispensers;
+				}
+				else {
+					entColor = CFG::Outlines_Color_TeammateBuildings;
+				}
+			}
+			else {
+				entColor = CFG::Outlines_Color_EnemyBuildings;
+			}
 
 			m_vecOutlineEntities.emplace_back(OutlineEntity_t{ pBuilding, entColor, CFG::Outlines_Buildings_Alpha });
 
@@ -281,7 +315,7 @@ void COutlines::RunModels()
 	{
 		if (!CFG::Outlines_World_Ignore_HealthPacks)
 		{
-			const auto color = CFG::Color_HealthPack;
+			const auto color = CFG::Outlines_Color_HealthPack;
 
 			for (const auto pEntity : H::Entities->GetGroup(EEntGroup::HEALTHPACKS))
 			{
@@ -297,7 +331,7 @@ void COutlines::RunModels()
 
 		if (!CFG::Outlines_World_Ignore_AmmoPacks)
 		{
-			const auto color = CFG::Color_AmmoPack;
+			const auto color = CFG::Outlines_Color_AmmoPack;
 
 			for (const auto pEntity : H::Entities->GetGroup(EEntGroup::AMMOPACKS))
 			{
@@ -313,7 +347,7 @@ void COutlines::RunModels()
 
 		if (!CFG::Outlines_World_Ignore_Halloween_Gift)
 		{
-			const auto color = CFG::Color_Halloween_Gift;
+			const auto color = CFG::Outlines_Color_Halloween_Gift;
 
 			for (const auto pEntity : H::Entities->GetGroup(EEntGroup::HALLOWEEN_GIFT))
 			{
@@ -329,7 +363,7 @@ void COutlines::RunModels()
 
 		if (!CFG::Outlines_World_Ignore_MVM_Money)
 		{
-			const auto color = CFG::Color_MVM_Money;
+			const auto color = CFG::Outlines_Color_MVM_Money;
 
 			for (const auto pEntity : H::Entities->GetGroup(EEntGroup::MVM_MONEY))
 			{
@@ -371,7 +405,16 @@ void COutlines::RunModels()
 				if (!F::VisualUtils->IsOnScreen(pLocal, pEntity))
 					continue;
 
-				const auto color = F::VisualUtils->GetEntityColor(pLocal, pEntity);
+				Color_t color;
+				if (bIsLocal) {
+					color = CFG::Outlines_Color_LocalProjectiles;
+				}
+				else if (pEntity->m_iTeamNum() == pLocal->m_iTeamNum()) {
+					color = CFG::Outlines_Color_TeammateProjectiles;
+				}
+				else {
+					color = CFG::Outlines_Color_EnemyProjectiles;
+				}
 
 				m_vecOutlineEntities.emplace_back(OutlineEntity_t{ pEntity, color, CFG::Outlines_World_Alpha });
 
@@ -562,5 +605,7 @@ void COutlines::SetModelStencil(IMatRenderContext* pRenderContext)
 	state.m_PassOp = STENCILOPERATION_REPLACE;
 	state.m_FailOp = STENCILOPERATION_KEEP;
 	state.m_ZFailOp = STENCILOPERATION_REPLACE;
+	state.m_nTestMask = 0x0;
+	state.m_nWriteMask = 0xFF;
 	state.SetStencilState(pRenderContext);
 }
