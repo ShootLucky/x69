@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "../../../SDK/Helpers/AimUtils/AimUtils.h"
 
-void DrawProjPath(const CUserCmd* pCmd, float time)
+void DrawProjPath(const CUserCmd * pCmd, float time)
 {
     if (!pCmd || !G::bFiring)
     {
@@ -730,7 +730,7 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                     }
                 }
             }
-            OffsetPlayerPosition(pWeapon, vTarget, pPlayer, bDucked, bOnGround);
+            OffsetPlayerPosition(pWeapon, vTarget, pPlayer, bDucked, bSimOnGround);
             float flTimeToTarget = 0.0f;
             Vec3 vAngleTo;
             if (!CalcProjAngle(vLocalPos, vTarget, vAngleTo, flTimeToTarget, false))
@@ -778,13 +778,29 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                         QAngle an = Math::CalcAngle(pLocal->GetShootPos(), worldSpaceCenter);
                         Math::AngleVectors(an, &forward, &right, &up);
                         Vec3 shootPos = pLocal->GetShootPos() + (forward * offset.x) + (right * offset.y) + (up * offset.z);
-                        std::vector<Vec3> optimal = Sunflower2D(CFG::Aimbot_Projectile_SplashPoints, 2);
+                        // First, trace to target to determine visibility factor
+                        trace_t visTrace;
+                        Ray_t visRay;
+                        visRay.Init(shootPos, worldSpaceCenter);
+                        CTraceFilterWorldCustom visFilter;
+                        visFilter.m_pTarget = target.Entity;
+                        I::EngineTrace->TraceRay(visRay, MASK_SOLID, &visFilter, &visTrace);
+                        float visibilityFactor = visTrace.fraction; // 1.0 = fully visible, 0.0 = completely blocked early
+                        // Adjust displacement based on visibility
+                        float minDisplacementFactor = 0.3f; // Min when almost visible
+                        float maxDisplacementFactor = 1.0f; // Max when heavily blocked
+                        float displacementFactor = Math::RemapValClamped(1.0f - visibilityFactor, 0.0f, 1.0f, minDisplacementFactor, maxDisplacementFactor);
+                        // Scale with distance
+                        float distToEnemy = shootPos.DistTo(worldSpaceCenter);
+                        float distFactor = Math::RemapValClamped(distToEnemy, 200.0f, 2000.0f, 0.5f, 1.5f);
+                        float displacement = wRadius * displacementFactor * distFactor;
+                        // Dynamic numPoints to reduce FPS drop for distant targets
+                        int numPoints = static_cast<int>(Math::RemapValClamped(distToEnemy, 200.0f, 2000.0f, 512.0f, 128.0f));
+                        std::vector<Vec3> optimal = Sunflower2D(numPoints, 2);
                         float minDist = 10000.0f;
                         float planeDistFactor = bTargetOnGround ? 0.8f : 0.5f;
-                        float halfDist = pLocal->GetShootPos().DistTo(worldSpaceCenter) * planeDistFactor;
-                        float displacementFactor = bTargetOnGround ? 0.8f : 0.5f;
-                        float displacement = wRadius * displacementFactor;
-                        std::deque<Vec3> newOptimal;
+                        float halfDist = distToEnemy * planeDistFactor;
+                        std::vector<Vec3> newOptimal;
                         Vec3 nf, nr, nu;
                         for (auto& p : optimal) {
                             p = worldSpaceCenter - (forward * halfDist) + (right * p.x * displacement) + (up * p.y * displacement);
@@ -807,9 +823,10 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                             });
                         std::vector<Vec3> goodPoints;
                         for (auto& p : newOptimal) {
+                            if (goodPoints.size() >= 10) break; // Limit good points to reduce processing
                             float dist = p.DistTo(worldSpaceCenter);
                             if (minDist < dist)
-                                break;
+                                continue; // Since sorted, can skip farther
                             if (DoesHitEntity(target.Entity, p, absPos, wRadius)) {
                                 minDist = dist;
                                 goodPoints.push_back(p);
@@ -900,13 +917,29 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                 QAngle an = Math::CalcAngle(pLocal->GetShootPos(), worldSpaceCenter);
                 Math::AngleVectors(an, &forward, &right, &up);
                 Vec3 shootPos = pLocal->GetShootPos() + (forward * offset.x) + (right * offset.y) + (up * offset.z);
-                std::vector<Vec3> optimal = Sunflower2D(CFG::Aimbot_Projectile_SplashPoints, 2);
+                // First, trace to target to determine visibility factor
+                trace_t visTrace;
+                Ray_t visRay;
+                visRay.Init(shootPos, worldSpaceCenter);
+                CTraceFilterWorldCustom visFilter;
+                visFilter.m_pTarget = target.Entity;
+                I::EngineTrace->TraceRay(visRay, MASK_SOLID, &visFilter, &visTrace);
+                float visibilityFactor = visTrace.fraction; // 1.0 = fully visible, 0.0 = completely blocked early
+                // Adjust displacement based on visibility
+                float minDisplacementFactor = 0.3f; // Min when almost visible
+                float maxDisplacementFactor = 1.0f; // Max when heavily blocked
+                float displacementFactor = Math::RemapValClamped(1.0f - visibilityFactor, 0.0f, 1.0f, minDisplacementFactor, maxDisplacementFactor);
+                // Scale with distance
+                float distToEnemy = shootPos.DistTo(worldSpaceCenter);
+                float distFactor = Math::RemapValClamped(distToEnemy, 200.0f, 2000.0f, 0.5f, 1.5f);
+                float displacement = wRadius * displacementFactor * distFactor;
+                // Dynamic numPoints to reduce FPS drop for distant targets
+                int numPoints = static_cast<int>(Math::RemapValClamped(distToEnemy, 200.0f, 2000.0f, 512.0f, 128.0f));
+                std::vector<Vec3> optimal = Sunflower2D(numPoints, 2);
                 float minDist = 10000.0f;
                 float planeDistFactor = bTargetOnGround ? 0.8f : 0.5f;
-                float halfDist = pLocal->GetShootPos().DistTo(worldSpaceCenter) * planeDistFactor;
-                float displacementFactor = bTargetOnGround ? 0.8f : 0.5f;
-                float displacement = wRadius * displacementFactor;
-                std::deque<Vec3> newOptimal;
+                float halfDist = distToEnemy * planeDistFactor;
+                std::vector<Vec3> newOptimal;
                 Vec3 nf, nr, nu;
                 for (auto& p : optimal) {
                     p = worldSpaceCenter - (forward * halfDist) + (right * p.x * displacement) + (up * p.y * displacement);
@@ -929,9 +962,10 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
                     });
                 std::vector<Vec3> goodPoints;
                 for (auto& p : newOptimal) {
+                    if (goodPoints.size() >= 10) break; // Limit good points to reduce processing
                     float dist = p.DistTo(worldSpaceCenter);
                     if (minDist < dist)
-                        break;
+                        continue; // Since sorted, can skip farther
                     if (DoesHitEntity(target.Entity, p, absPos, wRadius)) {
                         minDist = dist;
                         goodPoints.push_back(p);

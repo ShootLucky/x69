@@ -13,6 +13,8 @@ struct ProjectileInfo
 	float m_gravity_mod{};
 
 	bool no_spin{};
+
+	float m_radius{}; // New: Explosion radius
 };
 
 class CProjectileSim
@@ -22,6 +24,15 @@ public:
 	bool Init(const ProjectileInfo& info, bool no_vec_up = false);
 	void RunTick();
 	Vec3 GetOrigin();
+	Vec3 GetImpactOrigin() const; // Returns the position of first impact (if any)
+	bool HasImpacted() const;     // Checks if an impact has occurred
+	float GetExplosionRadius() const; // New: Returns the explosion radius for splash damage
+	bool CanHitWithSplash(const Vec3& targetPos) const; // New: Checks if the target position can be hit by splash (distance <= radius and clear LOS)
+
+private:
+	Vec3 m_impactPos{};           // Stores the impact position
+	bool m_hasImpacted = false;   // Flag for impact detection
+	float m_radius = 0.0f;        // New: Explosion radius based on projectile type/attributes
 };
 
 MAKE_SINGLETON_SCOPED(CProjectileSim, ProjectileSim, F);

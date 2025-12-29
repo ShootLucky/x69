@@ -16,6 +16,8 @@ bool CProjectileSim::GetInfo(C_TFPlayer* player, C_TFWeaponBase* weapon, const V
     Vec3 pos{};
     Vec3 ang{};
 
+    float radius = 0.0f; // New: Default radius (0 for non-explosive)
+
     switch (weapon->GetWeaponID())
     {
     case TF_WEAPON_ROCKETLAUNCHER:
@@ -37,9 +39,12 @@ bool CProjectileSim::GetInfo(C_TFPlayer* player, C_TFWeaponBase* weapon, const V
             speed = std::min(speed, 3000.0f);
         }
 
+        // New: Set explosion radius (base 146 HU, modified by attributes like for Direct Hit)
+        radius = SDKUtils::AttribHookValue(146.0f, "mult_explosion_radius", weapon);
+
         out = { TF_PROJECTILE_ROCKET, pos, ang, speed, 0.0f, true };
 
-        return true;
+        break;
     }
     case TF_WEAPON_GRENADELAUNCHER:
     {
@@ -48,9 +53,12 @@ bool CProjectileSim::GetInfo(C_TFPlayer* player, C_TFWeaponBase* weapon, const V
         auto is_lochnload{ weapon->m_iItemDefinitionIndex() == Demoman_m_TheLochnLoad };
         auto speed{ SDKUtils::AttribHookValue(1200.0, "mult_projectile_speed", weapon) };
 
+        // New: Set explosion radius (base 146 HU, modified by attributes)
+        radius = SDKUtils::AttribHookValue(146.0f, "mult_explosion_radius", weapon);
+
         out = { TF_PROJECTILE_PIPEBOMB, pos, ang, speed, 1.0f, is_lochnload };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_PIPEBOMBLAUNCHER:
@@ -66,45 +74,60 @@ bool CProjectileSim::GetInfo(C_TFPlayer* player, C_TFWeaponBase* weapon, const V
             speed = 900.0f;
         }
 
+        // New: Set explosion radius (base 146 HU, modified by attributes)
+        radius = SDKUtils::AttribHookValue(146.0f, "mult_explosion_radius", weapon);
+
         out = { TF_PROJECTILE_PIPEBOMB_REMOTE, pos, ang, speed, 1.0f, false };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_CANNON:
     {
         SDKUtils::GetProjectileFireSetupRebuilt(player, { 16.0f, 8.0f, -6.0f }, angles, pos, ang, true);
 
+        // New: Set explosion radius (Loose Cannon base 146 HU)
+        radius = SDKUtils::AttribHookValue(146.0f, "mult_explosion_radius", weapon);
+
         out = { TF_PROJECTILE_CANNONBALL, pos, ang, 1454.0f, 1.0f, false };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_FLAREGUN:
     {
         SDKUtils::GetProjectileFireSetupRebuilt(player, { 23.5f, 12.0f, ducking ? 8.0f : -3.0f }, angles, pos, ang, false);
 
+        // Non-explosive
+        radius = 0.0f;
+
         out = { TF_PROJECTILE_FLARE, pos, ang, 2000.0f, 0.3f, true };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_FLAREGUN_REVENGE:
     {
         SDKUtils::GetProjectileFireSetupRebuilt(player, { 23.5f, 12.0f, ducking ? 8.0f : -3.0f }, angles, pos, ang, false);
 
+        // Non-explosive
+        radius = 0.0f;
+
         out = { TF_PROJECTILE_FLARE, pos, ang, 3000.0f, 0.45f, true };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_FLAME_BALL:
     {
         SDKUtils::GetProjectileFireSetupRebuilt(player, { 23.5f, 12.0f, ducking ? 8.0f : -3.0f }, angles, pos, ang, false);
 
+        // Non-explosive
+        radius = 0.0f;
+
         out = { TF_PROJECTILE_FLARE, pos, ang, 3000.0f, 0.0f, true };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_COMPOUND_BOW:
@@ -122,9 +145,12 @@ bool CProjectileSim::GetInfo(C_TFPlayer* player, C_TFWeaponBase* weapon, const V
             grav_mod = 0.5f;
         }
 
+        // Non-explosive
+        radius = 0.0f;
+
         out = { TF_PROJECTILE_ARROW, pos, ang, speed, grav_mod, true };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_CROSSBOW:
@@ -132,18 +158,24 @@ bool CProjectileSim::GetInfo(C_TFPlayer* player, C_TFWeaponBase* weapon, const V
     {
         SDKUtils::GetProjectileFireSetupRebuilt(player, { 23.5f, 8.0f, -3.0f }, angles, pos, ang, false);
 
+        // Non-explosive
+        radius = 0.0f;
+
         out = { TF_PROJECTILE_ARROW, pos, ang, 2400.0f, 0.2f, true };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_SYRINGEGUN_MEDIC:
     {
         SDKUtils::GetProjectileFireSetupRebuilt(player, { 16.0f, 6.0f, -8.0f }, angles, pos, ang, false);
 
+        // Non-explosive
+        radius = 0.0f;
+
         out = { TF_PROJECTILE_SYRINGE, pos, ang, 1000.0f, 0.3f, true };
 
-        return true;
+        break;
     }
 
     case TF_WEAPON_RAYGUN:
@@ -151,9 +183,12 @@ bool CProjectileSim::GetInfo(C_TFPlayer* player, C_TFWeaponBase* weapon, const V
     {
         SDKUtils::GetProjectileFireSetupRebuilt(player, { 23.5f, 12.0f, ducking ? 8.0f : -3.0f }, angles, pos, ang, false);
 
+        // Non-explosive
+        radius = 0.0f;
+
         out = { TF_PROJECTILE_ENERGY_BALL, pos, ang, 1200.0f, 0.0f, true };
 
-        return true;
+        break;
     }
 
     default:
@@ -161,6 +196,11 @@ bool CProjectileSim::GetInfo(C_TFPlayer* player, C_TFWeaponBase* weapon, const V
         return false;
     }
     }
+
+    // New: Assign radius to out
+    out.m_radius = radius;
+
+    return true;
 }
 
 bool CProjectileSim::Init(const ProjectileInfo& info, bool no_vec_up)
@@ -170,11 +210,42 @@ bool CProjectileSim::Init(const ProjectileInfo& info, bool no_vec_up)
         env = I::Physics->CreateEnvironment();
     }
 
+    // New: Determine bbox size based on projectile type
+    Vec3 bbox_min = { -1.0f, -1.0f, -1.0f };
+    Vec3 bbox_max = { 1.0f, 1.0f, 1.0f };
+
+    switch (info.m_type)
+    {
+    case TF_PROJECTILE_PIPEBOMB:
+    case TF_PROJECTILE_PIPEBOMB_REMOTE:
+    case TF_PROJECTILE_PIPEBOMB_PRACTICE:
+    case TF_PROJECTILE_CANNONBALL:
+    {
+        bbox_min = { -2.0f, -2.0f, -2.0f };
+        bbox_max = { 2.0f, 2.0f, 2.0f };
+        break;
+    }
+    case TF_PROJECTILE_ROCKET:
+    case TF_PROJECTILE_FLARE:
+    case TF_PROJECTILE_SYRINGE:
+    case TF_PROJECTILE_ENERGY_BALL:
+    case TF_PROJECTILE_ARROW:
+    {
+        // Smaller or point-approx for non-physics projectiles
+        bbox_min = { -0.5f, -0.5f, -0.5f };
+        bbox_max = { 0.5f, 0.5f, 0.5f };
+        break;
+    }
+    default:
+    {
+        // Default small
+        break;
+    }
+    }
+
     if (!obj)
     {
-        //it doesn't matter what the size is for non drag affected projectiles
-        //pipes use the size below so it works out just fine
-        auto col{ I::PhysicsCollision->BBoxToCollide({ -2.0f, -2.0f, -2.0f }, { 2.0f, 2.0f, 2.0f }) };
+        auto col{ I::PhysicsCollision->BBoxToCollide(bbox_min, bbox_max) };
 
         auto params{ g_PhysDefaultObjectParams };
 
@@ -182,7 +253,7 @@ bool CProjectileSim::Init(const ProjectileInfo& info, bool no_vec_up)
         params.rotdamping = 0.0f;
         params.inertia = 0.0f;
         params.rotInertiaLimit = 0.0f;
-        params.enableCollisions = false;
+        params.enableCollisions = true; // Changed: Enable collisions for impact detection
 
         obj = env->CreatePolyObject(col, 0, info.m_pos, info.m_ang, &params);
 
@@ -193,6 +264,13 @@ bool CProjectileSim::Init(const ProjectileInfo& info, bool no_vec_up)
     {
         return false;
     }
+
+    // New: Reset impact state
+    m_hasImpacted = false;
+    m_impactPos = {};
+
+    // New: Store explosion radius
+    m_radius = info.m_radius;
 
     //set position and velocity
     {
@@ -331,12 +409,32 @@ bool CProjectileSim::Init(const ProjectileInfo& info, bool no_vec_up)
 
 void CProjectileSim::RunTick()
 {
-    if (!env)
+    if (!env || m_hasImpacted) // Changed: Stop simulating after impact
     {
         return;
     }
 
-    env->Simulate(TICK_INTERVAL);
+    // New: Use substeps for better precision
+    const int substeps = 4; // Adjust as needed for precision vs performance
+    float sub_dt = TICK_INTERVAL / static_cast<float>(substeps);
+
+    for (int i = 0; i < substeps; ++i)
+    {
+        env->Simulate(sub_dt);
+
+        // Check for contact after each substep
+        if (!m_hasImpacted)
+        {
+            Vec3 contact{};
+            if (obj->GetContactPoint(&contact, nullptr)) // Pass nullptr for contactObject as we don't need it
+            {
+                m_impactPos = contact;
+                m_hasImpacted = true;
+                obj->Sleep(); // Optionally stop the object
+                break; // No need for further substeps
+            }
+        }
+    }
 }
 
 Vec3 CProjectileSim::GetOrigin()
@@ -351,4 +449,49 @@ Vec3 CProjectileSim::GetOrigin()
     obj->GetPosition(&out, nullptr);
 
     return out;
+}
+
+Vec3 CProjectileSim::GetImpactOrigin() const
+{
+    return m_hasImpacted ? m_impactPos : Vec3{};
+}
+
+bool CProjectileSim::HasImpacted() const
+{
+    return m_hasImpacted;
+}
+
+float CProjectileSim::GetExplosionRadius() const
+{
+    return m_radius;
+}
+
+bool CProjectileSim::CanHitWithSplash(const Vec3& targetPos) const
+{
+    if (!HasImpacted() || m_radius <= 0.0f)
+    {
+        return false;
+    }
+
+    Vec3 impact = GetImpactOrigin();
+
+    float dist = impact.DistTo(targetPos);
+
+    if (dist > m_radius)
+    {
+        return false;
+    }
+
+    // New: Perform LOS trace to check for obstructions (e.g., walls)
+    // Assumes targetPos is the enemy's position (e.g., feet for ground splash)
+    Ray_t ray;
+    ray.Init(impact, targetPos);
+
+    trace_t tr;
+    CTraceFilterWorldOnly filter; // Trace only against world (solid obstructions), ignore entities
+
+    I::EngineTrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
+
+    // Clear LOS if trace reaches the target without hitting solid
+    return (tr.fraction == 1.0f && !tr.startsolid);
 }
