@@ -9,6 +9,7 @@ enum class EFonts
 	ESP_CONDS,
 	ESP_SMALL,
 	VerdanaBold,
+	OTHER,   // <-- adicionado para resolver referências a EFonts::OTHER
 
 	SPLASH,
 	PIXEL // <<< NOVA FONTE (hack antigo)

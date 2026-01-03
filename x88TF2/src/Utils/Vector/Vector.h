@@ -148,6 +148,12 @@ public:
 		return (x * x + y * y + z * z);
 	}
 
+	Vec3 Normalized()
+	{
+		float flLengthNormal = 1.f / (1.192092896e-07F + Length());
+		return Vec3(x * flLengthNormal, y * flLengthNormal, z * flLengthNormal);
+	}
+
 	float Normalize()
 	{
 		float fl_Length = Length();
@@ -163,6 +169,19 @@ public:
 	float NormalizeInPlace()
 	{
 		return Normalize();
+	}
+
+	// vector = vec3 
+	Vec3 Normalized() const
+	{
+		float fl_Length = Length();
+		float fl_Length_normal = 1.f / (1.192092896e-07F + fl_Length);
+
+		return Vec3(
+			x * fl_Length_normal,
+			y * fl_Length_normal,
+			z * fl_Length_normal
+		);
 	}
 
 	float Length2D(void) const

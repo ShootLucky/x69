@@ -30,9 +30,13 @@ public:
 	bool CanHitWithSplash(const Vec3& targetPos) const; // New: Checks if the target position can be hit by splash (distance <= radius and clear LOS)
 
 private:
-	Vec3 m_impactPos{};           // Stores the impact position
-	bool m_hasImpacted = false;   // Flag for impact detection
-	float m_radius = 0.0f;        // New: Explosion radius based on projectile type/attributes
+	IPhysicsEnvironment* m_env = nullptr; // Changed: Instance member
+	IPhysicsObject* m_obj = nullptr;      // Changed: Instance member
+	Vec3 m_impactPos{};                   // Stores the impact position
+	bool m_hasImpacted = false;           // Flag for impact detection
+	float m_radius = 0.0f;                // New: Explosion radius based on projectile type/attributes
+	int m_tickCount = 0;                  // New: Tick counter for limiting simulation
+	static constexpr int MAX_TICKS = 500; // New: Max ticks to prevent infinite simulation (adjust as needed)
 };
 
 MAKE_SINGLETON_SCOPED(CProjectileSim, ProjectileSim, F);

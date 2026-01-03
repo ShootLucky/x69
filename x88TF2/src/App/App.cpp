@@ -1,37 +1,33 @@
 ﻿#include "App.h"
 #include "../src/SDK/SDK.h"
+#include "../src/Features/Menu/notification_system/notifs.h"
+#include "../src/Features/PlayersList/PlayersList.h"
 #include <string>
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
-
 const char* ChooseRandomSubText()
 {
     // 0 .. 9999 (precisão alta para frases raras)
     int r = rand() % 10000;
-
     // COMUNS
     if (r < 4500) return "god i wish i had x69";
     else if (r < 6000) return "totally legit, trust me";
     else if (r < 7400) return "random crits are balanced";
-    else if (r < 8800) return "medusa.solutions best cheats";
-
+    else if (r < 8800) return "[medusa.solutions](http://medusa.solutions) best cheats";
     // RARAS
     else if (r < 9300) return "skill issue detected";
     else if (r < 9600) return "vac was never enough";
     else if (r < 9750) return "moneybot = fedoraware";
     else if (r < 9850) return "spy backtrack go brr";
     else if (r < 9900) return "lmaobox paste detected";
-
     // RARÍSSIMAS
     else if (r < 9950) return "hvh mid on badlands";
     else if (r < 9990) return "moneybot >> lmaobox >> paste";
     else if (r < 9995) return "nullcore users fear this... x64";
     else return "x69 internal // dev build";
 }
-
-
 void CApp::Start()
 {
     srand(static_cast<unsigned int>(time(NULL))); // Seed rand
@@ -72,6 +68,7 @@ void CApp::Start()
         g_SubTextChosen = true;
     }
     U::HookManager->InitializeAllHooks();
+    F::Players->Parse();
     Config::Load(U::Storage->GetConfigFolder() / "default.json");
     I::EngineClient->ClientCmd_Unrestricted("toggleconsole; clear");
     Sleep(25);
@@ -387,7 +384,7 @@ void CApp::Draw()
             int subX = cx - sw / 2;
             int subY = (cy - th / 2) + th + 10; // Abaixo do nome principal
             I::MatSystemSurface->DrawSetTextFont(subFont);
-            I::MatSystemSurface->DrawSetTextColor(45, 46, 45,nameAlpha); // Mesmo alpha do nome
+            I::MatSystemSurface->DrawSetTextColor(45, 46, 45, nameAlpha); // Mesmo alpha do nome
             I::MatSystemSurface->DrawSetTextPos(subX, subY);
             I::MatSystemSurface->DrawPrintText(
                 subText.c_str(),

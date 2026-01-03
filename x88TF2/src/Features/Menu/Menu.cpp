@@ -1,4 +1,4 @@
-#include "Menu.h"
+Ôªø#include "Menu.h"
 #include <sstream>
 #include <iomanip> // For std::setprecision
 #include <windows.h> // For MultiByteToWideChar, MapVirtualKey, GetKeyNameText
@@ -16,7 +16,7 @@ namespace menu {
     static int item_count = 1;
     static int item_countx3 = 12;
 }
-// Helper para obter nome legÌvel de uma virtual-key
+// Helper para obter nome leg√≠vel de uma virtual-key
 static std::string GetKeyName(int vk)
 {
     if (vk == 0) return "IN_ATTACK";
@@ -169,46 +169,67 @@ void combo(int x, int* y, std::string text, int* option, std::vector<std::string
     H::Draw->String(font, value_x, *y, display_color, POS_DEFAULT, display.c_str());
     *y += 15;
 }
-void multi_combo(int x, int* y, std::string text, int* option, std::vector<std::string> aliases, int alpha = 255, int item_counts = 1) {
+void multi_combo(
+    int x,
+    int* y,
+    std::string text,
+    int* option,
+    std::vector<std::string> aliases,
+    int alpha = 255,
+    int item_counts = 1
+) {
     if (menu::menu_locked)
         alpha = static_cast<int>(alpha * 0.f);
+
     int text_width = 0, text_height = 0;
     const CFont& font = H::Fonts->Get(EFonts::Menu);
+
     wchar_t wtext[1024] = {};
     MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, wtext, 1024);
     I::MatSystemSurface->GetTextSize(font.m_dwFont, wtext, text_width, text_height);
+
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
+
     static bool editing_multi[256] = {};
-    static int pending_bitmask[256] = {};
-    static int pending_index[256] = {};
+    static int current_index[256] = {};
+
     if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_RETURN) & 1) {
             if (!editing_multi[item_counts]) {
-                pending_bitmask[item_counts] = *option;
-                pending_index[item_counts] = 0;
                 editing_multi[item_counts] = true;
             }
             else {
-                pending_bitmask[item_counts] ^= (1 << pending_index[item_counts]);
+                int bit = 1 << current_index[item_counts];
+                *option ^= bit; // TOGGLE IMEDIATO
             }
         }
+
         if (editing_multi[item_counts]) {
-            if (GetAsyncKeyState(VK_LEFT) & 1)
-                pending_index[item_counts] = (pending_index[item_counts] - 1 + static_cast<int>(aliases.size())) % static_cast<int>(aliases.size());
-            if (GetAsyncKeyState(VK_RIGHT) & 1)
-                pending_index[item_counts] = (pending_index[item_counts] + 1) % static_cast<int>(aliases.size());
+            if (GetAsyncKeyState(VK_LEFT) & 1) {
+                current_index[item_counts] =
+                    (current_index[item_counts] - 1 + (int)aliases.size()) % (int)aliases.size();
+            }
+
+            if (GetAsyncKeyState(VK_RIGHT) & 1) {
+                current_index[item_counts] =
+                    (current_index[item_counts] + 1) % (int)aliases.size();
+            }
+
             if (GetAsyncKeyState(VK_ESCAPE) & 1) {
-                editing_multi[item_counts] = false;
-                *option = pending_bitmask[item_counts];
+                editing_multi[item_counts] = false; // ESC s√≥ fecha
             }
         }
     }
+
     std::string display;
     Color_t display_color = Color_t(31, 144, 217, 255);
+
     if (editing_multi[item_counts]) {
-        int idx = pending_index[item_counts];
+        int idx = current_index[item_counts];
         display = "< " + aliases.at(idx) + " >";
-        display_color = (pending_bitmask[item_counts] & (1 << idx)) ? Color_t(0, 255, 0, 255) : Color_t(255, 0, 0, 255);
+        display_color = (*option & (1 << idx))
+            ? Color_t(0, 255, 0, 255)
+            : Color_t(255, 0, 0, 255);
     }
     else {
         for (size_t i = 0; i < aliases.size(); ++i) {
@@ -217,13 +238,19 @@ void multi_combo(int x, int* y, std::string text, int* option, std::vector<std::
                 display += aliases[i];
             }
         }
-        if (display.empty()) display = "None";
+
+        if (display.empty())
+            display = "None";
+
         display = "< " + display + " >";
     }
+
     int value_x = x + text_width + 10;
     H::Draw->String(font, value_x, *y, display_color, POS_DEFAULT, display.c_str());
+
     *y += 15;
 }
+
 void int_slider(int x, int* y, std::string text, int& option, int min_value = 0, int max_value = 0, int item_counts = 1) {
     int alpha = 255;
     if (menu::menu_locked)
@@ -246,7 +273,7 @@ void int_slider(int x, int* y, std::string text, int& option, int min_value = 0,
     H::Draw->String(font, value_x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, value_str.c_str());
     *y += 15;
 }
-// ImplementaÁ„o simples do float_slider
+// Implementa√ß√£o simples do float_slider
 void float_slider(int x, int* y, std::string text, float& option, float min_value = 0.f, float max_value = 0.f, int item_counts = 1) {
     int alpha = 255;
     if (menu::menu_locked)
@@ -259,9 +286,9 @@ void float_slider(int x, int* y, std::string text, float& option, float min_valu
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
     if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_LEFT) & 1)
-            option -= 0.15f;
+            option -= 1.00f;
         else if (GetAsyncKeyState(VK_RIGHT) & 1)
-            option += 0.15f;
+            option += 1.00f;
     }
     option = std::clamp(option, min_value, max_value);
     std::ostringstream ss;
@@ -434,7 +461,7 @@ void menu::render() {
     else if (local_index > 0) {
         player_info_t info{};
         if (I::EngineClient->GetPlayerInfo(local_index, &info)) {
-            // Em TF2 sÛ pega nome real quando EST¡ em jogo
+            // Em TF2 s√≥ pega nome real quando EST√Å em jogo
             if (info.name && std::strlen(info.name) > 0) {
                 player_name = info.name;
                 full_hello = std::string("Hello ") + player_name;
@@ -826,11 +853,11 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP", &CFG::ESP_Enable, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "ESP Master", &CFG::ESP_Enable, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Team", &CFG::ESP_Team, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "Team Check", &CFG::ESP_Team, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -838,7 +865,7 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            combo(x_left, &y, "Box Type", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"}, false, 255, current_sub_item++);
+            combo(x_left, &y, "Box Style", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"}, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -854,7 +881,7 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "Pickups", &CFG::ESP_Pickups, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "World Pickups", &CFG::ESP_Pickups, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -866,7 +893,7 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Capture Flag", &CFG::ESP_CaptureFlag, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "Flag ESP", &CFG::ESP_CaptureFlag, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -878,11 +905,11 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Local Player", &CFG::ESP_LocalPlayer, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "Show Local Player", &CFG::ESP_LocalPlayer, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Hide Cloaked", &CFG::ESP_HideCloaked, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "Hide Cloaked Players", &CFG::ESP_HideCloaked, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -899,11 +926,27 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Offscreen", &CFG::ESP_Offscreen, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "Offscreen Indicators", &CFG::ESP_Offscreen, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Conds", &CFG::ESP_Conds, false, 255, current_sub_item++);
+            float_slider(x_center, &y, "Offscreen Radius", CFG::ESP_Offscreen_Radius, 10.0f, 500.0f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_center, &y, "Offscreen Max Distance", CFG::ESP_Offscreen_MaxDist, 0.0f, 2000.0f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_center, &y, "Offscreen Style", &CFG::ESP_Offscreen_Style, std::vector<std::string>{"Triangle", "Circle", "Bar"}, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Offscreen Filled", &CFG::ESP_Offscreen_Filled, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Player Conditions", &CFG::ESP_Conds, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -911,15 +954,43 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Tracer", &CFG::ESP_Tracer, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "Player Tracers", &CFG::ESP_Tracer, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Uber", &CFG::ESP_Uber, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "UberCharge Status", &CFG::ESP_Uber, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Uber Bar", &CFG::ESP_UberBar, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "UberCharge Bar", &CFG::ESP_UberBar, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Distance Enemy", &CFG::ESP_DistanceEnemy, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_center, &y, "Distance Position", &CFG::ESP_DistancePosition, std::vector<std::string>{"Side", "Bottom"}, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Buffs", &CFG::ESP_Buffs, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Debuffs", &CFG::ESP_Debuffs, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Latency (Ping)", &CFG::ESP_Ping, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "KDR Player", &CFG::ESP_KRDPlayer, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Lag Compensation", &CFG::ESP_LagCompensation, false, 255, current_sub_item++);
             max_items = current_sub_item - 1;
         }
         else if (visuals_sub_section == 1) { // Skeleton
@@ -1019,11 +1090,14 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            multi_combo(x_left_col, &y_left, "Logs Type", &CFG::Logs_Type, std::vector<std::string>{"Chat", "Console", "Screen", "All"}, 255, current_sub_item++);
+            multi_combo(x_left_col, &y_left, "Logs Type", &CFG::Logs_Type, std::vector<std::string>{"Chat", "Console", "Screen"}, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            multi_combo(x_left_col, &y_left, "Players Logs Type", &CFG::PlayersLogs_Type, std::vector<std::string>{"Damage", "Respawn", "Enter", "Exit", "Playerlist", "Class"}, 255, current_sub_item++);
+            multi_combo(x_left_col, &y_left, "Players Logs Type", &CFG::PlayersLogs_Type, std::vector<std::string>{"Local", "Fried", "Name", "Damage", "Respawn", "Enter", "Exit", "Playerlist", "Class", "Enemy Vote", "Team vote"}, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_left_col - 25, y_left, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
             // --- Center Column: Weapons (Tracer Effects, Draw Path, Remove Scope/Zoom/Punch/Fire, Fov) ---
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center_col - 25, y_center, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
@@ -1420,90 +1494,408 @@ else if (visuals_sub_section == 4) { // Outlines
         max_items = current_sub_item - 1;
         }
     }
-    else if (CFG::CurrentSection == 2) { // Playerlist section
-        int base_x = 150;
-        int name_x = base_x;
-        int ignored_x = base_x + 200;
-        int cheater_x = base_x + 350;
-        int retard_x = base_x + 500;
-        int start_y = y;
-        int header_y = start_y;
-        y = start_y;
-        // Headers
-        H::Draw->String(font, name_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Name");
-        H::Draw->String(font, ignored_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Ignored");
-        H::Draw->String(font, cheater_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Cheater");
-        H::Draw->String(font, retard_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, "Nigga");
-        y += 15;
-        // Horizontal line under headers
-        H::Draw->Line(name_x, y, retard_x + 100, y, Color_t(255, 255, 255, 255));
-        y += 15;
-        std::vector<std::pair<int, std::string>> player_list;
-        std::vector<int> ent_indices;
-        std::vector<PlayerPriority> priorities;
-        for (int i = 1; i <= 64; ++i) {
-            if (i == I::EngineClient->GetLocalPlayer()) continue;
-            player_info_t info{};
-            if (I::EngineClient->GetPlayerInfo(i, &info) && !info.fakeplayer) {
-                player_list.emplace_back(i, info.name);
-                ent_indices.push_back(i);
-                PlayerPriority pri{};
-                F::Players->GetInfo(i, pri);
-                priorities.push_back(pri);
+else if (CFG::CurrentSection == 2) { // Playerlist section
+    static int selected_player_index = -1; // Entity index of selected player for main list, -1 means none/invalid
+    static bool in_submenu = false; // Flag to indicate if we're in the per-player submenu
+    static int previous_item_count = 0;
+    // Key repeat timers (static to persist across frames)
+    static float last_down_time = 0.0f;
+    static float last_up_time = 0.0f;
+    static float last_right_time = 0.0f;
+    static float last_left_time = 0.0f;
+    const float initial_delay = 0.3f; // Seconds before repeat starts
+    const float repeat_rate = 0.05f; // Seconds between repeats
+    float current_time = I::EngineClient->Time(); // Assuming engine has Time() for current game time
+    int base_x = 150;
+    int name_x = base_x;
+    int start_y = y;
+    int header_y = start_y;
+    y = start_y;
+    // Collect player data separated by teams and status
+    std::vector<std::pair<int, std::string>> spectator_players;
+    std::vector<std::pair<int, std::string>> red_players;
+    std::vector<std::pair<int, std::string>> blu_players;
+    int max_clients = I::EngineClient->GetMaxClients();
+    for (int i = 1; i <= max_clients; ++i) {
+        if (i == I::EngineClient->GetLocalPlayer()) continue;
+        player_info_t info{};
+        if (I::EngineClient->GetPlayerInfo(i, &info) && info.name[0] != '\0') { // Check if connected and has name
+            C_BaseEntity* ent = reinterpret_cast<C_BaseEntity*>(I::ClientEntityList->GetClientEntity(i));
+            std::string name = info.name;
+            int team = ent ? ent->m_iTeamNum() : 0; // If no entity, treat as unassigned (0)
+            if (team == 0 || team == 1) {
+                spectator_players.emplace_back(i, name);
+            }
+            else if (team == 2) {
+                red_players.emplace_back(i, name);
+            }
+            else if (team == 3) {
+                blu_players.emplace_back(i, name);
             }
         }
-        // Sort by name
-        std::sort(player_list.begin(), player_list.end(), [](const auto& a, const auto& b) {
-            return a.second < b.second;
-            });
-        int num_players = player_list.size();
-        int num_columns = 3;
-        int total_items = num_players * num_columns;
-        int player_item_offset = 1; // Section is 1, players start from 2
-        int max_player_item = total_items + player_item_offset;
-        if (!menu::menu_locked) {
+    }
+    // Sort by name within groups
+    std::sort(spectator_players.begin(), spectator_players.end(), [](const auto& a, const auto& b) {
+        return a.second < b.second;
+        });
+    std::sort(red_players.begin(), red_players.end(), [](const auto& a, const auto& b) {
+        return a.second < b.second;
+        });
+    std::sort(blu_players.begin(), blu_players.end(), [](const auto& a, const auto& b) {
+        return a.second < b.second;
+        });
+    // Flat list of entity indices for navigation
+    std::vector<int> all_indices;
+    for (const auto& p : spectator_players) all_indices.push_back(p.first);
+    for (const auto& p : red_players) all_indices.push_back(p.first);
+    for (const auto& p : blu_players) all_indices.push_back(p.first);
+    int num_players = all_indices.size();
+    if (!in_submenu) {
+        int max_player_item = num_players > 0 ? num_players : 1;
+        // Find current position
+        int current_pos = -1;
+        for (int i = 0; i < num_players; ++i) {
+            if (all_indices[i] == selected_player_index) {
+                current_pos = i;
+                break;
+            }
+        }
+        if (current_pos == -1) {
+            if (num_players > 0) {
+                current_pos = 0;
+                selected_player_index = all_indices[0];
+            }
+            else {
+                selected_player_index = -1;
+            }
+        }
+        // Sync menu::item_count
+        if (current_pos != -1) {
+            menu::item_count = current_pos + 1;
+        }
+        bool section_changed = false;
+        if (!menu::menu_locked && num_players > 0) {
             int delta = 0;
-            bool vertical = false;
-            if (GetAsyncKeyState(VK_DOWN) & 1) { delta += num_columns; vertical = true; }
-            if (GetAsyncKeyState(VK_UP) & 1) { delta -= num_columns; vertical = true; }
-            if (GetAsyncKeyState(VK_RIGHT) & 1) delta += 1;
-            if (GetAsyncKeyState(VK_LEFT) & 1) delta -= 1;
-            int new_count = menu::item_count + delta;
-            if (new_count > max_player_item) {
-                if (vertical) new_count = menu::item_count; // Stay for vertical beyond
-                else new_count = max_player_item;
+            // Handle DOWN (pressed + held)
+            bool down_pressed = GetAsyncKeyState(VK_DOWN) & 1;
+            bool down_held = GetAsyncKeyState(VK_DOWN) & 0x8000;
+            if (down_pressed) {
+                delta += 1;
+                last_down_time = current_time;
             }
-            if (new_count < 1) {
-                if (vertical) new_count = menu::item_count;
-                else new_count = 1;
-            }
-            menu::item_count = new_count;
-        }
-        for (int row = 0; row < num_players; ++row) {
-            int player_y = y;
-            // Draw name (non-interactive)
-            H::Draw->String(font, name_x, player_y, Color_t(255, 255, 255, 255), POS_DEFAULT, player_list[row].second.c_str());
-            for (int col = 0; col < num_columns; ++col) {
-                int item_id = row * num_columns + col + player_item_offset + 1;
-                int col_x;
-                if (col == 0) col_x = ignored_x;
-                else if (col == 1) col_x = cheater_x;
-                else col_x = retard_x;
-                if (!menu_locked && menu::item_count == item_id) {
-                    H::Draw->String(font, col_x - 25, player_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            else if (down_held && current_time - last_down_time > initial_delay) {
+                if (current_time - last_down_time > repeat_rate) {
+                    delta += 1;
+                    last_down_time = current_time - std::fmod((current_time - last_down_time - initial_delay), repeat_rate) + initial_delay;
                 }
-                int temp_y = player_y;
-                bool* opt;
-                if (col == 0) opt = &priorities[row].Ignored;
-                else if (col == 1) opt = &priorities[row].Cheater;
-                else opt = &priorities[row].RetardLegit;
-                checkbox(col_x, &temp_y, "", opt, false, 255, item_id, ent_indices[row], &priorities[row], true);
             }
-            y += 15; // Move to next row
+            // Handle UP (pressed + held)
+            bool up_pressed = GetAsyncKeyState(VK_UP) & 1;
+            bool up_held = GetAsyncKeyState(VK_UP) & 0x8000;
+            if (up_pressed) {
+                delta -= 1;
+                last_up_time = current_time;
+            }
+            else if (up_held && current_time - last_up_time > initial_delay) {
+                if (current_time - last_up_time > repeat_rate) {
+                    delta -= 1;
+                    last_up_time = current_time - std::fmod((current_time - last_up_time - initial_delay), repeat_rate) + initial_delay;
+                }
+            }
+            // Handle RIGHT (pressed + held)
+            bool right_pressed = GetAsyncKeyState(VK_RIGHT) & 1;
+            bool right_held = GetAsyncKeyState(VK_RIGHT) & 0x8000;
+            if (right_pressed) {
+                delta += 1;
+                last_right_time = current_time;
+            }
+            else if (right_held && current_time - last_right_time > initial_delay) {
+                if (current_time - last_right_time > repeat_rate) {
+                    delta += 1;
+                    last_right_time = current_time - std::fmod((current_time - last_right_time - initial_delay), repeat_rate) + initial_delay;
+                }
+            }
+            // Handle LEFT (pressed + held)
+            bool left_pressed = GetAsyncKeyState(VK_LEFT) & 1;
+            bool left_held = GetAsyncKeyState(VK_LEFT) & 0x8000;
+            if (left_pressed) {
+                delta -= 1;
+                last_left_time = current_time;
+            }
+            else if (left_held && current_time - last_left_time > initial_delay) {
+                if (current_time - last_left_time > repeat_rate) {
+                    delta -= 1;
+                    last_left_time = current_time - std::fmod((current_time - last_left_time - initial_delay), repeat_rate) + initial_delay;
+                }
+            }
+            // Special handling for changing section when on last item
+            // Apply delta to current_pos with wrap-around
+            if (delta != 0) {
+                int new_pos = current_pos + delta;
+                if (new_pos >= num_players) new_pos = 0;
+                if (new_pos < 0) new_pos = num_players - 1;
+                selected_player_index = all_indices[new_pos];
+                menu::item_count = new_pos + 1; // Sync global item_count
+            }
+        }
+        if (section_changed) {
+            in_submenu = false;
+            return;
+        }
+        // Main player list mode
+        int x_left = 150;
+        int x_mid = 350;
+        int x_right = 550;
+        int y_left = start_y;
+        int y_mid = start_y;
+        int y_right = start_y;
+        int row = 0;
+        const int max_name_width = 180; // Max width before truncation
+        // Left: Spectator (always show header)
+        int header_width_left = 0, header_height_left = 0;
+        wchar_t wheader_left[256] = {};
+        MultiByteToWideChar(CP_UTF8, 0, "Spectator", -1, wheader_left, 256);
+        I::MatSystemSurface->GetTextSize(font.m_dwFont, wheader_left, header_width_left, header_height_left);
+        H::Draw->String(font, x_left, y_left, Color_t(255, 255, 255, 255), POS_DEFAULT, "Spectator");
+        y_left += 15;
+        for (const auto& p : spectator_players) {
+            int player_y = y_left;
+            std::string display_name = p.second;
+            int text_width = 0, text_height = 0;
+            wchar_t wname[256] = {};
+            MultiByteToWideChar(CP_UTF8, 0, display_name.c_str(), -1, wname, 256);
+            I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            // Truncate if too wide
+            while (text_width > max_name_width && display_name.length() > 3) {
+                display_name = display_name.substr(0, display_name.length() - 1);
+                MultiByteToWideChar(CP_UTF8, 0, (display_name + "....").c_str(), -1, wname, 256);
+                I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            }
+            if (text_width > max_name_width) {
+                display_name = display_name.substr(0, display_name.length() - 4) + "....";
+                MultiByteToWideChar(CP_UTF8, 0, display_name.c_str(), -1, wname, 256);
+                I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            }
+            // Get priority to determine color
+            PlayerPriority priority{};
+            F::Players->GetInfo(p.first, priority);
+            Color_t name_color = Color_t(200, 200, 200, 255); // Default spectator
+            if (priority.Cheater || priority.CheaterLight || priority.RijinUser || priority.LmaoboxUser || priority.NethookUser) {
+                name_color = Color_t(255, 0, 0, 255); // Red for cheaters
+            }
+            else if (priority.RetardLegit || priority.Suspect) {
+                name_color = Color_t(255, 255, 0, 255); // Yellow for suspects
+            }
+            else if (priority.Ignored) {
+                name_color = Color_t(128, 128, 128, 255); // Gray for ignored
+            }
+            if (!menu_locked && menu::item_count - 1 == row) {
+                H::Draw->String(font, x_left - 25, player_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            H::Draw->String(font, x_left, player_y, name_color, POS_DEFAULT, display_name.c_str());
+            y_left += 15;
+            row++;
+        }
+        // Middle: RED Team
+        int header_width_mid = 0, header_height_mid = 0;
+        wchar_t wheader_mid[256] = {};
+        MultiByteToWideChar(CP_UTF8, 0, "RED Team", -1, wheader_mid, 256);
+        I::MatSystemSurface->GetTextSize(font.m_dwFont, wheader_mid, header_width_mid, header_height_mid);
+        H::Draw->String(font, x_mid, y_mid, Color_t(255, 255, 255, 255), POS_DEFAULT, "RED Team");
+        y_mid += 15;
+        for (const auto& p : red_players) {
+            int player_y = y_mid;
+            std::string display_name = p.second;
+            int text_width = 0, text_height = 0;
+            wchar_t wname[256] = {};
+            MultiByteToWideChar(CP_UTF8, 0, display_name.c_str(), -1, wname, 256);
+            I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            // Truncate if too wide
+            while (text_width > max_name_width && display_name.length() > 3) {
+                display_name = display_name.substr(0, display_name.length() - 1);
+                MultiByteToWideChar(CP_UTF8, 0, (display_name + "....").c_str(), -1, wname, 256);
+                I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            }
+            if (text_width > max_name_width) {
+                display_name = display_name.substr(0, display_name.length() - 4) + "....";
+                MultiByteToWideChar(CP_UTF8, 0, display_name.c_str(), -1, wname, 256);
+                I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            }
+            // Get priority to determine color
+            PlayerPriority priority{};
+            F::Players->GetInfo(p.first, priority);
+            Color_t name_color = Color_t(255, 0, 0, 255); // Default red team
+            if (priority.Cheater || priority.CheaterLight || priority.RijinUser || priority.LmaoboxUser || priority.NethookUser) {
+                name_color = CFG::Color_Cheater; // Assume red, or from config
+            }
+            else if (priority.RetardLegit || priority.Suspect) {
+                name_color = CFG::Color_RetardLegit; // Assume yellow
+            }
+            else if (priority.Ignored) {
+                name_color = Color_t(128, 128, 128, 255); // Gray
+            }
+            if (!menu_locked && menu::item_count - 1 == row) {
+                H::Draw->String(font, x_mid - 25, player_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            H::Draw->String(font, x_mid, player_y, name_color, POS_DEFAULT, display_name.c_str());
+            y_mid += 15;
+            row++;
+        }
+        // Right: BLU Team
+        int header_width_right = 0, header_height_right = 0;
+        wchar_t wheader_right[256] = {};
+        MultiByteToWideChar(CP_UTF8, 0, "BLU Team", -1, wheader_right, 256);
+        I::MatSystemSurface->GetTextSize(font.m_dwFont, wheader_right, header_width_right, header_height_right);
+        H::Draw->String(font, x_right, y_right, Color_t(255, 255, 255, 255), POS_DEFAULT, "BLU Team");
+        y_right += 15;
+        for (const auto& p : blu_players) {
+            int player_y = y_right;
+            std::string display_name = p.second;
+            int text_width = 0, text_height = 0;
+            wchar_t wname[256] = {};
+            MultiByteToWideChar(CP_UTF8, 0, display_name.c_str(), -1, wname, 256);
+            I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            // Truncate if too wide
+            while (text_width > max_name_width && display_name.length() > 3) {
+                display_name = display_name.substr(0, display_name.length() - 1);
+                MultiByteToWideChar(CP_UTF8, 0, (display_name + "....").c_str(), -1, wname, 256);
+                I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            }
+            if (text_width > max_name_width) {
+                display_name = display_name.substr(0, display_name.length() - 4) + "....";
+                MultiByteToWideChar(CP_UTF8, 0, display_name.c_str(), -1, wname, 256);
+                I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, text_width, text_height);
+            }
+            // Get priority to determine color
+            PlayerPriority priority{};
+            F::Players->GetInfo(p.first, priority);
+            Color_t name_color = Color_t(0, 0, 255, 255); // Default blue team
+            if (priority.Cheater || priority.CheaterLight || priority.RijinUser || priority.LmaoboxUser || priority.NethookUser) {
+                name_color = CFG::Color_Cheater;
+            }
+            else if (priority.RetardLegit || priority.Suspect) {
+                name_color = CFG::Color_RetardLegit;
+            }
+            else if (priority.Ignored) {
+                name_color = Color_t(128, 128, 128, 255); // Gray
+            }
+            if (!menu_locked && menu::item_count - 1 == row) {
+                H::Draw->String(font, x_right - 25, player_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            H::Draw->String(font, x_right, player_y, name_color, POS_DEFAULT, display_name.c_str());
+            y_right += 15;
+            row++;
+        }
+        if (num_players == 0) {
+            H::Draw->String(font, name_x, start_y, Color_t(255, 255, 255, 255), POS_DEFAULT, "No players");
+        }
+        // Check for Enter to enter submenu
+        if (GetAsyncKeyState(VK_RETURN) & 1 && num_players > 0) {
+            in_submenu = true;
+            previous_item_count = menu::item_count;
+            menu::item_count = 1;
+            return; // <<< ISSO √â CR√çTICO
         }
         max_items = max_player_item;
     }
-    else if (CFG::CurrentSection == 3) {
+    else {
+        // Submenu mode for selected player
+        player_info_t player_info{};
+        if (!I::EngineClient->GetPlayerInfo(selected_player_index, &player_info)) {
+            in_submenu = false;
+            menu::item_count = previous_item_count;
+            return;
+        }
+        PlayerPriority priority{};
+        F::Players->GetInfo(selected_player_index, priority); // Fetch current priorities
+        // Draw player name as header
+        H::Draw->String(font, name_x, y, Color_t(255, 255, 255, 255), POS_DEFAULT, ("Flags for: " + std::string(player_info.name)).c_str());
+        y += 15;
+        // Horizontal line
+        H::Draw->Line(name_x, y, name_x + 200, y, Color_t(255, 255, 255, 255));
+        y += 15;
+        // List of flags (vertical checkboxes)
+        struct FlagInfo {
+            std::string name;
+            bool* value;
+        };
+        FlagInfo flags[] = {
+            {"Ignored", &priority.Ignored},
+            {"Cheater", &priority.Cheater},
+            {"Retard Legit", &priority.RetardLegit},
+            {"Cheater Light", &priority.CheaterLight},
+            {"Rijin User", &priority.RijinUser},
+            {"Lmaobox User", &priority.LmaoboxUser},
+            {"Suspect", &priority.Suspect},
+            {"Nethook User", &priority.NethookUser}
+        };
+        const int max_submenu_items = sizeof(flags) / sizeof(flags[0]);
+        for (int i = 0; i < max_submenu_items; ++i) {
+            int flag_y = y;
+            int item_id = i + 1;
+            if (!menu_locked && menu::item_count == item_id) {
+                H::Draw->String(font, name_x - 25, flag_y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            H::Draw->String(font, name_x, flag_y, Color_t(255, 255, 255, 255), POS_DEFAULT, flags[i].name.c_str());
+            std::string state = *(flags[i].value) ? "ON" : "OFF";
+            H::Draw->String(font, name_x + 150, flag_y, *(flags[i].value) ? Color_t(31, 144, 217, 255) : Color_t(255, 255, 255, 255), POS_DEFAULT, state.c_str());
+            y += 15;
+        }
+        // Key handling for navigation (only up/down)
+        if (!menu::menu_locked) {
+            int delta = 0;
+            bool down_pressed = GetAsyncKeyState(VK_DOWN) & 1;
+            bool down_held = GetAsyncKeyState(VK_DOWN) & 0x8000;
+            if (down_pressed) {
+                delta += 1;
+                last_down_time = current_time;
+            }
+            else if (down_held && current_time - last_down_time > initial_delay) {
+                if (current_time - last_down_time > repeat_rate) {
+                    delta += 1;
+                    last_down_time = current_time - std::fmod((current_time - last_down_time - initial_delay), repeat_rate) + initial_delay;
+                }
+            }
+            bool up_pressed = GetAsyncKeyState(VK_UP) & 1;
+            bool up_held = GetAsyncKeyState(VK_UP) & 0x8000;
+            if (up_pressed) {
+                delta -= 1;
+                last_up_time = current_time;
+            }
+            else if (up_held && current_time - last_up_time > initial_delay) {
+                if (current_time - last_up_time > repeat_rate) {
+                    delta -= 1;
+                    last_up_time = current_time - std::fmod((current_time - last_up_time - initial_delay), repeat_rate) + initial_delay;
+                }
+            }
+            int new_count = menu::item_count + delta;
+            if (new_count > max_submenu_items) new_count = 1;
+            if (new_count < 1) new_count = max_submenu_items;
+            menu::item_count = new_count;
+            // Toggle on Enter
+            if (GetAsyncKeyState(VK_RETURN) & 1) {
+                int selected_flag = menu::item_count - 1;
+                if (*(flags[selected_flag].value)) {
+                    *(flags[selected_flag].value) = false;
+                }
+                else {
+                    for (int j = 0; j < max_submenu_items; ++j) {
+                        *(flags[j].value) = false;
+                    }
+                    *(flags[selected_flag].value) = true;
+                }
+                F::Players->Mark(selected_player_index, priority);
+            }
+            // Exit on Esc or Backspace
+            if ((GetAsyncKeyState(VK_ESCAPE) & 1) || (GetAsyncKeyState(VK_BACK) & 1)) {
+                in_submenu = false;
+                menu::item_count = previous_item_count;
+            }
+        }
+        max_items = max_submenu_items;
+    }
+    }
+else if (CFG::CurrentSection == 3) {
         // Misc section
         int x_left = 150;
         int x_center = 350;
@@ -1540,7 +1932,7 @@ else if (visuals_sub_section == 4) { // Outlines
             }
             checkbox(x_left, &y, "Volume Down", &CFG::Radio_VolDown, false, 255, current_item++);
         }
-        y += 30; // EspaÁo
+        y += 30; // Espa√ßo
         if (!menu_locked && menu::item_count == current_item) {
             H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
         }
@@ -1780,7 +2172,7 @@ else if (CFG::CurrentSection == 4) { // Colors section
             I::MatSystemSurface->GetTextSize(font.m_dwFont, wname, name_width, name_height);
             // Draw square after the name
             int square_size = name_height - 4; // proporcional ao texto
-            if (square_size < 8) square_size = 8; // limite mÌnimo
+            if (square_size < 8) square_size = 8; // limite m√≠nimo
             int square_x = col_x + name_width + 8;
             int square_y = y + (name_height / 2) - (square_size / 2);
             // outline

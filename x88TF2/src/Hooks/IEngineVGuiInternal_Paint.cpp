@@ -5,6 +5,7 @@
 #include "../src/Features/Aimbot/AimbotHitscan/AimbotHitscan.h" // Added include for AimbotHitscan
 #include "../Features/Radio/Radio.h" // Added include for Radio
 #include "../Features/SeedPred/SeedPred.h"
+#include "../src/Features/Menu/notification_system/notifs.h"
 MAKE_HOOK(IEngineVGuiInternal_Paint, Memory::GetVFunc(I::EngineVGui, 14), void, __fastcall,
 	void* ecx, int mode)
 {
@@ -19,6 +20,7 @@ MAKE_HOOK(IEngineVGuiInternal_Paint, Memory::GetVFunc(I::EngineVGui, 14), void, 
 			F::Radio->Run();
 			menu::render();
 			F::SeedPred->Paint();
+			g_notification_system->run();
 			App->Draw(); // ✅ CORRETO
 		}
 		I::MatSystemSurface->FinishDrawing();

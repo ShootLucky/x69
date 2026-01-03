@@ -70,6 +70,7 @@ public:
 	NETVAR(m_vecMaxsPreScaled, Vec3, "CBaseEntity", "m_vecMaxsPreScaled");
 	NETVAR(m_vecMins, Vec3, "CBaseEntity", "m_vecMins");
 	NETVAR(m_vecMaxs, Vec3, "CBaseEntity", "m_vecMaxs");
+	NETVAR(m_vecVelocity, Vec3, "CBasePlayer", "m_vecVelocity[0]");
 	NETVAR(m_nSolidType, int, "CBaseEntity", "m_nSolidType");
 	NETVAR(m_usSolidFlags, int, "CBaseEntity", "m_usSolidFlags");
 	NETVAR(m_nSurroundType, int, "CBaseEntity", "m_nSurroundType");

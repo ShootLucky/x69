@@ -88,6 +88,7 @@ private:
         C_TFPlayer* pLocal,
         const ProjTarget_t& target
     );
+    bool NeuralNetworkSplashPrediction(const Vec3& impactPoint, C_BaseEntity* pTargetEntity);
 public:
     bool IsFiring(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
     bool ShouldAimKey();

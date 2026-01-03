@@ -362,6 +362,7 @@
     <ClCompile Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.cpp" />
     <ClCompile Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
     <ClCompile Include="src\Features\Chams\Chams.cpp" />
+    <ClCompile Include="src\Features\Menu\notification_system\notifs.cpp" />
     <ClCompile Include="src\Features\Outlines\Outlines.cpp" />
     <ClCompile Include="src\Features\PlayersList\PlayersList.cpp" />
     <ClCompile Include="src\Features\MovementSimulation\MovementSimulation.cpp" />
@@ -379,7 +380,9 @@
     <ClCompile Include="src\Hooks\CBaseEntity_BaseInterpolatePart1.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_InterpolateServerEntities.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_SetAbsVelocity.cpp" />
+    <ClCompile Include="src\Hooks\CBaseHudChatLine_InsertAndColorizeText.cpp" />
     <ClCompile Include="src\Hooks\CBasePlayer_CalcPlayerView.cpp" />
+    <ClCompile Include="src\Hooks\CGameEventManager_FireEventIntern.cpp" />
     <ClCompile Include="src\Hooks\CHudTFCrosshair_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_CreateMove.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_OverrideView.cpp" />
@@ -447,6 +450,7 @@
     <ClInclude Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.h" />
     <ClInclude Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.h" />
     <ClInclude Include="src\Features\Chams\Chams.h" />
+    <ClInclude Include="src\Features\Menu\notification_system\notifs.h" />
     <ClInclude Include="src\Features\Outlines\Outlines.h" />
     <ClInclude Include="src\Features\PlayersList\PlayersList.h" />
     <ClInclude Include="src\Features\MovementSimulation\MovementSimulation.h" />

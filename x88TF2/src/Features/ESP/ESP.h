@@ -17,6 +17,7 @@ public:
 	bool IsEnabled() const noexcept { return CFG::ESP_Enable; }
 	void CustomFOV(CViewSetup* pSetup);
 	void Rain();
+	void PlayerArrow(C_TFPlayer* Player, Color_t Clr);
 private:
 	// Helpers de desenho — implementados em ESP.cpp
 	void DrawBox(int left, int top, int w, int h, const Color_t& clr);

@@ -8,7 +8,7 @@ MAKE_SIGNATURE(CBaseHudChatLine_InsertAndColorizeText, "client.dll", "44 89 44 2
 MAKE_HOOK(CBaseHudChatLine_InsertAndColorizeText, Signatures::CBaseHudChatLine_InsertAndColorizeText.Get(), void, __fastcall,
 	void* ecx, wchar_t* buf, int clientIndex)
 {
-	if (CFG::Visuals_Chat_Name_Tags && ecx)
+	if (CFG::PlayersLogs_Type && ecx)
 	{
 		std::wstring str{ buf };
 		std::wstring prefix{};

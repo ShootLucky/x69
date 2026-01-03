@@ -40,9 +40,14 @@ void CPlayers::Parse()
 		auto& playerEntry = j[item.key()];
 
 		m_Players[key] = {
-			playerEntry["ignored"].get<bool>(),
-			playerEntry["cheater"].get<bool>(),
-			playerEntry["retardlegit"].get<bool>()
+			playerEntry.value("ignored", false),
+			playerEntry.value("cheater", false),
+			playerEntry.value("retardlegit", false),
+			playerEntry.value("cheaterlight", false),
+			playerEntry.value("rijinuser", false),
+			playerEntry.value("lmaoboxuser", false),
+			playerEntry.value("suspect", false),
+			playerEntry.value("nethookuser", false)
 		};
 	}
 }
@@ -84,8 +89,13 @@ void CPlayers::Mark(int entindex, const PlayerPriority& info)
 	playerEntry["ignored"] = info.Ignored;
 	playerEntry["cheater"] = info.Cheater;
 	playerEntry["retardlegit"] = info.RetardLegit;
+	playerEntry["cheaterlight"] = info.CheaterLight;
+	playerEntry["rijinuser"] = info.RijinUser;
+	playerEntry["lmaoboxuser"] = info.LmaoboxUser;
+	playerEntry["suspect"] = info.Suspect;
+	playerEntry["nethookuser"] = info.NethookUser;
 
-	if (!info.Ignored && !info.Cheater && !info.RetardLegit)
+	if (!info.Ignored && !info.Cheater && !info.RetardLegit && !info.CheaterLight && !info.RijinUser && !info.LmaoboxUser && !info.Suspect && !info.NethookUser)
 	{
 		j.erase(std::string(playerInfo.guid));
 	}

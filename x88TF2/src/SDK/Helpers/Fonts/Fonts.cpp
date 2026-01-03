@@ -10,6 +10,8 @@ void CFontManager::Reload()
 	m_mapFonts[EFonts::ESP_CONDS] = { "Small Fonts", 9, FONTFLAG_OUTLINE, 0 };
 	m_mapFonts[EFonts::ESP_SMALL] = { "Small Fonts", 11, FONTFLAG_OUTLINE, 0 };
 	m_mapFonts[EFonts::VerdanaBold] = { "Verdana", 12, FONTFLAG_ANTIALIAS, 700 };
+	m_mapFonts[EFonts::OTHER] = { "Tahoma", 12, FONTFLAG_NONE, 400 }; // fonte padrão para OTHER
+
 	// splash normal (caso queira usar)
 	int splashSize = H::Draw->GetScreenH() / 8;
 	m_mapFonts[EFonts::SPLASH] = {
