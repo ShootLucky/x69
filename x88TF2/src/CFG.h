@@ -109,6 +109,10 @@ namespace CFG
 	CFGVAR(ESP_HideCloaked, false);
 	CFGVAR(ESP_LocalPlayer, false);
 	CFGVAR(ESP_Offscreen, false);
+	CFGVAR(ESP_Offscreen_Radius, 80.0f);
+	CFGVAR(ESP_Offscreen_MaxDist, 0.0f);
+	CFGVAR(ESP_Offscreen_Style, 0);
+	CFGVAR(ESP_Offscreen_Filled, false);
 	CFGVAR(ESP_Pickups, false);
 	CFGVAR(ESP_PickupsBox, false);
 	CFGVAR(ESP_PickupsName, false);
@@ -165,6 +169,13 @@ namespace CFG
 	CFGVAR(Visuals_World_Modulation_Mode, 0);
 	CFGVAR(Visuals_Chat_Player_List_Info, false);
 	CFGVAR(Visuals_Flat_Textures, false);
+	CFGVAR(ESP_DistanceEnemy, false);
+	CFGVAR(ESP_Buffs, false);
+	CFGVAR(ESP_Debuffs, false);
+	CFGVAR(ESP_Ping, false);
+	CFGVAR(ESP_KRDPlayer, false);
+	CFGVAR(ESP_LagCompensation, false);
+	CFGVAR(ESP_DistancePosition, 0);
 #pragma endregion
 #pragma region Materials
 	CFGVAR(Materials_Active, false);

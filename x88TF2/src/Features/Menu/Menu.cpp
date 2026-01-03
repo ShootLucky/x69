@@ -259,9 +259,9 @@ void float_slider(int x, int* y, std::string text, float& option, float min_valu
     H::Draw->String(font, x, *y, Color_t(255, 255, 255, 255), POS_DEFAULT, text.c_str());
     if (item_counts == menu::item_count && !menu::menu_locked) {
         if (GetAsyncKeyState(VK_LEFT) & 1)
-            option -= 0.15f;
+            option -= 1.00f;
         else if (GetAsyncKeyState(VK_RIGHT) & 1)
-            option += 0.15f;
+            option += 1.00f;
     }
     option = std::clamp(option, min_value, max_value);
     std::ostringstream ss;
@@ -826,11 +826,11 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP", &CFG::ESP_Enable, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "ESP Master", &CFG::ESP_Enable, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Team", &CFG::ESP_Team, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "Team Check", &CFG::ESP_Team, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -838,7 +838,7 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            combo(x_left, &y, "Box Type", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"}, false, 255, current_sub_item++);
+            combo(x_left, &y, "Box Style", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"}, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -854,7 +854,7 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "Pickups", &CFG::ESP_Pickups, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "World Pickups", &CFG::ESP_Pickups, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -866,7 +866,7 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Capture Flag", &CFG::ESP_CaptureFlag, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "Flag ESP", &CFG::ESP_CaptureFlag, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -878,11 +878,11 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Local Player", &CFG::ESP_LocalPlayer, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "Show Local Player", &CFG::ESP_LocalPlayer, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_left, &y, "ESP Hide Cloaked", &CFG::ESP_HideCloaked, false, 255, current_sub_item++);
+            checkbox(x_left, &y, "Hide Cloaked Players", &CFG::ESP_HideCloaked, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_left - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -899,11 +899,27 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Offscreen", &CFG::ESP_Offscreen, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "Offscreen Indicators", &CFG::ESP_Offscreen, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Conds", &CFG::ESP_Conds, false, 255, current_sub_item++);
+            float_slider(x_center, &y, "Offscreen Radius", CFG::ESP_Offscreen_Radius, 10.0f, 500.0f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            float_slider(x_center, &y, "Offscreen Max Distance", CFG::ESP_Offscreen_MaxDist, 0.0f, 2000.0f, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_center, &y, "Offscreen Style", &CFG::ESP_Offscreen_Style, std::vector<std::string>{"Triangle", "Circle", "Bar"}, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Offscreen Filled", &CFG::ESP_Offscreen_Filled, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Player Conditions", &CFG::ESP_Conds, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
@@ -911,15 +927,43 @@ void menu::render() {
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Tracer", &CFG::ESP_Tracer, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "Player Tracers", &CFG::ESP_Tracer, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Uber", &CFG::ESP_Uber, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "UberCharge Status", &CFG::ESP_Uber, false, 255, current_sub_item++);
             if (!menu_locked && menu::item_count == current_sub_item) {
                 H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
             }
-            checkbox(x_center, &y, "ESP Uber Bar", &CFG::ESP_UberBar, false, 255, current_sub_item++);
+            checkbox(x_center, &y, "UberCharge Bar", &CFG::ESP_UberBar, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Distance Enemy", &CFG::ESP_DistanceEnemy, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            combo(x_center, &y, "Distance Position", &CFG::ESP_DistancePosition, std::vector<std::string>{"Side", "Bottom"}, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Buffs", &CFG::ESP_Buffs, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Debuffs", &CFG::ESP_Debuffs, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Latency (Ping)", &CFG::ESP_Ping, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "KDR Player", &CFG::ESP_KRDPlayer, false, 255, current_sub_item++);
+            if (!menu_locked && menu::item_count == current_sub_item) {
+                H::Draw->String(font, x_center - 25, y, Color_t(0, 255, 0, 255), POS_DEFAULT, ">");
+            }
+            checkbox(x_center, &y, "Lag Compensation", &CFG::ESP_LagCompensation, false, 255, current_sub_item++);
             max_items = current_sub_item - 1;
         }
         else if (visuals_sub_section == 1) { // Skeleton
