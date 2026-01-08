@@ -448,7 +448,7 @@ void menu::render() {
     address_string << I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
     int x = 240, x2 = 390;
     int y = 10;
-    H::Draw->String(H::Fonts->Get(EFonts::Menu), 5, 40, Color_t(255, 150, 150, 255), POS_DEFAULT, "x69 V1");
+    H::Draw->String(H::Fonts->Get(EFonts::Menu), 5, 40, Color_t(255, 150, 150, 255), POS_DEFAULT, "x69 V1.1");
     // Improved Steam name fetching with lobby detection
     static std::string player_name = "LocalPlayer";
     int local_index = I::EngineClient->GetLocalPlayer();
