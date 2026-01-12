@@ -1,12 +1,8 @@
-// Modified CGameEventManager_FireEventIntern.cpp
 #include "../src/SDK/SDK.h"
-
 #include "../CFG.h"
 #include "../Features/PlayersList/PlayersList.h"
 #include "../src/Features/Menu/notification_system/notifs.h"
-
 MAKE_SIGNATURE(CGameEventManager_FireEventIntern, "engine.dll", "44 88 44 24 ? 48 89 4C 24 ? 55 57", 0x0);
-
 static constexpr int PL_LOCAL = 1 << 0;
 static constexpr int PL_FRIED = 1 << 1;
 static constexpr int PL_NAME = 1 << 2;
@@ -18,189 +14,261 @@ static constexpr int PL_PLAYERLIST = 1 << 7;
 static constexpr int PL_CLASS = 1 << 8;
 static constexpr int PL_ENEMYVOTE = 1 << 9;
 static constexpr int PL_TEAMVOTE = 1 << 10;
-
-Color_t PREFIX_COLOR = Color_t(0, 150, 255, 255); // Cyan for [x69]
-
+Color_t PREFIX_COLOR = Color_t(0, 150, 255, 255); // Cyan for x69
+Color_t BRACKET_COLOR = Color_t(255, 255, 255, 255); // White for []
+std::pair<std::string, std::string> GetTaggedName(const player_info_t& pi, Color_t& tag_col) {
+    std::string name_str = pi.name;
+    std::string chat_name = std::string(pi.name);
+    PlayerPriority pri{};
+    tag_col = Color_t(255, 255, 255, 255); // Default white
+    if (F::Players->GetInfoGUID(pi.guid, pri)) {
+        std::string tag_str;
+        std::string chat_tag;
+        if (pri.Cheater) {
+            tag_str = " [Cheater]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + CFG::Color_Cheater.toHexStr() + "Cheater\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = CFG::Color_Cheater;
+        }
+        else if (pri.CheaterLight) {
+            tag_str = " [Cheater Light]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(255, 150, 150, 255).toHexStr() + "Cheater Light\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(255, 150, 150, 255);
+        }
+        else if (pri.RijinUser) {
+            tag_str = " [Rijin User]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(255, 0, 255, 255).toHexStr() + "Rijin User\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(255, 0, 255, 255);
+        }
+        else if (pri.LmaoboxUser) {
+            tag_str = " [Lmaobox User]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(0, 255, 255, 255).toHexStr() + "Lmaobox User\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(0, 255, 255, 255);
+        }
+        else if (pri.NethookUser) {
+            tag_str = " [Nethook User]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(128, 0, 128, 255).toHexStr() + "Nethook User\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(128, 0, 128, 255);
+        }
+        else if (pri.RetardLegit) {
+            tag_str = " [Retard Legit]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + CFG::Color_RetardLegit.toHexStr() + "Retard Legit\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = CFG::Color_RetardLegit;
+        }
+        else if (pri.Suspect) {
+            tag_str = " [Suspect]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(255, 255, 0, 255).toHexStr() + "Suspect\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(255, 255, 0, 255);
+        }
+        else if (pri.Ignored) {
+            tag_str = " [Ignored]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + CFG::Color_Friend.toHexStr() + "Ignored\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = CFG::Color_Friend;
+        }
+        if (!tag_str.empty()) {
+            name_str += tag_str;
+            chat_name += chat_tag;
+        }
+    }
+    return { name_str, "\x01" + chat_name };
+}
+std::pair<std::string, std::string> GetTaggedNameByGUID(const std::string& guid, const std::string& name, Color_t& tag_col) {
+    std::string name_str = name;
+    std::string chat_name = std::string(name);
+    PlayerPriority pri{};
+    tag_col = Color_t(255, 255, 255, 255); // Default white
+    if (F::Players->GetInfoGUID(guid, pri)) {
+        std::string tag_str;
+        std::string chat_tag;
+        if (pri.Cheater) {
+            tag_str = " [Cheater]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + CFG::Color_Cheater.toHexStr() + "Cheater\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = CFG::Color_Cheater;
+        }
+        else if (pri.CheaterLight) {
+            tag_str = " [Cheater Light]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(255, 150, 150, 255).toHexStr() + "Cheater Light\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(255, 150, 150, 255);
+        }
+        else if (pri.RijinUser) {
+            tag_str = " [Rijin User]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(255, 0, 255, 255).toHexStr() + "Rijin User\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(255, 0, 255, 255);
+        }
+        else if (pri.LmaoboxUser) {
+            tag_str = " [Lmaobox User]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(0, 255, 255, 255).toHexStr() + "Lmaobox User\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(0, 255, 255, 255);
+        }
+        else if (pri.NethookUser) {
+            tag_str = " [Nethook User]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(128, 0, 128, 255).toHexStr() + "Nethook User\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(128, 0, 128, 255);
+        }
+        else if (pri.RetardLegit) {
+            tag_str = " [Retard Legit]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + CFG::Color_RetardLegit.toHexStr() + "Retard Legit\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = CFG::Color_RetardLegit;
+        }
+        else if (pri.Suspect) {
+            tag_str = " [Suspect]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + Color_t(255, 255, 0, 255).toHexStr() + "Suspect\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = Color_t(255, 255, 0, 255);
+        }
+        else if (pri.Ignored) {
+            tag_str = " [Ignored]";
+            chat_tag = " \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + CFG::Color_Friend.toHexStr() + "Ignored\x08" + BRACKET_COLOR.toHexStr() + "]";
+            tag_col = CFG::Color_Friend;
+        }
+        if (!tag_str.empty()) {
+            name_str += tag_str;
+            chat_name += chat_tag;
+        }
+    }
+    return { name_str, "\x01" + chat_name };
+}
 void LogMessage(std::string msg, Color_t color = Color_t(255, 255, 255, 255), std::string chat_colored_msg = "") {
     if (!CFG::Logs_Enable) return;
-
-    // Add prefix to msg for console and screen
+    // Add prefix to msg for console only (NOT for notifications)
     std::string prefixed_msg = std::format("[x69] {}", msg);
-
     bool to_chat = (CFG::Logs_Type & 1);
     bool to_console = (CFG::Logs_Type & 2);
     bool to_screen = (CFG::Logs_Type & 4);
-
     if (to_chat) {
         std::string chat_msg;
         if (!chat_colored_msg.empty()) {
-            chat_msg = "\x08" + PREFIX_COLOR.toHexStr() + "[x69]" + chat_colored_msg;
+            chat_msg = "\x08" + BRACKET_COLOR.toHexStr() + "[\x08" + PREFIX_COLOR.toHexStr() + "x69\x08" + BRACKET_COLOR.toHexStr() + "]" + chat_colored_msg;
         }
         else {
-            chat_msg = "\x08" + PREFIX_COLOR.toHexStr() + "[x69]\x01" + msg;
+            chat_msg = "\x08" + BRACKET_COLOR.toHexStr() + "[\x08" + PREFIX_COLOR.toHexStr() + "x69\x08" + BRACKET_COLOR.toHexStr() + "]\x01 " + msg;
         }
         I::ClientModeShared->m_pChatElement->ChatPrintf(0, chat_msg.c_str());
     }
-
     if (to_console) {
         I::CVar->ConsoleColorPrintf(color, "%s\n", prefixed_msg.c_str());
     }
-
     if (to_screen) {
-        g_notification_system->add_notification(prefixed_msg, 5000);
+        // Send msg WITHOUT [x69] prefix to notifications
+        g_notification_system->add_notification(msg, 5000);
     }
 }
-
 void OnVoteCast(IGameEvent* event) {
     if (!CFG::Logs_Enable) return;
-
-    const auto team = event->GetInt("team");
-    if (team == -1) return;
-
-    const auto pLocal = H::Entities->GetLocal();
-    if (!pLocal) return;
-
-    const auto voter = event->GetInt("entityid");
-    bool isLocal = voter == I::EngineClient->GetLocalPlayer();
-
-    if (isLocal) {
-        if (!(CFG::PlayersLogs_Type & PL_LOCAL)) return;
-    }
-    else {
-        bool isTeamVote = pLocal->m_iTeamNum() == team;
-        int reqBit = isTeamVote ? PL_TEAMVOTE : PL_ENEMYVOTE;
-        if (!(CFG::PlayersLogs_Type & reqBit)) return;
-    }
-
+    int voter_entity_idx = event->GetInt("entityid");
     player_info_t pi{};
-    if (!I::EngineClient->GetPlayerInfo(voter, &pi)) return;
-
-    bool yes = event->GetInt("vote_option") == 0;
-    Color_t col = yes ? Color_t(46, 204, 113, 255) : Color_t(231, 76, 60, 255);
-    std::string msg = std::format("{} voted {}", pi.name, yes ? "YES" : "NO");
-    std::string chat_msg = "\x01" + std::string(pi.name) + " voted \x08" + col.toHexStr() + (yes ? "YES" : "NO");
-
-    LogMessage(msg, col, chat_msg);
+    if (!I::EngineClient->GetPlayerInfo(voter_entity_idx, &pi)) return;
+    int vote_option = event->GetInt("vote_option");
+    int team = event->GetInt("team");
+    std::string vote_str = (vote_option == 0) ? "YES" : "NO";
+    Color_t tag_col;
+    auto [tagged_name, tagged_chat_name] = GetTaggedName(pi, tag_col);
+    bool on_our_team = (team == H::Entities->GetLocal()->m_iTeamNum());
+    int flag_type = on_our_team ? PL_TEAMVOTE : PL_ENEMYVOTE;
+    if (!(CFG::PlayersLogs_Type & flag_type)) return;
+    std::string msg = std::format("{} voted {}", tagged_name, vote_str);
+    Color_t vote_color = (vote_option == 0) ? Color_t(0, 255, 0, 255) : Color_t(255, 0, 0, 255);
+    std::string chat_colored_msg = tagged_chat_name + "\x01 voted \x08" + vote_color.toHexStr() + vote_str;
+    LogMessage(msg, Color_t(255, 255, 255, 255), chat_colored_msg);
 }
-
 void OnPlayerConnect(IGameEvent* event) {
     if (!CFG::Logs_Enable || !(CFG::PlayersLogs_Type & PL_ENTER)) return;
-
-    std::string name = event->GetString("name");
-    std::string msg = std::format("{} has joined the game", name);
-    LogMessage(msg);
+    const char* const name{ event->GetString("name") };
+    const char* const guid{ event->GetString("networkid") };
+    Color_t tag_col;
+    auto [tagged_name, tagged_chat_name] = GetTaggedNameByGUID(guid, name, tag_col);
+    std::string msg = std::format("{} has joined the game", tagged_name);
+    Color_t col(0, 255, 0, 255);
+    std::string chat_colored_msg = tagged_chat_name + "\x01 has joined the game";
+    LogMessage(msg, col, chat_colored_msg);
 }
-
 void OnPlayerDisconnect(IGameEvent* event) {
     if (!CFG::Logs_Enable || !(CFG::PlayersLogs_Type & PL_EXIT)) return;
-
-    std::string name = event->GetString("name");
-    std::string reason = event->GetString("reason");
-    std::string msg = std::format("{} has left the game ({})", name, reason);
-    LogMessage(msg);
+    const char* const name{ event->GetString("name") };
+    const char* const guid{ event->GetString("networkid") };
+    Color_t tag_col;
+    auto [tagged_name, tagged_chat_name] = GetTaggedNameByGUID(guid, name, tag_col);
+    std::string msg = std::format("{} has left the game", tagged_name);
+    Color_t col(255, 0, 0, 255);
+    std::string chat_colored_msg = tagged_chat_name + "\x01 has left the game";
+    LogMessage(msg, col, chat_colored_msg);
 }
-
 void OnPlayerChangeName(IGameEvent* event) {
     if (!CFG::Logs_Enable || !(CFG::PlayersLogs_Type & PL_NAME)) return;
-
-    std::string oldname = event->GetString("oldname");
-    std::string newname = event->GetString("newname");
-    std::string msg = std::format("{} changed name to {}", oldname, newname);
-    LogMessage(msg);
+    int user_id = event->GetInt("userid");
+    int idx = I::EngineClient->GetPlayerForUserID(user_id);
+    player_info_t pi{};
+    if (!I::EngineClient->GetPlayerInfo(idx, &pi)) return;
+    const char* old_name = event->GetString("oldname");
+    const char* new_name = event->GetString("newname");
+    Color_t tag_col;
+    auto [tagged_name, tagged_chat_name] = GetTaggedName(pi, tag_col);
+    std::string msg = std::format("{} changed name to {}", old_name, tagged_name);
+    Color_t col(255, 255, 0, 255);
+    std::string chat_colored_msg = "\x01 " + std::string(old_name) + " changed name to " + tagged_chat_name;
+    LogMessage(msg, col, chat_colored_msg);
 }
-
 void OnPlayerChangeClass(IGameEvent* event) {
-    if (!CFG::Logs_Enable) return;
-
-    int userid = event->GetInt("userid");
-    int index = I::EngineClient->GetPlayerForUserID(userid);
-    bool isLocal = index == I::EngineClient->GetLocalPlayer();
-
-    if (isLocal) {
-        if (!(CFG::PlayersLogs_Type & PL_LOCAL)) return;
-    }
-    else {
-        if (!(CFG::PlayersLogs_Type & PL_CLASS)) return;
-    }
-
+    if (!CFG::Logs_Enable || !(CFG::PlayersLogs_Type & PL_CLASS)) return;
+    int user_id = event->GetInt("userid");
+    int idx = I::EngineClient->GetPlayerForUserID(user_id);
     player_info_t pi{};
-    if (!I::EngineClient->GetPlayerInfo(index, &pi)) return;
-
-    int classid = event->GetInt("class");
-    std::string classname;
-    switch (classid) {
-    case 1: classname = "Scout"; break;
-    case 2: classname = "Sniper"; break;
-    case 3: classname = "Soldier"; break;
-    case 4: classname = "Demoman"; break;
-    case 5: classname = "Medic"; break;
-    case 6: classname = "Heavy"; break;
-    case 7: classname = "Pyro"; break;
-    case 8: classname = "Spy"; break;
-    case 9: classname = "Engineer"; break;
-    default: classname = "Unknown"; break;
-    }
-
-    std::string msg = std::format("{} changed class to {}", pi.name, classname);
-    LogMessage(msg);
+    if (!I::EngineClient->GetPlayerInfo(idx, &pi)) return;
+    int class_id = event->GetInt("class");
+    static const char* class_names[] = {
+        "Unknown", "Scout", "Sniper", "Soldier",
+        "Demoman", "Medic", "Heavy", "Pyro", "Spy", "Engineer"
+    };
+    const char* class_name = (class_id >= 0 && class_id < 10) ? class_names[class_id] : "Unknown";
+    Color_t tag_col;
+    auto [tagged_name, tagged_chat_name] = GetTaggedName(pi, tag_col);
+    std::string msg = std::format("{} changed class to {}", tagged_name, class_name);
+    Color_t col(255, 200, 100, 255);
+    std::string chat_colored_msg = tagged_chat_name + "\x01 changed class to " + class_name;
+    LogMessage(msg, col, chat_colored_msg);
 }
-
 void OnPlayerSpawn(IGameEvent* event) {
-    if (!CFG::Logs_Enable) return;
-
-    int userid = event->GetInt("userid");
-    int index = I::EngineClient->GetPlayerForUserID(userid);
-    bool isLocal = index == I::EngineClient->GetLocalPlayer();
-
-    if (isLocal) {
-        if (!(CFG::PlayersLogs_Type & PL_LOCAL)) return;
-    }
-    else {
-        if (!(CFG::PlayersLogs_Type & PL_RESPAWN)) return;
-    }
-
+    if (!CFG::Logs_Enable || !(CFG::PlayersLogs_Type & PL_RESPAWN)) return;
+    int user_id = event->GetInt("userid");
+    int idx = I::EngineClient->GetPlayerForUserID(user_id);
     player_info_t pi{};
-    if (!I::EngineClient->GetPlayerInfo(index, &pi)) return;
-
-    std::string msg = std::format("{} respawned", pi.name);
-    LogMessage(msg);
+    if (!I::EngineClient->GetPlayerInfo(idx, &pi)) return;
+    Color_t tag_col;
+    auto [tagged_name, tagged_chat_name] = GetTaggedName(pi, tag_col);
+    std::string msg = std::format("{} respawned", tagged_name);
+    std::string chat_colored_msg = tagged_chat_name + "\x01 respawned";
+    LogMessage(msg, Color_t(255, 255, 255, 255), chat_colored_msg);
 }
-
 void OnPlayerHurt(IGameEvent* event) {
     if (!CFG::Logs_Enable || !(CFG::PlayersLogs_Type & PL_DAMAGE)) return;
-
     int attacker = I::EngineClient->GetPlayerForUserID(event->GetInt("attacker"));
     if (attacker != I::EngineClient->GetLocalPlayer()) return;
-
     int victim = I::EngineClient->GetPlayerForUserID(event->GetInt("userid"));
     player_info_t pi{};
     if (!I::EngineClient->GetPlayerInfo(victim, &pi)) return;
-
     int dmg = event->GetInt("damageamount");
     if (dmg <= 0) return; // Prevent logging zero or negative damage
-
     int remaining = event->GetInt("health");
-    std::string msg = std::format("Damaged {} for {} ({} remaining)", pi.name, dmg, remaining);
-    Color_t col(255, 255, 0, 255);
-    LogMessage(msg, col);
+    Color_t tag_col;
+    auto [tagged_name, tagged_chat_name] = GetTaggedName(pi, tag_col);
+    std::string msg = std::format("Damaged {} for {} ({} remaining)", tagged_name, dmg, remaining);
+    Color_t col(0, 150, 255, 255);
+    std::string chat_colored_msg = "\x01 Damaged " + tagged_chat_name + "\x01 for \x08" + col.toHexStr() + std::to_string(dmg) + "\x01 (" + std::to_string(remaining) + " remaining)";
+    LogMessage(msg, col, chat_colored_msg);
 }
-
 void OnPlayerDeath(IGameEvent* event) {
     if (!CFG::Logs_Enable || !(CFG::PlayersLogs_Type & PL_FRIED)) return;
-
     int attacker = I::EngineClient->GetPlayerForUserID(event->GetInt("attacker"));
     if (attacker != I::EngineClient->GetLocalPlayer()) return;
-
     int victim = I::EngineClient->GetPlayerForUserID(event->GetInt("userid"));
     player_info_t pi{};
     if (!I::EngineClient->GetPlayerInfo(victim, &pi)) return;
-
     std::string weapon = event->GetString("weapon");
-    std::string msg = std::format("You fried {} with {}", pi.name, weapon);
+    Color_t tag_col;
+    auto [tagged_name, tagged_chat_name] = GetTaggedName(pi, tag_col);
+    std::string msg = std::format("You fried {} with {}", tagged_name, weapon);
     Color_t col(255, 0, 0, 255);
-    LogMessage(msg, col);
+    std::string chat_colored_msg = "\x01 You fried " + tagged_chat_name + "\x01 with " + weapon;
+    LogMessage(msg, col, chat_colored_msg);
 }
-
 MAKE_HOOK(CGameEventManager_FireEventIntern, Signatures::CGameEventManager_FireEventIntern.Get(), bool, __fastcall,
     void* ecx, IGameEvent* event, bool bServerOnly, bool bClientOnly) {
     if (event) {
@@ -212,105 +280,85 @@ MAKE_HOOK(CGameEventManager_FireEventIntern, Signatures::CGameEventManager_FireE
         static constexpr auto player_spawn{ HASH_CT("player_spawn") };
         static constexpr auto player_hurt{ HASH_CT("player_hurt") };
         static constexpr auto player_death{ HASH_CT("player_death") };
-
         auto hash = HASH_RT(event->GetName());
-
         if (hash == vote_cast && bClientOnly) {
             OnVoteCast(event);
         }
-
         if (hash == player_connect_client && bClientOnly) {
             if (CFG::Logs_Enable && (CFG::PlayersLogs_Type & PL_PLAYERLIST)) {
                 PlayerPriority pi{};
-
                 if (F::Players->GetInfoGUID(event->GetString("networkid"), pi)) {
                     const char* const name{ event->GetString("name") };
-
                     if (pi.Ignored) {
                         std::string msg = std::format("{} is marked as [Ignored]", name);
                         Color_t col = CFG::Color_Friend;
-                        std::string chat_msg = "\x01" + std::string(name) + " is marked as \x08" + col.toHexStr() + "[Ignored]";
+                        std::string chat_msg = "\x01 " + std::string(name) + " is marked as \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + col.toHexStr() + "Ignored\x08" + BRACKET_COLOR.toHexStr() + "]";
                         LogMessage(msg, col, chat_msg);
                     }
-
                     if (pi.Cheater) {
                         std::string msg = std::format("{} is marked as [Cheater]", name);
                         Color_t col = CFG::Color_Cheater;
-                        std::string chat_msg = "\x01" + std::string(name) + " is marked as \x08" + col.toHexStr() + "[Cheater]";
+                        std::string chat_msg = "\x01 " + std::string(name) + " is marked as \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + col.toHexStr() + "Cheater\x08" + BRACKET_COLOR.toHexStr() + "]";
                         LogMessage(msg, col, chat_msg);
                     }
-
                     if (pi.RetardLegit) {
                         std::string msg = std::format("{} is marked as [Retard Legit]", name);
                         Color_t col = CFG::Color_RetardLegit;
-                        std::string chat_msg = "\x01" + std::string(name) + " is marked as \x08" + col.toHexStr() + "[Retard Legit]";
+                        std::string chat_msg = "\x01 " + std::string(name) + " is marked as \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + col.toHexStr() + "Retard Legit\x08" + BRACKET_COLOR.toHexStr() + "]";
                         LogMessage(msg, col, chat_msg);
                     }
-
                     if (pi.CheaterLight) {
                         std::string msg = std::format("{} is marked as [Cheater Light]", name);
                         Color_t col = Color_t(255, 150, 150, 255); // Light red
-                        std::string chat_msg = "\x01" + std::string(name) + " is marked as \x08" + col.toHexStr() + "[Cheater Light]";
+                        std::string chat_msg = "\x01 " + std::string(name) + " is marked as \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + col.toHexStr() + "Cheater Light\x08" + BRACKET_COLOR.toHexStr() + "]";
                         LogMessage(msg, col, chat_msg);
                     }
-
                     if (pi.RijinUser) {
                         std::string msg = std::format("{} is marked as [Rijin User]", name);
                         Color_t col = Color_t(255, 0, 255, 255); // Magenta
-                        std::string chat_msg = "\x01" + std::string(name) + " is marked as \x08" + col.toHexStr() + "[Rijin User]";
+                        std::string chat_msg = "\x01 " + std::string(name) + " is marked as \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + col.toHexStr() + "Rijin User\x08" + BRACKET_COLOR.toHexStr() + "]";
                         LogMessage(msg, col, chat_msg);
                     }
-
                     if (pi.LmaoboxUser) {
                         std::string msg = std::format("{} is marked as [Lmaobox User]", name);
                         Color_t col = Color_t(0, 255, 255, 255); // Cyan
-                        std::string chat_msg = "\x01" + std::string(name) + " is marked as \x08" + col.toHexStr() + "[Lmaobox User]";
+                        std::string chat_msg = "\x01 " + std::string(name) + " is marked as \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + col.toHexStr() + "Lmaobox User\x08" + BRACKET_COLOR.toHexStr() + "]";
                         LogMessage(msg, col, chat_msg);
                     }
-
                     if (pi.Suspect) {
                         std::string msg = std::format("{} is marked as [Suspect]", name);
                         Color_t col = Color_t(255, 255, 0, 255); // Yellow
-                        std::string chat_msg = "\x01" + std::string(name) + " is marked as \x08" + col.toHexStr() + "[Suspect]";
+                        std::string chat_msg = "\x01 " + std::string(name) + " is marked as \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + col.toHexStr() + "Suspect\x08" + BRACKET_COLOR.toHexStr() + "]";
                         LogMessage(msg, col, chat_msg);
                     }
-
                     if (pi.NethookUser) {
                         std::string msg = std::format("{} is marked as [Nethook User]", name);
                         Color_t col = Color_t(128, 0, 128, 255); // Purple
-                        std::string chat_msg = "\x01" + std::string(name) + " is marked as \x08" + col.toHexStr() + "[Nethook User]";
+                        std::string chat_msg = "\x01 " + std::string(name) + " is marked as \x08" + BRACKET_COLOR.toHexStr() + "[\x08" + col.toHexStr() + "Nethook User\x08" + BRACKET_COLOR.toHexStr() + "]";
                         LogMessage(msg, col, chat_msg);
                     }
                 }
             }
-
             OnPlayerConnect(event);
         }
-
         if (hash == player_disconnect && bClientOnly) {
             OnPlayerDisconnect(event);
         }
-
         if (hash == player_changename && bClientOnly) {
             OnPlayerChangeName(event);
         }
-
         if (hash == player_changeclass && bClientOnly) {
             OnPlayerChangeClass(event);
         }
-
         if (hash == player_spawn && bClientOnly) {
             OnPlayerSpawn(event);
         }
-
         if (hash == player_hurt && bClientOnly) {
             OnPlayerHurt(event);
         }
-
         if (hash == player_death && bClientOnly) {
             OnPlayerDeath(event);
         }
     }
-
     return CALL_ORIGINAL(ecx, event, bServerOnly, bClientOnly);
 }

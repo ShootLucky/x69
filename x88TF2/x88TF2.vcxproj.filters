@@ -84,6 +84,8 @@
     <ClCompile Include="src\Features\Menu\notification_system\notifs.cpp" />
     <ClCompile Include="src\Hooks\CBaseHudChatLine_InsertAndColorizeText.cpp" />
     <ClCompile Include="src\Hooks\CGameEventManager_FireEventIntern.cpp" />
+    <ClCompile Include="src\Features\Menu\functions_menu\functions_menu.cpp" />
+    <ClCompile Include="src\Features\Menu\notification_system\icons_notify.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -259,5 +261,7 @@
     <ClInclude Include="src\Features\Outlines\Outlines.h" />
     <ClInclude Include="src\Features\SeedPred\SeedPred.h" />
     <ClInclude Include="src\Features\Menu\notification_system\notifs.h" />
+    <ClInclude Include="src\Features\Menu\functions_menu\functions_menu.h" />
+    <ClInclude Include="src\Features\Menu\notification_system\icons_notify.h" />
   </ItemGroup>
 </Project>

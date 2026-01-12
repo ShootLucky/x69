@@ -362,6 +362,8 @@
     <ClCompile Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.cpp" />
     <ClCompile Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
     <ClCompile Include="src\Features\Chams\Chams.cpp" />
+    <ClCompile Include="src\Features\Menu\functions_menu\functions_menu.cpp" />
+    <ClCompile Include="src\Features\Menu\notification_system\icons_notify.cpp" />
     <ClCompile Include="src\Features\Menu\notification_system\notifs.cpp" />
     <ClCompile Include="src\Features\Outlines\Outlines.cpp" />
     <ClCompile Include="src\Features\PlayersList\PlayersList.cpp" />
@@ -450,6 +452,8 @@
     <ClInclude Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.h" />
     <ClInclude Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.h" />
     <ClInclude Include="src\Features\Chams\Chams.h" />
+    <ClInclude Include="src\Features\Menu\functions_menu\functions_menu.h" />
+    <ClInclude Include="src\Features\Menu\notification_system\icons_notify.h" />
     <ClInclude Include="src\Features\Menu\notification_system\notifs.h" />
     <ClInclude Include="src\Features\Outlines\Outlines.h" />
     <ClInclude Include="src\Features\PlayersList\PlayersList.h" />
