@@ -57,6 +57,15 @@ private:
         const ProjTarget_t& target,
         float flTargetTime
     );
+    bool TrySplashShot(
+        C_TFPlayer* pLocal,
+        C_TFWeaponBase* pWeapon,
+        const CUserCmd* pCmd,
+        const ProjTarget_t& target,
+        Vec3& outAngle,
+        float& outTime,
+        bool isPlayer
+    );
     bool SolveTarget(
         C_TFPlayer* pLocal,
         C_TFWeaponBase* pWeapon,
@@ -90,6 +99,8 @@ private:
     );
     bool NeuralNetworkSplashPrediction(const Vec3& impactPoint, C_BaseEntity* pTargetEntity);
 public:
+    // ========== FUNÇÕES PÚBLICAS ==========
+    Vec3 GetWeaponFireOffset(C_TFWeaponBase* pWeapon, C_TFPlayer* pLocal);
     bool IsFiring(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
     bool ShouldAimKey();
     void Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);

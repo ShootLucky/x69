@@ -376,6 +376,7 @@
     <ClCompile Include="src\Features\ProjectileSim\ProjectileSim.cpp" />
     <ClCompile Include="src\Features\Radio\Radio.cpp" />
     <ClCompile Include="src\Features\SeedPred\SeedPred.cpp" />
+    <ClCompile Include="src\Features\SpectatorList\SpectatorList.cpp" />
     <ClCompile Include="src\Features\VisualUtils\VisualUtils.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_AddVar.cpp" />
@@ -466,6 +467,7 @@
     <ClInclude Include="src\Features\ProjectileSim\ProjectileSim.h" />
     <ClInclude Include="src\Features\Radio\Radio.h" />
     <ClInclude Include="src\Features\SeedPred\SeedPred.h" />
+    <ClInclude Include="src\Features\SpectatorList\SpectatorList.h" />
     <ClInclude Include="src\Features\VisualUtils\VisualUtils.h" />
     <ClInclude Include="src\Hooks\WINAPI_WndProc.h" />
     <ClInclude Include="src\SDK\TF2\CPredictionCopy.h" />

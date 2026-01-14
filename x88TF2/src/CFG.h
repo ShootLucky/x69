@@ -151,11 +151,7 @@ namespace CFG
 	CFGVAR(Visuals_ViewModel_Up, 0.f);
 	CFGVAR(Visuals_Removals_Mode, 0);
 	CFGVAR(Visuals_Rain, false);
-	CFGVAR(Visuals_Rain_Width, 1.f);
-	CFGVAR(Visuals_Rain_Length, 20.f);
-	CFGVAR(Visuals_Rain_Radius, 1000.f);
-	CFGVAR(Visuals_Rain_WindDirection, 0.f);
-	CFGVAR(Visuals_Rain_WindSpeed, 10.f);
+	CFGVAR(Visual_Spectatorlist, true);
 	CFGVAR(ESP_Arrows, false);
 	CFGVAR(ESP_Conds, false);
 	CFGVAR(ESP_SniperLines, false);

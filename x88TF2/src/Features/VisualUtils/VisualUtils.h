@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../src/SDK/SDK.h"
+#include "../../SDK/SDK.h"
 
 class CVisualUtils
 {

@@ -112,6 +112,17 @@ bool CAimUtils::VisPos(C_BaseEntity* pSkip, C_BaseEntity* pEntity, const Vec3& f
 	return (trace.m_pEnt == pEntity || trace.fraction > 0.99f);
 }
 
+bool CAimUtils::VisibilityCheck(C_TFPlayer* pLocal, C_BaseEntity* pEntity)
+{
+	if (!pLocal || !pEntity)
+		return false;
+
+	const Vec3 vLocalPos = pLocal->GetShootPos();
+	const Vec3 vEntityPos = pEntity->GetAbsOrigin() + Vec3(0, 0, 48); // Approximate center
+
+	return VisPos(pLocal, pEntity, vLocalPos, vEntityPos);
+}
+
 EWeaponType CAimUtils::GetWeaponType(C_TFWeaponBase* pWeapon)
 {
 	if (!pWeapon)

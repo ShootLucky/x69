@@ -51,6 +51,17 @@ public:
 	bool DiffersFromCurrent(const LagRecord_t* pRecord);
 	bool IsSettingUpBones() { return m_bSettingUpBones; }
 
+	// Expose the raw container of records for a player.
+	// Retorna uma referência constante para a deque de registros (pode ser vazia).
+	const std::deque<LagRecord_t>& Records(C_TFPlayer* pPlayer) const
+	{
+		static const std::deque<LagRecord_t> empty;
+		auto it = m_LagRecords.find(pPlayer);
+		if (it != m_LagRecords.end())
+			return it->second;
+		return empty;
+	}
+
 	// Fake latency functions
 	void AdjustPing(INetChannel* pNetChan);
 	void RestorePing(INetChannel* pNetChan);

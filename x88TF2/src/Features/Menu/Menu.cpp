@@ -138,47 +138,31 @@ void menu::render() {
         checkbox(x_left, &y, "Minigun Tapfire", &CFG::Aimbot_MinigunTapfire, false, 255, current_item++);
         combo(x_left, &y, "Aim Type", &CFG::Aimbot_Hitscan_Mode, std::vector<std::string>{ "Aimlock", "Silent" }, false, 255, current_item++);
         combo(x_left, &y, "Hitbox Sort", &CFG::Aimbot_Hitbox_Sort, std::vector<std::string>{ "Auto", "Damage", "Accuracy" }, false, 255, current_item++);
-        combo(x_left, &y, "Hitbox Type", &CFG::Aimbot_Hitscan_Hitbox, std::vector<std::string>{ "Head", "Pelvis", "Auto" }, false, 255, current_item++);
+        multi_combo(x_left, &y, "Hitbox Types", &CFG::Aimbot_Hitscan_Hitbox, std::vector<std::string>{ "Head", "Body", "Pelvis", "Arms", "Legs" }, 255, current_item++);
         combo(x_left, &y, "Sort", &CFG::Aimbot_Hitscan_Sort, std::vector<std::string>{ "Distance", "FOV", "Health" }, false, 255, current_item++);
-        static bool showScanOptions = false;
-        checkbox(x_left, &y, "Scan options", &showScanOptions, false, 255, current_item++);
-        if (showScanOptions) {
-            checkbox(x_left, &y, "Scan Head", &CFG::Aimbot_Hitscan_Scan_Head, false, 255, current_item++);
-            checkbox(x_left, &y, "Scan Body", &CFG::Aimbot_Hitscan_Scan_Body, false, 255, current_item++);
-            checkbox(x_left, &y, "Scan Arms", &CFG::Aimbot_Hitscan_Scan_Arms, false, 255, current_item++);
-            checkbox(x_left, &y, "Scan Legs", &CFG::Aimbot_Hitscan_Scan_Legs, false, 255, current_item++);
-            checkbox(x_left, &y, "Scan Buildings", &CFG::Aimbot_Hitscan_Scan_Buildings, false, 255, current_item++);
-        }
-        float_slider(x_left, &y, "Multipoint Scale", CFG::Aimbot_Hitscan_Multipoint_Scale, 0.f, 1.f, current_item++);
         float_slider(x_left, &y, "FOV", CFG::Aimbot_FOV, 0.f, 180.f, current_item++);
         float_slider(x_left, &y, "Smoothing", CFG::Aimbot_Hitscan_Smoothing, 0.f, 20.f, current_item++);
         checkbox(x_left, &y, "Ignore Invisible", &CFG::Aimbot_Ignore_Invisible, false, 255, current_item++);
         checkbox(x_left, &y, "Ignore Taunting", &CFG::Aimbot_Ignore_Taunting, false, 255, current_item++);
-        checkbox(x_left, &y, "Active Shoot", &CFG::Aimbot_ActiveShoot, false, 255, current_item++);
         checkbox(x_left, &y, "Active Lag Records", &CFG::Aimbot_ActiveLagRecords, false, 255, current_item++);
         checkbox(x_left, &y, "Auto Shoot", &CFG::Aimbot_AutoShoot, false, 255, current_item++);
         checkbox(x_left, &y, "Auto Scope", &CFG::Aimbot_AutoScope, false, 255, current_item++);
         checkbox(x_left, &y, "Target Players", &CFG::Aimbot_Target_Players, false, 255, current_item++);
         checkbox(x_left, &y, "Target Buildings", &CFG::Aimbot_Target_Buildings, false, 255, current_item++);
-        checkbox(x_left, &y, "Ignore Friends", &CFG::Aimbot_Ignore_Friends, false, 255, current_item++);
         checkbox(x_left, &y, "Ignore Invulnerable", &CFG::Aimbot_Ignore_Invulnerable, false, 255, current_item++);
-        checkbox(x_left, &y, "Whitelist Teammates", &CFG::Aimbot_WhitelistTeammates, false, 255, current_item++);
-        int_slider(x_left, &y, "Baim After Shots", CFG::Aimbot_BaimAfterShots, 0, 20, current_item++);
-        float_slider(x_left, &y, "Baim After Health", CFG::Aimbot_BaimAfterHealth, 0.f, 1.f, current_item++);
         // Project Aimbot (center column)
         y = start_y;
         checkbox(x_center, &y, "Projectile Aimbot", &CFG::Aimbot_Projectile_Enable, false, 255, current_item++);
         checkbox(x_center, &y, "No Spread", &CFG::Aimbot_Projectile_NoSpread, false, 255, current_item++);
         checkbox(x_center, &y, "Auto Double Donk", &CFG::Aimbot_Projectile_AutoDoubleDonk, false, 255, current_item++);
-        checkbox(x_center, &y, "Advanced Air Strafe", &CFG::Aimbot_Projectile_AdvancedAirStrafe, false, 255, current_item++);
+        checkbox(x_center, &y, "Air Strafe", &CFG::Aimbot_Projectile_AdvancedAirStrafe, false, 255, current_item++);
         checkbox(x_center, &y, "Ground Strafe Prediction", &CFG::Aimbot_Projectile_GroundStrafePrediction, false, 255, current_item++);
-        checkbox(x_center, &y, "BBox Multipoint", &CFG::Aimbot_Projectile_BBox_Multipoint, false, 255, current_item++);
+        checkbox(x_center, &y, "Multipoint", &CFG::Aimbot_Projectile_BBox_Multipoint, false, 255, current_item++);
         checkbox(x_center, &y, "Rocket Splash Preferred", &CFG::Aimbot_Projectile_RocketSplashPoint, false, 255, current_item++);
         combo(x_center, &y, "Aim Type", &CFG::Aimbot_Projectile_Mode, std::vector<std::string>{ "Aimlock", "Silent" }, false, 255, current_item++);
         combo(x_center, &y, "Aim Position", &CFG::Aimbot_Projectile_AimPosition, std::vector<std::string>{ "Auto" }, false, 255, current_item++);
         combo(x_center, &y, "Sort", &CFG::Aimbot_Projectile_Sort, std::vector<std::string>{ "Auto", "Distance", "FOV" }, false, 255, current_item++);
         combo(x_center, &y, "Method", &CFG::Aimbot_Projectile_PredictionMethod, std::vector<std::string>{ "Full Acceleration", "Velocity" }, false, 255, current_item++);
-        int_slider(x_center, &y, "Ticks Predict", CFG::Aimbot_Projectile_TicksPredict, 0, 128, current_item++);
         checkbox(x_center, &y, "Team Check", &CFG::Aimbot_Projectile_TeamCheck, false, 255, current_item++);
         float_slider(x_center, &y, "FOV", CFG::Aimbot_Projectile_FOV, 0.f, 180.f, current_item++);
         float_slider(x_center, &y, "Smoothing", CFG::Aimbot_Projectile_Smoothing, 0.f, 20.f, current_item++);
@@ -297,7 +281,7 @@ void menu::render() {
             if (CFG::BulletTracer) {
                 combo(x_center_col, &y_center, "Type", &CFG::BulletTracer_Type, std::vector<std::string>{ "Default", "C.A.P.P.E.R", "Machina (White)", "Machina (Team)", "Big Nasty", "Short Circuit", "Merasmus Zap", "Random", "Random (No Zap)" }, false, 255, current_sub_item++);
             }
-            combo(x_center_col, &y_center, "Draw Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted", "Line + Box" }, false, 255, current_sub_item++);
+            combo(x_center_col, &y_center, "Movement Path Style", &CFG::Visuals_Draw_Movement_Path_Style, std::vector<std::string>{ "Off", "Line", "Dotted", "Line + Box" }, false, 255, current_sub_item++);
             checkbox(x_center_col, &y_center, "Remove punch", &CFG::Visuals_RemovePunch, false, 255, current_sub_item++);
             checkbox(x_center_col, &y_center, "Fov", &CFG::Visuals_CustomFov_Enable, false, 255, current_sub_item++);
             float_slider(x_center_col, &y_center, "Fov Amount", CFG::Visuals_CustomFov_Amount, 0.f, 120.f, current_sub_item++);
@@ -306,11 +290,7 @@ void menu::render() {
             checkbox(x_center_col, &y_center, "Remove Fire", &CFG::Visuals_RemoveFire, false, 255, current_sub_item++);
             // --- Right Column: Map (Rain) ---
             checkbox(x_right_col, &y_right, "Rain Map", &CFG::Visuals_Rain, false, 255, current_sub_item++);
-            float_slider(x_right_col, &y_right, "Radius", CFG::Visuals_Rain_Radius, 0.f, 100.f, current_sub_item++); // Assuming range 0-100, adjust as needed
-            float_slider(x_right_col, &y_right, "Width", CFG::Visuals_Rain_Width, 0.f, 10.f, current_sub_item++); // Assuming separate width and length
-            float_slider(x_right_col, &y_right, "Length", CFG::Visuals_Rain_Length, 0.f, 100.f, current_sub_item++);
-            float_slider(x_right_col, &y_right, "Wind Direction", CFG::Visuals_Rain_WindDirection, 0.f, 360.f, current_sub_item++); // 0-360 degrees
-            float_slider(x_right_col, &y_right, "Wind Speed", CFG::Visuals_Rain_WindSpeed, 0.f, 50.f, current_sub_item++); // Assuming range 0-50
+            checkbox(x_right_col, &y_right, "Spectator List", &CFG::Visual_Spectatorlist, false, 255, current_sub_item++);
             max_items = current_sub_item - 1;
         }
         else if (visuals_sub_section == 3) { // Chams

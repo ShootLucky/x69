@@ -109,42 +109,9 @@ void DrawMovePath(const std::vector<Vec3>& vPath)
 Vec3 GetProjectileFirePos(C_TFPlayer* local, C_TFWeaponBase* weapon, const Vec3& angles)
 {
     Vec3 out = local->GetShootPos();
-    Vec3 offset = { 0.0f, 0.0f, 0.0f };
 
-    switch (weapon->GetWeaponID())
-    {
-    case TF_WEAPON_ROCKETLAUNCHER:
-    case TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT:
-    case TF_WEAPON_FLAREGUN:
-    case TF_WEAPON_FLAREGUN_REVENGE:
-    case TF_WEAPON_SYRINGEGUN_MEDIC:
-    case TF_WEAPON_FLAME_BALL:
-    case TF_WEAPON_CROSSBOW:
-    case TF_WEAPON_FLAMETHROWER:
-    case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
-        if (weapon->m_iItemDefinitionIndex() != Soldier_m_TheOriginal)
-        {
-            offset = { 23.5f, 12.0f, -3.0f };
-            if (local->m_fFlags() & FL_DUCKING)
-                offset.z = 8.0f;
-        }
-        break;
-
-    case TF_WEAPON_COMPOUND_BOW:
-        offset = { 20.5f, 12.0f, -3.0f };
-        if (local->m_fFlags() & FL_DUCKING)
-            offset.z = 8.0f;
-        break;
-
-    case TF_WEAPON_PIPEBOMBLAUNCHER:
-    case TF_WEAPON_GRENADELAUNCHER:
-    case TF_WEAPON_CANNON:
-        offset = { 16.0f, 8.0f, -6.0f };
-        break;
-
-    default:
-        return out; // No offset for other weapons
-    }
+    // ========== USAR A FUNÇÃO AUXILIAR ==========
+    Vec3 offset = F::AimbotProjectile->GetWeaponFireOffset(weapon, local);
 
     if (offset.x != 0.0f || offset.y != 0.0f || offset.z != 0.0f)
     {
@@ -533,89 +500,158 @@ void CAimbotProjectile::OffsetPlayerPosition(C_TFWeaponBase* pWeapon, Vec3& vPos
 bool CAimbotProjectile::CanArcReach(const Vec3& vFrom, const Vec3& vTo, const Vec3& vAngleTo, float flTargetTime, C_BaseEntity* pTarget)
 {
     const auto pLocal = H::Entities->GetLocal();
-    if (!pLocal)
-    {
-        return false;
-    }
+    if (!pLocal) return false;
+
     const auto pWeapon = H::Entities->GetWeapon();
-    if (!pWeapon)
-    {
-        return false;
-    }
+    if (!pWeapon) return false;
+
+    // ========== SETUP DE INFORMAÇÕES DO PROJÉTIL ==========
     ProjectileInfo info{};
     if (!F::ProjectileSim->GetInfo(pLocal, pWeapon, vAngleTo, info))
-    {
         return false;
-    }
+
+    // Correção especial para Loch-n-Load
     if (pWeapon->m_iItemDefinitionIndex() == Demoman_m_TheLochnLoad)
     {
-        info.m_speed += 45.0f; //need to do this for some reason
+        info.m_speed += 45.0f;
     }
+
     if (!F::ProjectileSim->Init(info, true))
-    {
         return false;
-    }
+
+    // ========== OTIMIZAÇÕES DE EARLY EXIT ==========
+    const float maxDistance = vFrom.DistTo(vTo);
+    const float projectileSpeed = info.m_speed;
+    const float estimatedTime = maxDistance / (projectileSpeed + 0.001f);
+
+    // Se o tempo estimado é muito maior que o esperado, já falha
+    if (estimatedTime > flTargetTime * 1.5f)
+        return false;
+
+    // ========== SETUP DE TRACE FILTER ==========
     CTraceFilterWorldCustom filter{};
     filter.m_pTarget = pTarget;
-    //I::DebugOverlay->ClearAllOverlays();
-    for (auto n = 0; n < TIME_TO_TICKS(flTargetTime * 1.2f); n++)
+
+    // ========== TAMANHO DO HULL BASEADO NO PROJÉTIL ==========
+    Vec3 mins, maxs;
+
+    switch (info.m_type)
     {
-        auto pre{ F::ProjectileSim->GetOrigin() };
+    case TF_PROJECTILE_PIPEBOMB:
+    case TF_PROJECTILE_PIPEBOMB_REMOTE:
+    case TF_PROJECTILE_PIPEBOMB_PRACTICE:
+    case TF_PROJECTILE_CANNONBALL:
+        mins = { -8.0f, -8.0f, -8.0f };
+        maxs = { 8.0f, 8.0f, 20.0f };
+        break;
+
+    case TF_PROJECTILE_FLARE:
+        mins = { -8.0f, -8.0f, -8.0f };
+        maxs = { 8.0f, 8.0f, 8.0f };
+        break;
+
+    default:
+        mins = { -6.0f, -6.0f, -6.0f };
+        maxs = { 6.0f, 6.0f, 6.0f };
+        break;
+    }
+
+    // ========== SIMULAÇÃO OTIMIZADA ==========
+    const int maxTicks = TIME_TO_TICKS(flTargetTime * 1.2f);
+    const float targetDistSqr = vTo.DistToSqr(vFrom); // Usa distância ao quadrado (mais rápido)
+
+    // Variáveis para detecção de "muito próximo"
+    float closestDistSqr = FLT_MAX;
+    bool wasGettingCloser = false;
+    int ticksSinceClosest = 0;
+
+    for (int n = 0; n < maxTicks; n++)
+    {
+        const Vec3 pre = F::ProjectileSim->GetOrigin();
         F::ProjectileSim->RunTick();
-        auto post{ F::ProjectileSim->GetOrigin() };
+        const Vec3 post = F::ProjectileSim->GetOrigin();
+
+        // ========== EARLY EXIT: Se está se afastando muito do alvo ==========
+        const float currentDistSqr = post.DistToSqr(vTo);
+
+        if (currentDistSqr < closestDistSqr)
+        {
+            closestDistSqr = currentDistSqr;
+            wasGettingCloser = true;
+            ticksSinceClosest = 0;
+        }
+        else
+        {
+            ticksSinceClosest++;
+
+            // Se estava ficando perto mas agora está se afastando por muito tempo, desiste
+            if (wasGettingCloser && ticksSinceClosest > 5)
+            {
+                // Só desiste se está realmente longe (30 HU)
+                if (currentDistSqr > 900.0f) // 30^2
+                    return false;
+            }
+        }
+
+        // ========== TRACE HULL OTIMIZADO ==========
         trace_t trace{};
-        Vec3 mins{ -6.0f, -6.0f, -6.0f };
-        Vec3 maxs{ 6.0f, 6.0f, 6.0f };
-        switch (info.m_type)
-        {
-        case TF_PROJECTILE_PIPEBOMB:
-        case TF_PROJECTILE_PIPEBOMB_REMOTE:
-        case TF_PROJECTILE_PIPEBOMB_PRACTICE:
-        case TF_PROJECTILE_CANNONBALL:
-        {
-            mins = { -8.0f, -8.0f, -8.0f };
-            maxs = { 8.0f, 8.0f, 20.0f };
-            break;
-        }
-        case TF_PROJECTILE_FLARE:
-        {
-            mins = { -8.0f, -8.0f, -8.0f };
-            maxs = { 8.0f, 8.0f, 8.0f };
-            break;
-        }
-        default:
-        {
-            break;
-        }
-        }
         H::AimUtils->TraceHull(pre, post, mins, maxs, MASK_SOLID, &filter, &trace);
+
+        // ========== VERIFICAÇÃO DE ACERTO DIRETO ==========
         if (trace.m_pEnt == pTarget)
         {
             return true;
         }
+
+        // ========== VERIFICAÇÃO DE COLISÃO ==========
         if (trace.DidHit())
         {
-            if (info.m_pos.DistTo(trace.endpos) > info.m_pos.DistTo(vTo))
+            const float distToImpact = info.m_pos.DistTo(trace.endpos);
+            const float distToTarget = info.m_pos.DistTo(vTo);
+
+            // Se o projétil já passou do alvo, considera que pode acertar
+            if (distToImpact > distToTarget)
             {
                 return true;
             }
-            if (trace.endpos.DistTo(vTo) > 40.0f)
+
+            // Se bateu muito longe do alvo (40 HU+), falhou
+            const float impactToTargetDist = trace.endpos.DistTo(vTo);
+            if (impactToTargetDist > 40.0f)
             {
                 return false;
             }
-            H::AimUtils->Trace(trace.endpos, vTo, MASK_SOLID, &filter, &trace);
-            return !trace.DidHit() || trace.m_pEnt == pTarget;
+
+            // ========== VERIFICAÇÃO FINAL: Linha de visão do impacto até o alvo ==========
+            trace_t finalTrace{};
+            H::AimUtils->Trace(trace.endpos, vTo, MASK_SOLID, &filter, &finalTrace);
+
+            // Se não bateu em nada OU bateu no alvo = sucesso
+            return !finalTrace.DidHit() || finalTrace.m_pEnt == pTarget;
         }
-        //I::DebugOverlay->AddBoxOverlay(post, mins, maxs, Math::CalcAngle(pre, post), 255, 255, 255, 2, 60.0f);
+
+        // ========== EARLY EXIT: Passou muito longe do tempo esperado ==========
+        if (n > TIME_TO_TICKS(flTargetTime * 1.3f))
+        {
+            // Verifica se pelo menos está perto do alvo
+            if (post.DistToSqr(vTo) < 625.0f) // 25^2 HU
+                continue; // Continua simulando se estiver perto
+            else
+                return false;
+        }
     }
-    return true;
+
+    return false;
 }
 
-bool CAimbotProjectile::CanSee(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const Vec3& vFrom, const Vec3& vTo, const ProjTarget_t& target, float flTargetTime)
+// ========== FUNÇÃO AUXILIAR PARA CALCULAR OFFSET ==========
+Vec3 CAimbotProjectile::GetWeaponFireOffset(C_TFWeaponBase* pWeapon, C_TFPlayer* pLocal)
 {
-    Vec3 vLocalPos = vFrom;
+    const int weaponID = pWeapon->GetWeaponID();
+    const bool bDucking = (pLocal->m_fFlags() & FL_DUCKING) != 0;
+    const int defIndex = pWeapon->m_iItemDefinitionIndex();
 
-    switch (pWeapon->GetWeaponID())
+    switch (weaponID)
     {
     case TF_WEAPON_ROCKETLAUNCHER:
     case TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT:
@@ -627,94 +663,302 @@ bool CAimbotProjectile::CanSee(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, cons
     case TF_WEAPON_FLAMETHROWER:
     case TF_WEAPON_SHOTGUN_BUILDING_RESCUE:
     {
-        if (pWeapon->m_iItemDefinitionIndex() != Soldier_m_TheOriginal)
+        if (defIndex != Soldier_m_TheOriginal)
         {
-            Vec3 vOffset = { 23.5f, 12.0f, -3.0f };
-
-            if (pLocal->m_fFlags() & FL_DUCKING)
-                vOffset.z = 8.0f;
-
-            H::AimUtils->GetProjectileFireSetup(target.AngleTo, vOffset, &vLocalPos);
+            return { 23.5f, 12.0f, bDucking ? 8.0f : -3.0f };
         }
-
         break;
     }
-
     case TF_WEAPON_COMPOUND_BOW:
     {
-        Vec3 vOffset = { 20.5f, 12.0f, -3.0f };
-
-        if (pLocal->m_fFlags() & FL_DUCKING)
-            vOffset.z = 8.0f;
-
-        H::AimUtils->GetProjectileFireSetup(target.AngleTo, vOffset, &vLocalPos);
-
+        return { 20.5f, 12.0f, bDucking ? 8.0f : -3.0f };
+    }
+    case TF_WEAPON_PIPEBOMBLAUNCHER:
+    case TF_WEAPON_GRENADELAUNCHER:
+    case TF_WEAPON_CANNON:
+    {
+        return { 16.0f, 8.0f, -6.0f };
+    }
+    default:
         break;
     }
 
-    default: break;
+    return { 0.0f, 0.0f, 0.0f };
+}
+
+bool CAimbotProjectile::CanSee(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const Vec3& vFrom, const Vec3& vTo, const ProjTarget_t& target, float flTargetTime)
+{
+    Vec3 vLocalPos = vFrom;
+
+    // ========== CALCULAR OFFSET UMA ÚNICA VEZ ==========
+    const Vec3 vOffset = GetWeaponFireOffset(pWeapon, pLocal);
+
+    if (vOffset.x != 0.0f || vOffset.y != 0.0f || vOffset.z != 0.0f)
+    {
+        H::AimUtils->GetProjectileFireSetup(target.AngleTo, vOffset, &vLocalPos);
     }
 
-    if (m_CurProjInfo.GravityMod != 0.f)
+    // ========== VERIFICAÇÕES POR TIPO DE PROJÉTIL ==========
+
+    // 1. PROJÉTEIS COM GRAVIDADE (arco/pipes/rockets)
+    if (m_CurProjInfo.GravityMod != 0.0f)
     {
         return CanArcReach(vFrom, vTo, target.AngleTo, flTargetTime, target.Entity);
     }
 
+    // 2. FLAMETHROWER (trace especial)
     if (m_CurProjInfo.Flamethrower)
     {
         return H::AimUtils->TraceFlames(target.Entity, vLocalPos, vTo);
     }
+
+    // 3. PROJÉTEIS DIRETOS (flechas, seringas, etc)
     return H::AimUtils->TraceProjectile(target.Entity, vLocalPos, vTo);
 }
 
 bool CAimbotProjectile::NeuralNetworkSplashPrediction(const Vec3& impactPoint, C_BaseEntity* pTargetEntity)
 {
     if (!pTargetEntity) return false;
-    // --- 1. Calculate Required Inputs ---
-    Vec3 playerPosition = pTargetEntity->m_vecOrigin();
-    Vec3 playerVelocity = pTargetEntity->m_vecVelocity();
-    // A. Distance Factor (How far the player is from the splash point)
-    float distanceToImpact = impactPoint.DistTo(playerPosition);
-    float normalizedDistance = std::min(distanceToImpact / 1000.0f, 1.0f);
-    // B. Speed Factor (How fast the player is moving)
-    float playerSpeed = playerVelocity.Length();
-    float normalizedVelocity = std::min(playerSpeed / 300.0f, 1.0f); // 300 HU/s is max walk speed
-    // C. Direction Factor (New Crucial Input: Is the player moving towards or away from the impact?)
-    // Calculate the vector pointing from the player to the impact zone.
-    Vec3 directionToImpact = (impactPoint - playerPosition).Normalized();
-    // The dot product measures the projection of the velocity onto the direction vector.
-    // Positive value means moving TOWARDS the impact; negative means AWAY.
-    float playerSpeedTowardsImpact = playerVelocity.Dot(directionToImpact);
-    // Normalize the speed projection to a 0.0 to 1.0 range for the NN input.
-    // (Assuming max speed is 300 HU/s, so range is -300 to 300).
-    float normalizedDirection = (playerSpeedTowardsImpact + 300.0f) / 600.0f;
-    // Input Layer: [Distance, Speed, Direction]
-    float inputLayer[3] = { normalizedDistance, normalizedVelocity, normalizedDirection };
-    // --- 2. Hidden Layer Calculation (Cleaner Matrix Math) ---
-    const float hiddenLayerWeights[2][3] = {
-        {0.2f, 0.3f, 0.5f},
-        {0.4f, 0.1f, 0.2f}
-    };
-    const float hiddenLayerBias[2] = { 0.1f, -0.2f };
-    float hiddenLayerOutput[2];
-    // Refined loop structure for the dot product (addressing the 'TODO: optimize this' for clarity)
-    for (int i = 0; i < 2; ++i) {
-        float dotProduct = 0.0f;
-        // J loop performs the vector dot product: Input[j] * Weight[i][j]
-        for (int j = 0; j < 3; ++j) {
-            dotProduct += inputLayer[j] * hiddenLayerWeights[i][j];
-        }
-        // Apply Bias and Activation Function
-        hiddenLayerOutput[i] = 1.0f / (1.0f + expf(-(dotProduct + hiddenLayerBias[i]))); // Sigmoid
+
+    // ========== CACHE DE DADOS BÁSICOS ==========
+    const Vec3 playerPosition = pTargetEntity->m_vecOrigin();
+    const Vec3 playerVelocity = pTargetEntity->m_vecVelocity();
+
+    // ========== EARLY EXIT: Distância ==========
+    const float distanceToImpact = impactPoint.DistTo(playerPosition);
+    if (distanceToImpact > 200.0f)
+        return false;
+
+    // ========== EARLY EXIT: Altura ==========
+    const float heightDifference = fabsf(impactPoint.z - playerPosition.z);
+    if (heightDifference > 150.0f)
+        return false;
+
+    // ========== VERIFICAÇÃO CRÍTICA: LINHA DE VISÃO DO SPLASH ==========
+    // O splash precisa ter linha de visão até o jogador para causar dano
+    const Vec3 playerCenter = playerPosition + Vec3(0.0f, 0.0f, 41.0f); // Centro do player (meio da altura)
+
+    CTraceFilterWorldCustom filter{};
+    filter.m_pTarget = pTargetEntity;
+    trace_t splashTrace{};
+
+    // Trace do ponto de impacto até o centro do jogador
+    H::AimUtils->Trace(impactPoint, playerCenter, MASK_SOLID, &filter, &splashTrace);
+
+    // Se bateu em algo que NÃO é o jogador, o splash está bloqueado
+    if (splashTrace.DidHit() && splashTrace.m_pEnt != pTargetEntity)
+    {
+        // A parede está bloqueando o splash completamente
+        return false;
     }
-    // --- 3. Output Layer Calculation ---
-    const float outputLayerWeights[2] = { 0.7f, 0.9f };
-    const float outputLayerBias = 0.1f;
-    float finalDotProduct = (hiddenLayerOutput[0] * outputLayerWeights[0]) +
-        (hiddenLayerOutput[1] * outputLayerWeights[1]);
-    float output = 1.0f / (1.0f + expf(-(finalDotProduct + outputLayerBias))); // Sigmoid
-    const float predictionThreshold = 0.5f; // Adjust as needed; add CFG if desired
-    return output > predictionThreshold;
+
+    // Verificação adicional: trace para os pés do jogador também
+    const Vec3 playerFeet = playerPosition + Vec3(0.0f, 0.0f, 10.0f);
+    trace_t feetTrace{};
+    H::AimUtils->Trace(impactPoint, playerFeet, MASK_SOLID, &filter, &feetTrace);
+
+    // Se ambos traces (centro e pés) estão bloqueados, definitivamente não vai causar dano
+    if (feetTrace.DidHit() && feetTrace.m_pEnt != pTargetEntity)
+    {
+        // Splash completamente bloqueado
+        return false;
+    }
+
+    // ========== INPUT LAYER (3 inputs otimizados) ==========
+    const float normalizedDistance = std::min(distanceToImpact * 0.001f, 1.0f);
+    const float playerSpeed = playerVelocity.Length();
+    const float normalizedVelocity = std::min(playerSpeed * 0.00333f, 1.0f);
+
+    const float invDistance = 1.0f / (distanceToImpact + 0.001f);
+    const Vec3 directionToImpact = (impactPoint - playerPosition) * invDistance;
+    const float playerSpeedTowardsImpact = playerVelocity.Dot(directionToImpact);
+    const float normalizedDirection = (playerSpeedTowardsImpact + 300.0f) * 0.001666f;
+
+    // ========== HIDDEN LAYER (2 neurons) ==========
+    static constexpr float hiddenWeights[2][3] = {
+        {-0.8f,  0.4f,  0.6f},
+        { 0.3f, -0.2f,  0.7f}
+    };
+    static constexpr float hiddenBias[2] = { 0.3f, -0.1f };
+
+    float hidden[2];
+    {
+        const float dot0 = normalizedDistance * hiddenWeights[0][0] +
+            normalizedVelocity * hiddenWeights[0][1] +
+            normalizedDirection * hiddenWeights[0][2];
+
+        const float dot1 = normalizedDistance * hiddenWeights[1][0] +
+            normalizedVelocity * hiddenWeights[1][1] +
+            normalizedDirection * hiddenWeights[1][2];
+
+        hidden[0] = 1.0f / (1.0f + expf(-(dot0 + hiddenBias[0])));
+        hidden[1] = 1.0f / (1.0f + expf(-(dot1 + hiddenBias[1])));
+    }
+
+    // ========== OUTPUT LAYER ==========
+    static constexpr float outputWeights[2] = { 0.85f, 0.75f };
+    static constexpr float outputBias = 0.15f;
+
+    const float finalDot = (hidden[0] * outputWeights[0]) + (hidden[1] * outputWeights[1]);
+    const float output = 1.0f / (1.0f + expf(-(finalDot + outputBias)));
+
+    // ========== THRESHOLD DINÂMICO ==========
+    float dynamicThreshold = 0.45f;
+
+    if (distanceToImpact < 50.0f)
+        dynamicThreshold = 0.35f;
+    else if (distanceToImpact < 100.0f)
+        dynamicThreshold = 0.45f;
+    else
+        dynamicThreshold = 0.60f;
+
+    return output > dynamicThreshold;
+}
+
+bool CAimbotProjectile::TrySplashShot(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
+    const CUserCmd* pCmd, const ProjTarget_t& target, Vec3& outAngle, float& outTime, bool isPlayer)
+{
+    const int weaponID = pWeapon->GetWeaponID();
+    const int defIndex = pWeapon->m_iItemDefinitionIndex();
+
+    const bool isRocketLauncher = (weaponID == TF_WEAPON_ROCKETLAUNCHER);
+    const bool isDirectHit = (weaponID == TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT);
+    const bool isAirStrike = (defIndex == Soldier_m_TheAirStrike);
+
+    if (!isRocketLauncher && !isDirectHit && !isAirStrike)
+        return false;
+
+    constexpr float ROCKET_LAUNCHER_SPLASH = 146.0f;
+    constexpr float DIRECT_HIT_SPLASH = 44.0f;
+    constexpr float AIRSTRIKE_SPLASH = 110.0f;
+
+    float splashRadius = ROCKET_LAUNCHER_SPLASH;
+    if (isDirectHit) splashRadius = DIRECT_HIT_SPLASH;
+    if (isAirStrike) splashRadius = AIRSTRIKE_SPLASH;
+
+    const float scanRadius = splashRadius * 1.1f;
+    const Vec3 vLocalPos = GetProjectileFirePos(pLocal, pWeapon, pCmd->viewangles);
+    const Vec3 targetCenter = isPlayer ?
+        F::MovementSimulation->GetOrigin() + Vec3(0.0f, 0.0f, 41.0f) :
+        target.Entity->GetCenter();
+
+    // ========== PRÉ-VERIFICAÇÃO: VISÃO DIRETA ==========
+    CTraceFilterWorldCustom directFilter{};
+    trace_t directTrace{};
+    H::AimUtils->Trace(vLocalPos, targetCenter, MASK_SOLID, &directFilter, &directTrace);
+
+    if (!directTrace.DidHit() || directTrace.fraction > 0.95f || directTrace.m_pEnt == target.Entity)
+    {
+        return false; // Visão direta disponível, não precisa splash
+    }
+
+    float distToBlock = vLocalPos.DistTo(directTrace.endpos);
+    float distToTarget = vLocalPos.DistTo(targetCenter);
+
+    if (distToBlock >= distToTarget * 0.7f)
+    {
+        return false; // Bloqueio muito perto do alvo
+    }
+
+    // ========== GERAÇÃO DE PONTOS DE SPLASH ==========
+    std::vector<Vec3> potentialPoints;
+    potentialPoints.reserve(CFG::Aimbot_Projectile_SplashPoints);
+
+    const int numPoints = static_cast<int>(CFG::Aimbot_Projectile_SplashPoints);
+
+    for (int n = 0; n < numPoints; n++)
+    {
+        const float t = static_cast<float>(n) / static_cast<float>(numPoints);
+        const float inclination = acosf(1.0f - 2.0f * t);
+        const float azimuth = (PI * (3.0f - sqrtf(5.0f))) * static_cast<float>(n);
+
+        const float x = sinf(inclination) * cosf(azimuth);
+        const float y = sinf(inclination) * sinf(azimuth);
+        const float z = cosf(inclination);
+
+        if (z > 0.5f) continue;
+
+        const Vec3 scanPoint = targetCenter + Vec3(x, y, z) * scanRadius;
+
+        CTraceFilterWorldCustom filter{};
+        trace_t trace{};
+        H::AimUtils->Trace(targetCenter, scanPoint, MASK_SOLID, &filter, &trace);
+
+        if (trace.fraction >= 0.99f) continue;
+        if (trace.endpos.DistTo(targetCenter) > splashRadius) continue;
+        if (trace.endpos.DistTo(vLocalPos) < splashRadius * 0.9f) continue;
+
+        // Verificação 1: Ponto até alvo
+        trace_t losTrace{};
+        H::AimUtils->Trace(trace.endpos, targetCenter, MASK_SOLID, &filter, &losTrace);
+
+        if (losTrace.DidHit() && losTrace.fraction < 0.95f)
+            continue;
+
+        // Verificação 2: Nós até ponto
+        trace_t visTrace{};
+        H::AimUtils->Trace(vLocalPos, trace.endpos, MASK_SOLID, &filter, &visTrace);
+
+        if (visTrace.DidHit() && visTrace.fraction < 0.85f)
+        {
+            float distToVBlock = vLocalPos.DistTo(visTrace.endpos);
+            float distToPoint = vLocalPos.DistTo(trace.endpos);
+
+            if (distToVBlock < distToPoint * 0.85f)
+                continue;
+        }
+
+        potentialPoints.push_back(trace.endpos);
+    }
+
+    if (potentialPoints.empty())
+        return false;
+
+    std::sort(potentialPoints.begin(), potentialPoints.end(), [&](const Vec3& a, const Vec3& b)
+        {
+            return a.DistTo(targetCenter) < b.DistTo(targetCenter);
+        });
+
+    // ========== TESTE DE TRAJETÓRIA ==========
+    for (const auto& splashPoint : potentialPoints)
+    {
+        if (splashPoint.DistTo(vLocalPos) < splashRadius)
+            continue;
+
+        Vec3 calcAngle;
+        float splashTime = 0.0f;
+
+        if (!CalcProjAngle(vLocalPos, splashPoint, calcAngle, splashTime, false))
+            continue;
+
+        trace_t projTrace{};
+        CTraceFilterWorldCustom projFilter{};
+
+        H::AimUtils->TraceHull(
+            vLocalPos,
+            splashPoint,
+            { -2.0f, -2.0f, -2.0f },
+            { 2.0f, 2.0f, 2.0f },
+            MASK_SOLID,
+            &projFilter,
+            &projTrace
+        );
+
+        if (projTrace.startsolid || projTrace.allsolid)
+            continue;
+
+        if (projTrace.fraction < 0.85f && projTrace.endpos.DistTo(splashPoint) > 20.0f)
+            continue;
+
+        if (NeuralNetworkSplashPrediction(splashPoint, target.Entity))
+        {
+            outAngle = calcAngle;
+            outTime = splashTime;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const CUserCmd* pCmd, ProjTarget_t& target)
@@ -726,270 +970,97 @@ bool CAimbotProjectile::SolveTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon,
         H::AimUtils->GetProjectileFireSetup(pCmd->viewangles, vOffset, &vLocalPos);
     }
     m_TargetPath.clear();
+
     if (target.Entity->GetClassId() == ETFClassIds::CTFPlayer)
     {
         const auto pPlayer = target.Entity->As<C_TFPlayer>();
         const bool bDucked = pPlayer->m_fFlags() & FL_DUCKING;
         const bool bOnGround = pPlayer->m_fFlags() & FL_ONGROUND;
+
         if (!F::MovementSimulation->Initialize(pPlayer))
             return false;
+
         for (int nTick = 0; nTick < TIME_TO_TICKS(CFG::Aimbot_Projectile_Max_Simulation_Time); nTick++)
         {
             m_TargetPath.push_back(F::MovementSimulation->GetOrigin());
             F::MovementSimulation->RunTick(TICKS_TO_TIME(nTick));
+
             Vec3 vTarget = F::MovementSimulation->GetOrigin();
             OffsetPlayerPosition(pWeapon, vTarget, pPlayer, bDucked, bOnGround);
+
             float flTimeToTarget = 0.0f;
             if (!CalcProjAngle(vLocalPos, vTarget, target.AngleTo, flTimeToTarget, false))
                 continue;
+
             target.TimeToTarget = flTimeToTarget;
             int nTargetTick = TIME_TO_TICKS(flTimeToTarget + SDKUtils::GetLatency());
+
             if (pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER)
             {
-                const auto sticky_arm_time{ SDKUtils::AttribHookValue(0.8f, "sticky_arm_time", pLocal) };
+                const auto sticky_arm_time = SDKUtils::AttribHookValue(0.8f, "sticky_arm_time", pLocal);
                 if (TICKS_TO_TIME(nTargetTick) < sticky_arm_time)
                 {
                     nTargetTick += TIME_TO_TICKS(fabsf(flTimeToTarget - sticky_arm_time));
                 }
             }
+
             if ((nTargetTick == nTick || nTargetTick == nTick - 1))
             {
-                auto runSplash = [&]() -> bool
-                    {
-                        // 1. Get Weapon Info & Splash Radius
-                        const int weaponID = pWeapon->GetWeaponID();
-                        const int defIndex = pWeapon->m_iItemDefinitionIndex();
-                        bool isRocketLauncher = (weaponID == TF_WEAPON_ROCKETLAUNCHER);
-                        bool isDirectHit = (weaponID == TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT);
-                        bool isAirStrike = (defIndex == Soldier_m_TheAirStrike);
-                        // Filter invalid weapons immediately
-                        if (!isRocketLauncher && !isDirectHit && !isAirStrike)
-                            return false;
-                        // Define Radius
-                        float splashRadius = 146.0f; // Standard Rocket Radius
-                        if (isRocketLauncher) splashRadius = 146.0f; // Adjust based on strict TF2 values if needed (standard is ~146hu)
-                        if (isDirectHit) splashRadius = 44.0f; // DH is ~30% of standard
-                        if (isAirStrike) splashRadius = 110.0f; // Airstrike is smaller
-                        // 2. Setup Scanning Center
-                        Vec3 mins = target.Entity->m_vecMins();
-                        Vec3 maxs = target.Entity->m_vecMaxs();
-                        Vec3 targetCenter = F::MovementSimulation->GetOrigin() + Vec3(0.0f, 0.0f, (mins.z + maxs.z) * 0.5f);
-                        // 3. Generate Points (Fibonacci Sphere)
-                        // Decreased count for performance; 80 is overkill, 45 covers most geometry.
-                        const int numPoints = static_cast<int>(CFG::Aimbot_Projectile_SplashPoints);
-                        std::vector<Vec3> potentialPoints;
-                        potentialPoints.reserve(numPoints);
-                        // Extend the scan radius slightly beyond the splash radius to find walls just out of range
-                        // that might still clip the edge of the splash.
-                        float scanRadius = splashRadius * 1.1f;
-                        for (int n = 0; n < numPoints; n++)
-                        {
-                            // Fibonacci Sphere Math
-                            float t = static_cast<float>(n) / static_cast<float>(numPoints);
-                            float inclination = acosf(1.0f - 2.0f * t);
-                            float azimuth = (PI * (3.0f - sqrtf(5.0f))) * static_cast<float>(n);
-                            float x = sinf(inclination) * cosf(azimuth);
-                            float y = sinf(inclination) * sinf(azimuth);
-                            float z = cosf(inclination);
-                            // Optimization: Skip points that are significantly above the target (Ceiling shots are rare/bad)
-                            if (z > 0.5f) continue;
-                            Vec3 dir(x, y, z);
-                            Vec3 scanEnd = targetCenter + (dir * scanRadius);
-                            // Trace from Target -> Outwards (Find walls around them)
-                            CTraceFilterWorldCustom filter;
-                            trace_t trace;
-                            H::AimUtils->Trace(targetCenter, scanEnd, MASK_SOLID, &filter, &trace);
-                            // If fraction is 1.0, we hit air. We need to hit a wall/floor.
-                            if (trace.fraction >= 0.99f) continue;
-                            // Verify the wall point is actually within lethal splash range of the target
-                            // (The trace might have hit a wall far away if the scanRadius is huge)
-                            if (trace.endpos.DistTo(targetCenter) > splashRadius) continue;
-                            potentialPoints.push_back(trace.endpos);
-                        }
-                        if (potentialPoints.empty()) return false;
-                        // 4. Sort Points by Damage Potential
-                        // Logic: The closer the explosion is to the target's center, the more damage it deals.
-                        std::sort(potentialPoints.begin(), potentialPoints.end(), [&](const Vec3& a, const Vec3& b) {
-                            return a.DistTo(targetCenter) < b.DistTo(targetCenter);
-                            });
-                        // 5. Validate Firing
-                        Vec3 localShootPos = GetProjectileFirePos(pLocal, pWeapon, pCmd->viewangles);
-                        for (const auto& splashPoint : potentialPoints)
-                        {
-                            // Safety: Don't shoot if the splash point is too close to ourselves (Self-Damage check)
-                            if (splashPoint.DistTo(localShootPos) < splashRadius) continue;
-                            // Can we compute a firing solution?
-                            Vec3 outAngle;
-                            if (!CalcProjAngle(localShootPos, splashPoint, outAngle, target.TimeToTarget, false))
-                            {
-                                continue;
-                            }
-                            // Trace Hull: Can our rocket physically reach this spot?
-                            trace_t trace = {};
-                            CTraceFilterWorldCustom filter = {};
-                            // Use a small hull for the rocket size
-                            H::AimUtils->TraceHull(
-                                localShootPos,
-                                splashPoint,
-                                { -2.0f, -2.0f, -2.0f }, // Slightly tighter hull than 4.0 for leniency
-                                { 2.0f, 2.0f, 2.0f },
-                                MASK_SOLID,
-                                &filter,
-                                &trace
-                            );
-                            // Did we hit something unexpected?
-                            if (trace.startsolid || trace.allsolid || trace.fraction < 0.9f)
-                            {
-                                // If we hit something, was it the intended wall point?
-                                // If the hit point is very close to our desired splashPoint, it's valid.
-                                if (trace.endpos.DistTo(splashPoint) > 15.0f)
-                                    continue;
-                            }
-                            // 6. Neural Network / Final Validation
-                            // This is your "Is this a good idea?" check
-                            if (NeuralNetworkSplashPrediction(splashPoint, target.Entity))
-                            {
-                                // Set the aim angles here (assuming your bot needs to set them)
-                                target.AngleTo = outAngle;
-                                return true;
-                            }
-                            I::DebugOverlay->AddBoxOverlay(splashPoint, { -4.0f, -4.0f, -4.0f }, { 4.0f, 4.0f, 4.0f }, Vec3{ 0.0f, 0.0f, 0.0f }, 0, 255, 0, 100, 1.5f);
-                        }
-                        return false;
-                    };
-                if (CFG::Aimbot_Projectile_SplashBot && runSplash())
-                {
-                    F::MovementSimulation->Restore();
-                    return true;
-                }
+                // IMPORTANTE: Verifica tiro direto PRIMEIRO (mais confiável)
                 if (CanSee(pLocal, pWeapon, vLocalPos, vTarget, target, flTimeToTarget))
                 {
                     F::MovementSimulation->Restore();
                     return true;
                 }
+
+                // Se tiro direto falhou, tenta splash
+                if (CFG::Aimbot_Projectile_SplashBot)
+                {
+                    Vec3 splashAngle;
+                    float splashTime;
+                    if (TrySplashShot(pLocal, pWeapon, pCmd, target, splashAngle, splashTime, true))
+                    {
+                        target.AngleTo = splashAngle;
+                        target.TimeToTarget = splashTime;
+                        F::MovementSimulation->Restore();
+                        return true;
+                    }
+                }
             }
         }
         F::MovementSimulation->Restore();
     }
-    else
+    else // Alvo não é jogador (buildings, etc)
     {
         const Vec3 vTarget = target.Position;
         float flTimeToTarget = 0.0f;
-        auto runSplash = [&]() -> bool
-            {
-                // 1. Setup Constants and Weapon Info
-                const int weaponID = pWeapon->GetWeaponID();
-                const int defIndex = pWeapon->m_iItemDefinitionIndex();
-                const auto isRocketLauncher = (weaponID == TF_WEAPON_ROCKETLAUNCHER);
-                const auto isDirectHit = (weaponID == TF_WEAPON_ROCKETLAUNCHER_DIRECTHIT);
-                const auto isAirStrike = (defIndex == Soldier_m_TheAirStrike);
-                if (!isRocketLauncher && !isDirectHit && !isAirStrike)
-                    return false;
-                // Use actual TF2 splash radiuses for max effectiveness (e.g., standard rocket is 146 HU)
-                float splashRadius = 146.0f;
-                if (isDirectHit) splashRadius = 44.0f; // Direct Hit radius is significantly smaller
-                if (isAirStrike) splashRadius = 110.0f; // Air Strike is between standard and DH
-                // Use a scan radius slightly larger than the splash radius to find external walls
-                const float scanRadius = splashRadius * 1.1f;
-                const Vec3 targetCenter = target.Entity->GetCenter();
-                // If the projectile path is clear (fraction close to 1.0) and we hit the player,
-                // we should use direct aim, NOT splash. So, we abort the splash logic.
-                // We only continue if the player is blocked (trace hit something or fraction is low).
-                if (H::AimUtils->TraceProjectile(target.Entity, vLocalPos, targetCenter))
-                {
-                    // The target is visible/hittable directly.
-                    // If direct aim is available, we usually prefer it.
-                    return false;
-                }
-                // If we reach here, the target is confirmed to be blocked by world geometry.
-                // 2. Point Generation and Filtering (Optimized)
-                // Reduced points from 80 to 40-50 for performance while maintaining good coverage.
-                const int numPoints = static_cast<int>(CFG::Aimbot_Projectile_SplashPoints);
-                std::vector<Vec3> potential{};
-                potential.reserve(numPoints);
-                for (int n = 0; n < numPoints; n++)
-                {
-                    // Fibonacci Sphere Generation
-                    const float t = static_cast<float>(n) / static_cast<float>(numPoints);
-                    const float inclination = acosf(1.0f - 2.0f * t);
-                    const float azimuth = (PI * (3.0f - sqrtf(5.0f))) * static_cast<float>(n);
-                    const float x = sinf(inclination) * cosf(azimuth);
-                    const float y = sinf(inclination) * sinf(azimuth);
-                    const float z = cosf(inclination);
-                    // Optimization: Skip points significantly above the target (Z > 0.5 is upper hemisphere)
-                    if (z > 0.5f) continue;
-                    auto point = targetCenter + Vec3{ x, y, z } *scanRadius;
-                    // Trace from Target -> Outwards (Find nearby geometry/walls)
-                    CTraceFilterWorldCustom filter{};
-                    trace_t trace{};
-                    H::AimUtils->Trace(targetCenter, point, MASK_SOLID, &filter, &trace);
-                    // If fraction >= 0.99f, we hit air. We need to hit a solid surface for splash.
-                    if (trace.fraction >= 0.99f) continue;
-                    // Pre-Filter: Ensure the wall point is close enough to the target for damage.
-                    if (trace.endpos.DistTo(targetCenter) > splashRadius) continue;
-                    // Safety: Prevent self-damage splash.
-                    if (trace.endpos.DistTo(vLocalPos) < splashRadius * 0.9f) continue;
-                    potential.push_back(trace.endpos);
-                }
-                if (potential.empty()) return false;
-                // 3. Sort Points by Damage Potential
-                // Sort by distance to the target's center. Closest point = highest splash damage.
-                std::sort(potential.begin(), potential.end(), [&](const Vec3& a, const Vec3& b)
-                    {
-                        return a.DistTo(targetCenter) < b.DistTo(targetCenter);
-                    });
-                // 4. Validate Projectile Path and Prediction
-                for (const auto& point : potential)
-                {
-                    Vec3 outAngle;
-                    // Attempt to calculate the required firing angle and velocity arc
-                    if (!CalcProjAngle(vLocalPos, point, outAngle, flTimeToTarget, false))
-                    {
-                        continue;
-                    }
-                    // Trace Hull: Check if the projectile path is clear to the splash point.
-                    trace_t trace = {};
-                    CTraceFilterWorldCustom filter = {};
-                    H::AimUtils->TraceHull
-                    (
-                        vLocalPos,
-                        point,
-                        { -2.0f, -2.0f, -2.0f }, // Smaller hull for better clearance
-                        { 2.0f, 2.0f, 2.0f },
-                        MASK_SOLID,
-                        &filter,
-                        &trace
-                    );
-                    // Check 1: If the hull was stopped far short, it's not a clear shot.
-                    // We tolerate a slight miss (< 15 HU) because the hull trace is conservative.
-                    if (trace.startsolid || trace.allsolid || trace.endpos.DistTo(point) > 15.0f)
-                    {
-                        continue;
-                    }
-                    // The original code's second trace is redundant if the hull check passes and hits
-                    // close to the intended point. If you want maximum safety, you can keep the
-                    // secondary check (Trace from endpos of hull trace to final point) but it's often overkill.
-                    // We rely on the distance check above instead.
-                    bool splashDetected = NeuralNetworkSplashPrediction(point, target.Entity);
-                    if (splashDetected)
-                    {
-                        target.AngleTo = outAngle; // Set the computed angle
-                        target.Position = point;
-                        return true;
-                    }
-                    I::DebugOverlay->AddBoxOverlay(point, { -4.0f, -4.0f, -4.0f }, { 4.0f, 4.0f, 4.0f }, Vec3{ 0.0f, 0.0f, 0.0f }, 0, 255, 0, 100, 1.5f);
-                }
-                return false;
-            };
-        if (CFG::Aimbot_Projectile_SplashBot && runSplash())
-        {
-            return true;
-        }
+
+        if (!CalcProjAngle(vLocalPos, vTarget, target.AngleTo, flTimeToTarget, false))
+            return false;
+
+        target.TimeToTarget = flTimeToTarget;
+
+        // IMPORTANTE: Verifica tiro direto PRIMEIRO
         if (CanSee(pLocal, pWeapon, vLocalPos, vTarget, target, flTimeToTarget))
         {
             return true;
         }
+
+        // Se tiro direto falhou, tenta splash
+        if (CFG::Aimbot_Projectile_SplashBot)
+        {
+            Vec3 splashAngle;
+            float splashTime;
+            if (TrySplashShot(pLocal, pWeapon, pCmd, target, splashAngle, splashTime, false))
+            {
+                target.AngleTo = splashAngle;
+                target.Position = vTarget;
+                target.TimeToTarget = splashTime;
+                return true;
+            }
+        }
     }
+
     return false;
 }
 
@@ -998,6 +1069,8 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
     const Vec3 vLocalPos = pLocal->GetShootPos();
     const Vec3 vLocalAngles = I::EngineClient->GetViewAngles();
     m_vecTargets.clear();
+
+    // ========== COLETA DE PLAYERS ==========
     if (CFG::Aimbot_Target_Players)
     {
         const auto nGroup = pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW ? EEntGroup::PLAYERS_ALL : EEntGroup::PLAYERS_ENEMIES;
@@ -1005,9 +1078,12 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
         {
             if (!pEntity || pEntity == pLocal)
                 continue;
+
             const auto pPlayer = pEntity->As<C_TFPlayer>();
             if (pPlayer->deadflag() || pPlayer->InCond(TF_COND_HALLOWEEN_GHOST_MODE))
                 continue;
+
+            // ========== VERIFICAÇÕES DE INIMIGOS ==========
             if (pPlayer->m_iTeamNum() != pLocal->m_iTeamNum())
             {
                 if (CFG::Aimbot_Ignore_Friends && pPlayer->IsPlayerOnSteamFriendsList())
@@ -1019,73 +1095,98 @@ bool CAimbotProjectile::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, c
                 if (CFG::Aimbot_Ignore_Taunting && pPlayer->InCond(TF_COND_TAUNTING))
                     continue;
             }
+            // ========== VERIFICAÇÕES DE ALIADOS (CROSSBOW) ==========
             else
             {
                 if (pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW)
                 {
                     if (pPlayer->m_iHealth() >= pPlayer->GetMaxHealth() || pPlayer->IsInvulnerable())
-                    {
                         continue;
-                    }
                 }
             }
+
             Vec3 vPos = pPlayer->GetCenter();
             Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vPos);
             const float flFOVTo = CFG::Aimbot_Projectile_Sort == 0 ? Math::CalcFov(vLocalAngles, vAngleTo) : 0.0f;
             const float flDistTo = vLocalPos.DistTo(vPos);
+
+            // ========== FILTRO FOV ==========
             if (CFG::Aimbot_Projectile_Sort == 0 && flFOVTo > CFG::Aimbot_Projectile_FOV)
                 continue;
+
             m_vecTargets.emplace_back(ProjTarget_t{ pPlayer, vPos, vAngleTo, flFOVTo, flDistTo });
         }
     }
+
+    // ========== COLETA DE BUILDINGS ==========
     if (CFG::Aimbot_Target_Buildings)
     {
-        const auto isRescueRanger{ pWeapon->GetWeaponID() == TF_WEAPON_SHOTGUN_BUILDING_RESCUE };
+        const auto isRescueRanger = pWeapon->GetWeaponID() == TF_WEAPON_SHOTGUN_BUILDING_RESCUE;
         const auto nGroup = isRescueRanger ? EEntGroup::BUILDINGS_ALL : EEntGroup::BUILDINGS_ENEMIES;
+
         for (const auto pEntity : H::Entities->GetGroup(nGroup))
         {
             if (!pEntity)
                 continue;
+
             const auto pBuilding = pEntity->As<C_BaseObject>();
             if (pBuilding->m_bPlacing())
                 continue;
-            if (isRescueRanger && pBuilding->m_iTeamNum() == pLocal->m_iTeamNum() && pBuilding->m_iHealth() >= pBuilding->m_iMaxHealth())
+
+            // ========== VERIFICAÇÕES DE RESCUE RANGER ==========
+            if (isRescueRanger && pBuilding->m_iTeamNum() == pLocal->m_iTeamNum() &&
+                pBuilding->m_iHealth() >= pBuilding->m_iMaxHealth())
             {
                 continue;
             }
-            Vec3 vPos = pBuilding->GetCenter(); //fuck teleporters when aimed at with pipes lma
+
+            Vec3 vPos = pBuilding->GetCenter();
             Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vPos);
             const float flFOVTo = CFG::Aimbot_Projectile_Sort == 0 ? Math::CalcFov(vLocalAngles, vAngleTo) : 0.0f;
             const float flDistTo = vLocalPos.DistTo(vPos);
+
+            // ========== FILTRO FOV ==========
             if (CFG::Aimbot_Projectile_Sort == 0 && flFOVTo > CFG::Aimbot_Projectile_FOV)
                 continue;
+
             m_vecTargets.emplace_back(ProjTarget_t{ pBuilding, vPos, vAngleTo, flFOVTo, flDistTo });
         }
     }
+
     if (m_vecTargets.empty())
         return false;
-    // Sort by target priority
+
+    // ========== ORDENAÇÃO POR PRIORIDADE ==========
     F::AimbotCommon->Sort(m_vecTargets, CFG::Aimbot_Projectile_Sort);
-    const auto maxTargets{ std::min(CFG::Aimbot_Projectile_Max_Processing_Targets, static_cast<int>(m_vecTargets.size())) };
-    auto targetsScanned{ 0 };
-    for (auto& target : m_vecTargets)
+
+    // ========== PROCESSAMENTO DE ALVOS COM LIMITE INTELIGENTE ==========
+    const int maxTargets = std::min(CFG::Aimbot_Projectile_Max_Processing_Targets, static_cast<int>(m_vecTargets.size()));
+    const float maxRangeForFullScan = 400.0f;
+
+    for (int i = 0; i < static_cast<int>(m_vecTargets.size()); i++)
     {
-        if (target.Position.DistTo(vLocalPos) > 400.0f && targetsScanned >= maxTargets)
+        auto& target = m_vecTargets[i];
+        const float distToTarget = target.Position.DistTo(vLocalPos);
+
+        // ========== LÓGICA DE LIMITE: Alvos longe só são processados se dentro do limite ==========
+        // Se alvo está longe AND já processamos max_targets, pula
+        if (distToTarget > maxRangeForFullScan && i >= maxTargets)
         {
             continue;
         }
+
+        // ========== RESOLVER ALVO ==========
         if (!SolveTarget(pLocal, pWeapon, pCmd, target))
-        {
-            targetsScanned++;
             continue;
-        }
+
+        // ========== VERIFICAÇÃO FOV FINAL ==========
         if (CFG::Aimbot_Projectile_Sort == 0 && Math::CalcFov(vLocalAngles, target.AngleTo) > CFG::Aimbot_Projectile_FOV)
-        {
             continue;
-        }
+
         outTarget = target;
         return true;
     }
+
     return false;
 }
 
