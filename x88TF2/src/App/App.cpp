@@ -85,14 +85,16 @@ void CApp::Start()
     blackAlpha = 0.0f;
     ulBlackStart = GetTickCount();
 }
+
 void CApp::Loop()
 {
     while (true)
     {
-        bool bShouldUnload =
-            (GetAsyncKeyState(VK_F11) & 0x8000 && SDKUtils::IsGameWindowInFocus()) || bUnload;
-        if (bShouldUnload)
+     //   alive = (GetAsyncKeyState(VK_END) & 0x8000 && SDKUtils::IsGameWindowInFocus()) || bUnload;
+
+        if (!alive)
             break;
+
         static DWORD lastCheck = 0;
         if (GetTickCount() - lastCheck > 5000)
         {

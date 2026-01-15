@@ -87,6 +87,13 @@
     <ClCompile Include="src\Features\Menu\functions_menu\functions_menu.cpp" />
     <ClCompile Include="src\Features\Menu\notification_system\icons_notify.cpp" />
     <ClCompile Include="src\Features\SpectatorList\SpectatorList.cpp" />
+    <ClCompile Include="src\imgui\imgui.cpp" />
+    <ClCompile Include="src\imgui\imgui_demo.cpp" />
+    <ClCompile Include="src\imgui\imgui_draw.cpp" />
+    <ClCompile Include="src\imgui\imgui_impl_dx9.cpp" />
+    <ClCompile Include="src\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="src\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="include\kiero.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -265,8 +272,16 @@
     <ClInclude Include="src\Features\Menu\functions_menu\functions_menu.h" />
     <ClInclude Include="src\Features\Menu\notification_system\icons_notify.h" />
     <ClInclude Include="src\Features\SpectatorList\SpectatorList.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\..\background.png" />
+    <ClInclude Include="src\imgui\imconfig.h" />
+    <ClInclude Include="src\imgui\imgui.h" />
+    <ClInclude Include="src\imgui\imgui_impl_dx9.h" />
+    <ClInclude Include="src\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="src\imgui\imgui_internal.h" />
+    <ClInclude Include="src\imgui\imstb_rectpack.h" />
+    <ClInclude Include="src\imgui\imstb_textedit.h" />
+    <ClInclude Include="src\imgui\imstb_truetype.h" />
+    <ClInclude Include="src\includes.h" />
+    <ClInclude Include="include\kiero.h" />
+    <ClInclude Include="nemesis.h" />
   </ItemGroup>
 </Project>

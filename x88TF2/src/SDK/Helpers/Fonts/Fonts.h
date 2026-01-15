@@ -8,7 +8,6 @@ enum class EFonts
 	ESP,
 	ESP_CONDS,
 	ESP_SMALL,
-	Tabs,
 	VerdanaBold,
 	OTHER,   // <-- adicionado para resolver referências a EFonts::OTHER
 

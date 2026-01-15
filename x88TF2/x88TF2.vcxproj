@@ -168,10 +168,11 @@
     <IntDir>$(SolutionDir)build\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">
-    <IncludePath>$(ProjectDir)include\;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(ProjectDir)include\;$(IncludePath)</IncludePath>
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(Configuration)\</IntDir>
+    <LibraryPath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -333,7 +334,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
@@ -356,6 +357,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="include\kiero.cpp" />
     <ClCompile Include="src\App\App.cpp" />
     <ClCompile Include="src\Features\Aimbot\Aimbot.cpp" />
     <ClCompile Include="src\Features\Aimbot\AimbotHitscan\AimbotHitscan.cpp" />
@@ -418,6 +420,12 @@
     <ClCompile Include="src\Hooks\IVModelRender_ForcedMaterialOverride.cpp" />
     <ClCompile Include="src\Hooks\netgraphstringchanger.cpp" />
     <ClCompile Include="src\Hooks\WINAPI_WndProc.cpp" />
+    <ClCompile Include="src\imgui\imgui.cpp" />
+    <ClCompile Include="src\imgui\imgui_demo.cpp" />
+    <ClCompile Include="src\imgui\imgui_draw.cpp" />
+    <ClCompile Include="src\imgui\imgui_impl_dx9.cpp" />
+    <ClCompile Include="src\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="src\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\SDK\TF2\bitbuf.cpp" />
     <ClCompile Include="src\SDK\TF2\c_tf_player.cpp" />
     <ClCompile Include="src\SDK\TF2\netmessages.cpp" />
@@ -444,6 +452,9 @@
     <ClCompile Include="src\Utils\SignatureManager\SignatureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\kiero.h" />
+    <ClInclude Include="nemesis.h" />
+    <ClInclude Include="src\includes.h" />
     <ClInclude Include="include\nlohmann\json_fwd.hpp" />
     <ClInclude Include="src\App\App.h" />
     <ClInclude Include="src\CFG.h" />
@@ -470,6 +481,14 @@
     <ClInclude Include="src\Features\SpectatorList\SpectatorList.h" />
     <ClInclude Include="src\Features\VisualUtils\VisualUtils.h" />
     <ClInclude Include="src\Hooks\WINAPI_WndProc.h" />
+    <ClInclude Include="src\imgui\imconfig.h" />
+    <ClInclude Include="src\imgui\imgui.h" />
+    <ClInclude Include="src\imgui\imgui_impl_dx9.h" />
+    <ClInclude Include="src\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="src\imgui\imgui_internal.h" />
+    <ClInclude Include="src\imgui\imstb_rectpack.h" />
+    <ClInclude Include="src\imgui\imstb_textedit.h" />
+    <ClInclude Include="src\imgui\imstb_truetype.h" />
     <ClInclude Include="src\SDK\TF2\CPredictionCopy.h" />
     <ClInclude Include="src\SDK\TF2\iviewrender.h" />
     <ClInclude Include="src\SDK\TF2\NetVars\CTFPartyClient.h" />
@@ -620,9 +639,6 @@
     <ClInclude Include="src\Utils\Singleton\Singleton.h" />
     <ClInclude Include="src\Utils\Utils.h" />
     <ClInclude Include="src\Utils\Vector\Vector.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\..\background.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

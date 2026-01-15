@@ -5,8 +5,7 @@
 void CFontManager::Reload()
 {
 	// fontes normais
-	m_mapFonts[EFonts::Menu] = { "Segoe UI", 14, FONTFLAG_ANTIALIAS, 400 };
-	m_mapFonts[EFonts::Tabs] = { "Arial Narrow", 15, FONTFLAG_ANTIALIAS, 700 };
+	m_mapFonts[EFonts::Menu] = { "Tahoma", 14, FONTFLAG_OUTLINE, 700 };
 	m_mapFonts[EFonts::ESP] = { "Verdana", 12, FONTFLAG_OUTLINE, 0 };
 	m_mapFonts[EFonts::ESP_CONDS] = { "Small Fonts", 9, FONTFLAG_OUTLINE, 0 };
 	m_mapFonts[EFonts::ESP_SMALL] = { "Small Fonts", 11, FONTFLAG_OUTLINE, 0 };

@@ -20,7 +20,7 @@ MAKE_HOOK(IEngineVGuiInternal_Paint, Memory::GetVFunc(I::EngineVGui, 14), void, 
 			F::SpectatorList->Run();
 			F::AimbotHitscan->DrawDebug();
 			F::Radio->Run();
-			menu::render();
+		//	menu::render();
 			F::SeedPred->Paint();
 			g_notification_system->run();
 			App->Draw(); // ✅ CORRETO

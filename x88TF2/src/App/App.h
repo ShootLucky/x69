@@ -21,3 +21,6 @@ private:
 	std::string m_PlayerName;
 };
 MAKE_SINGLETON(CApp, App);
+
+
+inline bool alive = true;
