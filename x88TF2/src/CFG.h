@@ -14,7 +14,6 @@ namespace CFG
 	CFGVAR(Aimbot_TeamCheck, true);
 	CFGVAR(Aimbot_Hitscan_Smoothing, 5.f);
 	CFGVAR(Aimbot_Hitbox_Head, false);
-	CFGVAR(Aimbot_Hitbox_Neck, false);
 	CFGVAR(Aimbot_Hitbox_Chest, false);
 	CFGVAR(Aimbot_Hitbox_Pelvis, false);
 	CFGVAR(Aimbot_Hitbox_Body, false);
@@ -46,9 +45,6 @@ namespace CFG
 	CFGVAR(Aimbot_Hitscan_Sort, 0);
 	CFGVAR(Aimbot_TargetLagRecords, false);
 	CFGVAR(Aimbot_WalkToTarget, false);
-	CFGVAR(Aimbot_WhitelistTeammates, false);
-	CFGVAR(Aimbot_BaimAfterShots, 0);
-	CFGVAR(Aimbot_BaimAfterHealth, 0.18f);
 	CFGVAR(Aimbot_Hitbox_Sort, 0);
 	CFGVAR(Aimbot_Projectile_NoSpread, false);//Aimbot_Projectile_AimPosition Aimbot_Projectile_BBoxMultipoint Aimbot_Hitscan_AlwaysActive
 	CFGVAR(Aimbot_Projectile_AutoDoubleDonk, false); //Misc_Accuracy_Improvements
@@ -82,10 +78,6 @@ namespace CFG
 	CFGVAR(Aimbot_Projectile_Max_Simulation_Time, 2.0f);
 	CFGVAR(Aimbot_Projectile_Rocket_Splash, false);
 	CFGVAR(Aimbot_Hitscan_Hitbox, 0);
-	CFGVAR(Aimbot_Hitscan_Scan_Head, true);
-	CFGVAR(Aimbot_Hitscan_Scan_Body, true);
-	CFGVAR(Aimbot_Hitscan_Scan_Arms, false);
-	CFGVAR(Aimbot_Hitscan_Scan_Legs, false);
 	CFGVAR(Aimbot_Hitscan_Scan_Buildings, true);
 	CFGVAR(Aimbot_Projectile_SplashBot, false);
 	CFGVAR(Aimbot_Projectile_SplashPoints, 80.0f);

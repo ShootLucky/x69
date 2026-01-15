@@ -266,4 +266,7 @@
     <ClInclude Include="src\Features\Menu\notification_system\icons_notify.h" />
     <ClInclude Include="src\Features\SpectatorList\SpectatorList.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\background.png" />
+  </ItemGroup>
 </Project>

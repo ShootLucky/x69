@@ -23,6 +23,29 @@ public:
 
 public:
 	void Update();
+
+public:
+	// Retorna o delta do scroll do mouse (positivo para cima, negativo para baixo, 0 se não houver)
+	int GetMouseScroll() const
+	{
+		// Exemplo de implementação usando Windows API
+		// Você pode adaptar conforme seu sistema de input real
+		static int last_scroll = 0;
+		int current_scroll = 0;
+
+		// Supondo que você armazene o delta do scroll em algum lugar a cada frame,
+		// por exemplo, via mensagem WM_MOUSEWHEEL ou equivalente.
+		// Aqui está um exemplo genérico:
+		// current_scroll = this->m_nMouseWheelDelta;
+
+		// Se você não tem um campo para isso, pode usar GetAsyncKeyState para testes:
+		if (GetAsyncKeyState(VK_MBUTTON) & 0x8000) // Apenas exemplo, não detecta scroll real
+			current_scroll = 1;
+
+		int delta = current_scroll - last_scroll;
+		last_scroll = current_scroll;
+		return delta;
+	}
 };
 
 MAKE_SINGLETON_SCOPED(CInput, Input, H);
