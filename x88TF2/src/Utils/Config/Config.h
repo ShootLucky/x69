@@ -116,6 +116,44 @@ namespace Config
         }
         input_file.close();
     }
+
+    static std::vector<std::string> RefreshConfigFiles() {
+        std::vector<std::string> files;
+        std::string dir = "configs";
+        if (!std::filesystem::exists(dir)) std::filesystem::create_directory(dir);
+        for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".cfg") {
+                files.push_back(entry.path().stem().string());
+            }
+        }
+        if (files.empty()) files.push_back("default");
+        return files;
+    }
+
+    static void CreateConfig(const std::string& name) {
+        if (name.empty()) return;
+        std::filesystem::path path = "configs/" + name + ".cfg";
+        Save(path);
+    }
+
+    static void SaveConfig(const std::string& name) {
+        std::filesystem::path path = "configs/" + name + ".cfg";
+        Save(path);
+    }
+
+    static void LoadConfig(const std::string& name) {
+        std::filesystem::path path = "configs/" + name + ".cfg";
+        if (std::filesystem::exists(path)) {
+            Load(path);
+        }
+    }
+
+    static void DeleteConfig(const std::string& name) {
+        std::filesystem::path path = "configs/" + name + ".cfg";
+        if (std::filesystem::exists(path)) {
+            std::filesystem::remove(path);
+        }
+    }
 }
 #define CFGVAR(var, val) inline auto var{ val }; \
 namespace configvar_initializers\

@@ -312,7 +312,7 @@ void CAimbotMelee::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeap
 				{
 					Aim(pCmd, pLocal, pWeapon, target.AngleTo);
 				}
-				if (CFG::Misc_AccuracyImprovements)
+				if (CFG::Misc_Accuracy_Improvements)
 				{
 					if (bIsFiring && target.Entity->GetClassId() == ETFClassIds::CTFPlayer)
 					{

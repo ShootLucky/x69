@@ -14,8 +14,8 @@ namespace CFG
 	CFGVAR(Aimbot_TeamCheck, true);
 	CFGVAR(Aimbot_Hitscan_Smoothing, 5.f);
 	CFGVAR(Aimbot_Hitbox_Head, false);
-	CFGVAR(Aimbot_Hitbox_Neck, false);
-	CFGVAR(Aimbot_Hitbox_Chest, false);
+	CFGVAR(Aimbot_Hitbox_Legs, false);
+	CFGVAR(Aimbot_Hitbox_Arms, false);
 	CFGVAR(Aimbot_Hitbox_Pelvis, false);
 	CFGVAR(Aimbot_Hitbox_Body, false);
 	CFGVAR(Aimbot_Hitbox_Buildings, false);

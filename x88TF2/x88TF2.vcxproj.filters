@@ -218,7 +218,6 @@
     <ClInclude Include="src\SDK\SDK.h" />
     <ClInclude Include="src\Utils\Assert\Assert.h" />
     <ClInclude Include="src\Utils\Color\Color.h" />
-    <ClInclude Include="src\Utils\Config\Config.h" />
     <ClInclude Include="src\Utils\Hash\Hash.h" />
     <ClInclude Include="src\Utils\HookManager\HookManager.h" />
     <ClInclude Include="src\Utils\InterfaceManager\InterfaceManager.h" />
@@ -283,5 +282,6 @@
     <ClInclude Include="src\includes.h" />
     <ClInclude Include="include\kiero.h" />
     <ClInclude Include="nemesis.h" />
+    <ClInclude Include="src\Utils\Config\Config.h" />
   </ItemGroup>
 </Project>

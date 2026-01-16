@@ -832,7 +832,6 @@ void menu::render() {
         checkbox(x_center, &y, "Fake Taunt", &CFG::Misc_Fake_Taunt, false, 255, current_item++);
         checkbox(x_center, &y, "Setup Bones Optimization", &CFG::Misc_SetupBones_Optimization, false, 255, current_item++);
         checkbox(x_center, &y, "Fake Latency", &CFG::Misc_FakeLatency_Enable, false, 255, current_item++);
-        float_slider(x_center, &y, "Latency Amount", CFG::Misc_FakeLatencyfloat_Enable, 0.f, 600.f, current_item++);
         // Refresh config files periodically (e.g., every render in misc)
         menu::config_files = RefreshConfigFiles();
         if (menu::config_files.empty()) {

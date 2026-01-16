@@ -495,6 +495,7 @@
     <ClInclude Include="src\SDK\TF2\renderutils.h" />
     <ClInclude Include="src\SDK\TF2\utlblockmemory.h" />
     <ClInclude Include="src\SDK\TF2\utlmemory.h" />
+    <ClInclude Include="src\Utils\Config\Config.h" />
     <ClInclude Include="src\Utils\Storage\Storage.h" />
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
     <ClInclude Include="src\SDK\Helpers\Draw\Draw.h" />
@@ -620,7 +621,6 @@
     <ClInclude Include="src\SDK\TF2\vtf.h" />
     <ClInclude Include="src\Utils\Assert\Assert.h" />
     <ClInclude Include="src\Utils\Color\Color.h" />
-    <ClInclude Include="src\Utils\Config\Config.h" />
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="src\Utils\Hash\Hash.h" />
     <ClInclude Include="src\Utils\HookManager\HookManager.h" />

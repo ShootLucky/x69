@@ -237,7 +237,7 @@ void CMisc::AntiAFK(CUserCmd* pCmd)
 }
 float CMisc::GetFakeLatency() const
 {
-    return CFG::Misc_FakeLatency_Enable ? CFG::Misc_FakeLatencyfloat_Enable : 0.0f;
+
 }
 void CMisc::RecordIncomingSequence(CNetChannel* pNetChan)
 {
