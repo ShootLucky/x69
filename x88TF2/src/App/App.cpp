@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+#include "../src/Features/Aimbot/AimbotHitscan/AimbotHitscan.h"
 const char* ChooseRandomSubText()
 {
     // 0 .. 9999 (precisão alta para frases raras)

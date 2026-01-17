@@ -1,4 +1,4 @@
-#include "includes.h"
+﻿#include "includes.h"
 #include "App/App.h"
 #ifdef _WIN64
 #define GWL_WNDPROC GWLP_WNDPROC
@@ -7,12 +7,16 @@
 static int selected_weapon = 0;
 static std::vector<bool> hitbox_selected = { false, false, false, false, false };
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 EndScene oEndScene = NULL;
 WNDPROC oWndProc;
 static HWND window = NULL;
+
 bool init = false;
 HMODULE hmod = NULL;
+
 IDirect3DStateBlock9* pStateBlock = NULL;
+
 void InitImGui(LPDIRECT3DDEVICE9 pDevice)
 {
     ImGui::CreateContext();
@@ -20,11 +24,14 @@ void InitImGui(LPDIRECT3DDEVICE9 pDevice)
     io.ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
     ImGui_ImplWin32_Init(window);
     ImGui_ImplDX9_Init(pDevice);
+
     gui::set_theme();
     gui::menu_font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\verdanab.ttf", 13.f);;
 }
+
 IDirect3DStateBlock9* pixel_state = NULL; IDirect3DVertexDeclaration9* vertDec; IDirect3DVertexShader9* vertShader;
 DWORD dwOld_D3DRS_COLORWRITEENABLE;
+
 void SaveState(IDirect3DDevice9* pDevice)
 {
     pDevice->GetRenderState(D3DRS_COLORWRITEENABLE, &dwOld_D3DRS_COLORWRITEENABLE);
@@ -38,6 +45,7 @@ void SaveState(IDirect3DDevice9* pDevice)
     pDevice->SetSamplerState(NULL, D3DSAMP_ADDRESSW, D3DTADDRESS_WRAP);
     pDevice->SetSamplerState(NULL, D3DSAMP_SRGBTEXTURE, NULL);
 }
+
 void RestoreState(IDirect3DDevice9* pDevice)
 {
     pDevice->SetRenderState(D3DRS_COLORWRITEENABLE, dwOld_D3DRS_COLORWRITEENABLE);
@@ -47,6 +55,7 @@ void RestoreState(IDirect3DDevice9* pDevice)
     pDevice->SetVertexDeclaration(vertDec);
     pDevice->SetVertexShader(vertShader);
 }
+
 bool show_menu = true;
 long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
 {
@@ -93,7 +102,6 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                 ImU32 accent_color = IM_COL32(0, 122, 187, 255);
                 draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 1), ImVec2(p.x + s.x - 1, p.y + 3), accent_color);
                 draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 60), ImVec2(p.x + s.x - 1, p.y + 62), IM_COL32(40, 40, 40, 255));
-                draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 45), ImVec2(p.x + 181, p.y + 46), IM_COL32(45, 45, 45, 255));
                 draw_list->AddText(ImVec2(p.x + 6, p.y + 21), IM_COL32(5, 5, 5, 255), "X69 TF2");
                 draw_list->AddText(ImVec2(p.x + 5, p.y + 20), accent_color, "X69 TF2");
                 draw_list->AddText(ImVec2(p.x + 6, p.y + 33), IM_COL32(5, 5, 5, 255), "DEVELOPED BY");
@@ -131,7 +139,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     ImGui::SameLine();
                     gui::TabButton("Visuals", active_tab, 2);
                     ImGui::SameLine();
-                    gui::TabButton("Skins", active_tab, 3);
+                    gui::TabButton("Players", active_tab, 3);
                     ImGui::SameLine();
                     gui::TabButton("Misc", active_tab, 4);
                 }
@@ -147,16 +155,16 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     // AIMBOT TAB
                     if (active_tab == 0)
                     {
-                        if (gui::begin_group("MAIN", ImVec2(380, 250), 15.0f, 5.0f))
+                        if (gui::begin_group_scrollable("MAIN", ImVec2(380, 250), 5.0f, 0.0f))
                         {
                             // Inicia um grupo para a linha do checkbox + keybind (para isolar o layout)
                             ImGui::BeginGroup();
                             gui::checkbox("Aimbot", CFG::Aimbot_Active);
-                            ImGui::SameLine(350.0f); // Ajuste este valor para alinhar o keybind � direita (ex: calcule baseado na largura do grupo - largura do keybind)
-                            static int aimbot_key = 0;         // Ou use uma vari�vel do seu config, ex: CFG::Aimbot_Key
-                            static int aimbot_bind_type = 0;   // Ou use CFG::Aimbot_BindType (0=Always, 1=Hold on, 2=Toggle, 3=Hold off)
+                            ImGui::SameLine(350.0f); // Ajuste este valor para alinhar o keybind à direita (ex: calcule baseado na largura do grupo - largura do keybind)
+                            static int aimbot_key = CFG::Aimbot_Key;         // Ou use uma variável do seu config, ex: CFG::Aimbot_K
+                            static int aimbot_bind_type = CFG::Aimbot_KeyMode;   // Ou use CFG::Aimbot_BindType (0=Always, 1=Hold on, 2=Toggle, 3=Hold off)
                             gui::keybind("##AimbotKey", &aimbot_key, &aimbot_bind_type);
-                            ImGui::EndGroup(); // Fecha o grupo, agora os itens abaixo voltam ao alinhamento normal � esquerda
+                            ImGui::EndGroup(); // Fecha o grupo, agora os itens abaixo voltam ao alinhamento normal à esquerda
                             gui::slider("FOV", &CFG::Aimbot_FOV, 0.f, 180.f);
                             gui::slider("Smoothing", &CFG::Aimbot_Hitscan_Smoothing, 0.f, 20.f);
                             gui::checkbox("Visible Check", CFG::Aimbot_VisibleCheck);
@@ -166,10 +174,12 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Auto Shoot", CFG::Aimbot_AutoShoot);
                             gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
                             gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
+
                         }
-                        gui::end_group();
+                        gui::end_group_scrollable();
+
                         ImGui::SameLine(390);
-                        if (gui::begin_group("ACCURACY", ImVec2(380, 250), 15.0f, 5.0f))
+                        if (gui::begin_group("ACCURACY", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             gui::checkbox("Target Lag Records", CFG::Aimbot_TargetLagRecords);
                             gui::checkbox("Target Stickies", CFG::Aimbot_TargetStickies);
@@ -181,7 +191,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Auto Scope", CFG::Aimbot_AutoScope);
                         }
                         gui::end_group();
-                        if (gui::begin_group("HITBOXES", ImVec2(380, 250), 15.0f, 5.0f))
+                        if (gui::begin_group("HITBOXES", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             std::vector<gui::MultiComboItem> items = {
                                 gui::MultiComboItem("Head", &CFG::Aimbot_Hitbox_Head),
@@ -198,7 +208,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                         }
                         gui::end_group();
                         ImGui::SameLine(390);
-                        if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 15.0f, 5.0f))
+                        if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 5.0f, 5.0f))
                         {
 
 
@@ -212,7 +222,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     }
                     if (active_tab == 2)
                     {
-                        if (gui::begin_group("ESP PLAYERS", ImVec2(380, 250), 15.0f, 5.0f))
+                        if (gui::begin_group_scrollable("ESP PLAYERS", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             gui::checkbox("ESP Master", CFG::ESP_Enable);
                             gui::checkbox("Team Check", CFG::ESP_Team);
@@ -232,9 +242,9 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Distance Enemy", CFG::ESP_DistanceEnemy);
                             gui::combo("Distance Position", &CFG::ESP_DistancePosition, std::vector<std::string>{"Side", "Bottom"});
                         }
-                        gui::end_group();
+                        gui::end_group_scrollable();
                         ImGui::SameLine(390);
-                        if (gui::begin_group("ESP PICKUPS", ImVec2(380, 250), 15.0f, 5.0f))
+                        if (gui::begin_group("ESP PICKUPS", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             gui::checkbox("ESP Build", CFG::ESP_Build);
                             gui::checkbox("ESP Build Only Enemy", CFG::ESP_BuildOnlyEnemy);
@@ -246,7 +256,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Name Capture", CFG::ESP_NameCapture);
                         }
                         gui::end_group();
-                        if (gui::begin_group("ESP LINES", ImVec2(380, 250), 15.0f, 5.0f))
+                        if (gui::begin_group("ESP LINES", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             gui::checkbox("Offscreen Indicators", CFG::ESP_Offscreen);
                             gui::slider("Offscreen Radius", &CFG::ESP_Offscreen_Radius, 10.f, 500.f);
@@ -258,7 +268,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                         }
                         gui::end_group();
                         ImGui::SameLine(390);
-                        if (gui::begin_group("ESP MEDIC", ImVec2(380, 250), 15.0f, 5.0f))
+                        if (gui::begin_group("ESP MEDIC", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             gui::checkbox("UberCharge Status", CFG::ESP_Uber);
                             gui::checkbox("UberCharge Bar", CFG::ESP_UberBar);
@@ -268,8 +278,218 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                         gui::end_group();
                     }
                     // SKINS TAB
-                    if (active_tab == 3)
+                    if (active_tab == 3) // PLAYERS TAB
                     {
+                        // Lista de jogadores (lado esquerdo)
+                        if (gui::begin_group_scrollable("PLAYERS IN SERVER", ImVec2(380, 500), 5.0f, 5.0f))
+                        {
+                            int playerCount = 0;
+                            for (int i = 1; i <= I::EngineClient->GetMaxClients(); i++)
+                            {
+                                if (i == I::EngineClient->GetLocalPlayer())
+                                    continue;
+
+                                player_info_t pi{};
+                                if (!I::EngineClient->GetPlayerInfo(i, &pi) || pi.fakeplayer)
+                                    continue;
+
+                                auto pEntity = I::ClientEntityList->GetClientEntity(i);
+                                if (!pEntity)
+                                    continue;
+
+                                auto pBaseEntity = pEntity->As<C_BaseEntity>();
+                                if (!pBaseEntity)
+                                    continue;
+
+                                auto pPlayer = pEntity->As<C_TFPlayer>();
+                                if (!pPlayer)
+                                    continue;
+
+                                playerCount++;
+
+                                PlayerPriority priority{};
+                                F::Players->GetInfo(i, priority);
+
+                                ImGui::PushID(i);
+
+                                // Determinar cor do nome baseado na flag
+                                ImVec4 nameColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // Default: branco
+                                if (priority.Cheater)
+                                    nameColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+                                else if (priority.RetardLegit)
+                                    nameColor = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);
+                                else if (priority.CheaterLight)
+                                    nameColor = ImVec4(1.0f, 0.6f, 0.6f, 1.0f);
+                                else if (priority.Suspect)
+                                    nameColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+                                else if (priority.RijinUser)
+                                    nameColor = ImVec4(1.0f, 0.0f, 1.0f, 1.0f);
+                                else if (priority.LmaoboxUser)
+                                    nameColor = ImVec4(0.0f, 1.0f, 1.0f, 1.0f);
+                                else if (priority.NethookUser)
+                                    nameColor = ImVec4(0.5f, 0.0f, 0.5f, 1.0f);
+                                else if (priority.Ignored)
+                                    nameColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+
+                                // Team indicator
+                                int team = pBaseEntity->m_iTeamNum();
+                                const char* teamTag = team == 2 ? "[RED]" : team == 3 ? "[BLU]" : "[SPEC]";
+                                ImVec4 teamColor = team == 2 ? ImVec4(1.0f, 0.2f, 0.2f, 1.0f) :
+                                    team == 3 ? ImVec4(0.2f, 0.5f, 1.0f, 1.0f) :
+                                    ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+
+                                // Renderizar linha do jogador
+                                ImGui::TextColored(teamColor, "%s", teamTag);
+                                ImGui::SameLine();
+                                ImGui::PushStyleColor(ImGuiCol_Text, nameColor);
+                                ImGui::Selectable(pi.name, false, 0, ImVec2(320.0f, 0));
+                                ImGui::PopStyleColor();
+
+                                // Menu de contexto (botão direito)
+                                if (ImGui::BeginPopupContextItem())
+                                {
+                                    ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "%s", pi.name);
+                                    ImGui::Spacing();
+
+                                    // Botões de flag em grid 2x4
+                                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
+                                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 6));
+
+                                    // Linha 1
+                                    if (ImGui::Button("Clear All", ImVec2(100, 0)))
+                                    {
+                                        F::Players->Mark(i, PlayerPriority{});
+                                        ImGui::CloseCurrentPopup();
+                                    }
+                                    ImGui::SameLine();
+                                    if (ImGui::Button(priority.Cheater ? "✓ Cheater" : "Cheater", ImVec2(100, 0)))
+                                    {
+                                        priority = {};
+                                        priority.Cheater = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+
+                                    // Linha 2
+                                    if (ImGui::Button(priority.RetardLegit ? "✓ Retard" : "Retard", ImVec2(100, 0)))
+                                    {
+                                        priority = {};
+                                        priority.RetardLegit = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    ImGui::SameLine();
+                                    if (ImGui::Button(priority.CheaterLight ? "✓ Light" : "Light", ImVec2(100, 0)))
+                                    {
+                                        priority = {};
+                                        priority.CheaterLight = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+
+                                    // Linha 3
+                                    if (ImGui::Button(priority.Suspect ? "✓ Suspect" : "Suspect", ImVec2(100, 0)))
+                                    {
+                                        priority = {};
+                                        priority.Suspect = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    ImGui::SameLine();
+                                    if (ImGui::Button(priority.RijinUser ? "✓ Rijin" : "Rijin", ImVec2(100, 0)))
+                                    {
+                                        priority = {};
+                                        priority.RijinUser = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+
+                                    // Linha 4
+                                    if (ImGui::Button(priority.LmaoboxUser ? "✓ Lmaobox" : "Lmaobox", ImVec2(100, 0)))
+                                    {
+                                        priority = {};
+                                        priority.LmaoboxUser = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    ImGui::SameLine();
+                                    if (ImGui::Button(priority.NethookUser ? "✓ Nethook" : "Nethook", ImVec2(100, 0)))
+                                    {
+                                        priority = {};
+                                        priority.NethookUser = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+
+                                    // Linha 5
+                                    if (ImGui::Button(priority.Ignored ? "✓ Ignored" : "Ignored", ImVec2(100, 0)))
+                                    {
+                                        priority = {};
+                                        priority.Ignored = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+
+                                    ImGui::PopStyleVar(2);
+                                    ImGui::EndPopup();
+                                }
+                                ImGui::PopID();
+                            }
+
+                            if (playerCount > 0)
+                            {
+                                ImGui::Spacing();
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Total Players: %d", playerCount);
+                            }
+                        }
+                        gui::end_group_scrollable();
+
+                        // Legenda (lado direito)
+                        ImGui::SameLine(390);
+                        if (gui::begin_group_scrollable("LEGEND & INFO", ImVec2(380, 500), 5.0f, 5.0f))
+                        {
+                            ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "TEAM INDICATORS");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "[RED]");
+                            ImGui::SameLine();
+                            ImGui::TextColored(ImVec4(0.2f, 0.5f, 1.0f, 1.0f), "[BLU]");
+                            ImGui::SameLine();
+                            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "[SPEC]");
+                            ImGui::Spacing();
+                            ImGui::Spacing();
+
+                            ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "PLAYER FLAGS");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Clean Player");
+                            ImGui::TextDisabled("No flags assigned");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Cheater");
+                            ImGui::TextDisabled("Confirmed cheater");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Retard Legit");
+                            ImGui::TextDisabled("Suspicious legit player");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.6f, 1.0f), "Cheater Light");
+                            ImGui::TextDisabled("Likely soft cheats");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Suspect");
+                            ImGui::TextDisabled("Under observation");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Rijin User");
+                            ImGui::TextDisabled("Using Rijin cheat");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Lmaobox User");
+                            ImGui::TextDisabled("Using Lmaobox");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(0.5f, 0.0f, 0.5f, 1.0f), "Nethook User");
+                            ImGui::TextDisabled("Using Nethook");
+                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Ignored");
+                            ImGui::TextDisabled("Player is ignored");
+                            ImGui::Spacing();
+                            ImGui::Spacing();
+
+                            ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "HOW TO USE");
+                            ImGui::Spacing();
+                            ImGui::TextWrapped("Right-click any player to assign flags using the button grid.");
+                            ImGui::Spacing();
+                            ImGui::TextWrapped("Manual flags persist between sessions and appear with colored names.");
+                            ImGui::Spacing();
+                            ImGui::TextWrapped("Use 'Clear All' to remove all flags from a player.");
+                        }
+                        gui::end_group_scrollable();
                     }
                     // MISC TAB
 

@@ -4,14 +4,18 @@
 
 bool C_TFPlayer::IsPlayerOnSteamFriendsList()
 {
-    auto result{ reinterpret_cast<bool(__fastcall*)(void*, void*)>(Signatures::CTFPlayer_IsPlayerOnSteamFriendsList.Get())(this, this) };
+	// Chama a função original do TF2
+	auto result{ reinterpret_cast<bool(__fastcall*)(void*, void*)>(
+		Signatures::CTFPlayer_IsPlayerOnSteamFriendsList.Get())(this, this) };
 
-    if (!result)
-    {
-        PlayerPriority info{};
+	// Se o resultado da função original for false, verifica se está na lista de Ignored
+	if (!result)
+	{
+		PlayerPriority info{};
 
-        return F::Players->GetInfo(this->entindex(), info) && info.Ignored;
-    }
+		// Retorna true se o jogador está marcado como Ignored (para compatibilidade)
+		return F::Players->GetInfo(this->entindex(), info) && info.Ignored;
+	}
 
-    return result;
+	return result;
 }

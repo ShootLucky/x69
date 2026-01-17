@@ -51,7 +51,7 @@ private:
 
     // Target selection
     bool GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, HitscanTarget_t& outTarget);
-    bool ValidateTarget(C_BaseEntity* pEntity, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
+    bool ValidateTarget(C_TFPlayer* pEntity, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
 
     // Aiming
     bool ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);

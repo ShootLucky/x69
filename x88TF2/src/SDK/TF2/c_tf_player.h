@@ -169,6 +169,7 @@ public:
 	NETVAR(m_bUsingVRHeadset, bool, "CTFPlayer", "m_bUsingVRHeadset");
 	NETVAR(m_bForcedSkin, bool, "CTFPlayer", "m_bForcedSkin");
 	NETVAR(m_nForcedSkin, int, "CTFPlayer", "m_nForcedSkin");
+	NETVAR(m_nAccountTier, int, "CTFPlayer", "m_nAccountTier");
 	NETVAR(m_bGlowEnabled, bool, "CTFPlayer", "m_bGlowEnabled");
 	NETVAR(m_nActiveWpnClip, int, "CTFPlayer", "m_nActiveWpnClip");
 	NETVAR(m_flKartNextAvailableBoost, float, "CTFPlayer", "m_flKartNextAvailableBoost");
@@ -201,6 +202,11 @@ public:
 
 	Vec3 GetShootPos() {
 		return m_vecOrigin() + m_vecViewOffset();
+	}
+
+	inline bool IsPremium()
+	{
+		return m_nAccountTier() == 1;
 	}
 
 	bool IsPlayerOnSteamFriendsList();

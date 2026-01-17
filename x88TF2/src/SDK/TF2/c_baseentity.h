@@ -47,6 +47,7 @@ struct VarMapping_t
 class C_BaseEntity : public IClientEntity
 {
 public:
+	NETVAR(m_iHealth, int, "CBaseEntity", "m_iHealth");
 	NETVAR(m_flAnimTime, float, "CBaseEntity", "m_flAnimTime");
 	NETVAR(m_flSimulationTime, float, "CBaseEntity", "m_flSimulationTime");
 	NETVAR(m_ubInterpolationFrame, int, "CBaseEntity", "m_ubInterpolationFrame");

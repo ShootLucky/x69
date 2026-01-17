@@ -4,6 +4,10 @@
 #include <string>
 #include "src/imgui/imgui.h"
 #include "src/imgui/imgui_internal.h"
+#include "src/SDK/SDK.h"
+#include "src/CFG.h"
+#include "../src/Features/PlayersList/PlayersList.h"
+#include "../src/Features/Menu/notification_system/notifs.h"
 
 namespace gui
 {
@@ -25,6 +29,8 @@ namespace gui
         style.FramePadding = ImVec2(5.f, 3.f);
         style.WindowTitleAlign = ImVec2(0.50f, 0.50f);
         style.ItemSpacing = ImVec2(0.f, 4.f);
+        style.ScrollbarSize = 4.0f;  // Scrollbar fino (4 pixels de largura)
+        style.ScrollbarRounding = 2.0f;
 
 
         colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -41,10 +47,10 @@ namespace gui
         colors[ImGuiCol_TitleBgActive] = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
         colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
         colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
-        colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
-        colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
-        colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
-        colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+        colors[ImGuiCol_ScrollbarBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);  // Background transparente
+        colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);  // Grab mais escuro
+        colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);  // Hover um pouco mais claro
+        colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.00f);
         colors[ImGuiCol_CheckMark] = ImVec4(0.69f, 0.27f, 0.95f, 1.00f);
         colors[ImGuiCol_SliderGrab] = ImVec4(0.24f, 0.52f, 0.88f, 1.00f);
         colors[ImGuiCol_SliderGrabActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
@@ -85,9 +91,9 @@ namespace gui
         ImVec2 pos = ImGui::GetCursorScreenPos();
 
         ImVec2 box_size(14.0f, 14.0f);
-        float box_offset_x = 5.0f;
+        float box_offset_x = 0.0f;  // Colado na borda esquerda
         float box_offset_y = 3.0f;
-        float text_offset_x = 25.0f;
+        float text_offset_x = 20.0f;  // Reduzido de 25 para 20
 
         ImVec2 text_size = ImGui::CalcTextSize(label);
         ImVec2 total_size(text_offset_x + text_size.x, ImMax(box_size.y + box_offset_y, text_size.y));
@@ -164,7 +170,7 @@ namespace gui
         if (held)
         {
             float mouse_x = ImGui::GetIO().MousePos.x;
-            float t = (mouse_x - (bb.Min.x + 5.0f)) / width;
+            float t = (mouse_x - bb.Min.x) / width;
             t = ImClamp(t, 0.0f, 1.0f);
             *value = min + t * (max - min);
         }
@@ -178,9 +184,9 @@ namespace gui
             name_str += ": " + std::to_string((int)*value) + suffix;
         }
 
-        dl->AddText(ImVec2(pos.x + 5.0f, pos.y), IM_COL32(120, 120, 120, 255), name_str.c_str());
+        dl->AddText(ImVec2(pos.x, pos.y), IM_COL32(120, 120, 120, 255), name_str.c_str());
 
-        ImVec2 track_pos = ImVec2(pos.x + 5.0f, pos.y + 15.0f);
+        ImVec2 track_pos = ImVec2(pos.x, pos.y + 15.0f);
         ImVec2 track_end = ImVec2(track_pos.x + width, track_pos.y + track_height);
         dl->AddRectFilled(track_pos, track_end, IM_COL32(60, 60, 60, 255));
 
@@ -315,6 +321,74 @@ namespace gui
     void end_group()
     {
         ImGui::Unindent(5.0f + g_GroupBoxContentOffsetX);
+        ImGui::EndGroup();
+    }
+
+    // Variáveis para controlar o scroll group
+    static ImVec2 g_ScrollGroupPos;
+    static ImVec2 g_ScrollGroupSize;
+
+    bool begin_group_scrollable(const char* label, ImVec2 size, float content_offset_x = 0.0f, float content_offset_y = 0.0f)
+    {
+        g_GroupBoxContentOffsetX = content_offset_x;
+        g_GroupBoxContentOffsetY = content_offset_y;
+
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+
+        ImGui::BeginGroup();
+
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImDrawList* draw = ImGui::GetWindowDrawList();
+        ImVec2 end = ImVec2(pos.x + size.x, pos.y + size.y);
+
+        g_ScrollGroupPos = pos;
+        g_ScrollGroupSize = size;
+
+        ImU32 bg_color = IM_COL32(30, 30, 30, 255);
+        ImU32 border_color = IM_COL32(16, 16, 16, 255);
+        ImU32 text_color = IM_COL32(220, 220, 220, 255);
+        ImU32 text_shadow = IM_COL32(10, 10, 10, 150);
+
+        ImU32 accent_main = IM_COL32(0, 122, 187, 255);
+        ImU32 accent_faded = IM_COL32(0, 122, 187, 70);
+
+        ImGui::Dummy(size);
+        draw->AddRectFilled(pos, end, bg_color);
+
+        draw->AddRectFilledMultiColor(
+            pos,
+            ImVec2(pos.x + size.x, pos.y + 15),
+            accent_faded,
+            accent_faded,
+            accent_main,
+            accent_main
+        );
+
+        ImVec2 text_pos = ImVec2(pos.x + 5, pos.y + 2);
+        draw->AddText(ImVec2(text_pos.x + 1, text_pos.y + 1), text_shadow, label);
+        draw->AddText(text_pos, text_color, label);
+
+        draw->AddRect(pos, end, border_color);
+
+        float header_height = 15.0f;
+        // Posição do child: mais próximo da borda esquerda
+        ImVec2 child_pos = ImVec2(pos.x + 8.0f, pos.y + header_height + 5.0f);
+        // Tamanho do child: vai até quase a borda direita (deixa espaço apenas para o scrollbar de 4px)
+        ImVec2 child_size = ImVec2(size.x - 12.0f, size.y - header_height - 10.0f);
+
+        ImGui::SetCursorScreenPos(child_pos);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::BeginChild(label, child_size, false, ImGuiWindowFlags_NoBackground);
+        ImGui::PopStyleVar();
+
+        return true;
+    }
+
+    void end_group_scrollable()
+    {
+        ImGui::EndChild();
         ImGui::EndGroup();
     }
 
@@ -510,10 +584,10 @@ namespace gui
         float combo_height = 23.0f;
         float label_height = 15.0f;
 
-        ImVec2 label_pos = ImVec2(pos.x + 5.0f, pos.y);
+        ImVec2 label_pos = ImVec2(pos.x, pos.y);
         window->DrawList->AddText(label_pos, IM_COL32(120, 120, 120, 255), label);
 
-        ImVec2 combo_pos = ImVec2(pos.x + 5.0f, pos.y + label_height);
+        ImVec2 combo_pos = ImVec2(pos.x, pos.y + label_height);
         ImVec2 combo_size = ImVec2(width, combo_height);
         ImRect combo_bb(combo_pos, ImVec2(combo_pos.x + combo_size.x, combo_pos.y + combo_size.y));
 
@@ -684,10 +758,10 @@ namespace gui
             preview_text = preview_text.substr(0, 10) + "...";
         }
 
-        ImVec2 label_pos = ImVec2(pos.x + 5.0f, pos.y);
+        ImVec2 label_pos = ImVec2(pos.x, pos.y);
         window->DrawList->AddText(label_pos, IM_COL32(120, 120, 120, 255), label);
 
-        ImVec2 combo_pos = ImVec2(pos.x + 5.0f, pos.y + label_height);
+        ImVec2 combo_pos = ImVec2(pos.x, pos.y + label_height);
         ImVec2 combo_size = ImVec2(width, combo_height);
         ImRect combo_bb(combo_pos, ImVec2(combo_pos.x + combo_size.x, combo_pos.y + combo_size.y));
 

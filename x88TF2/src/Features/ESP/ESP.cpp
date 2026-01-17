@@ -12,7 +12,7 @@
 #include <cstdint> // for uintptr_t
 #define PI 3.14159265358979323846f
 #define DEG2RAD(deg) ((deg) * PI / 180.0f)
-C_BaseEntity* CESP::RainEntity = nullptr;
+C_BaseEntity * CESP::RainEntity = nullptr;
 IClientNetworkable* CESP::RainNetworkable = nullptr;
 C_BaseEntity* CESP::WindEntity = nullptr;
 IClientNetworkable* CESP::WindNetworkable = nullptr;
