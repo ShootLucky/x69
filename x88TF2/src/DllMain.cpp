@@ -4,6 +4,7 @@
 #define GWL_WNDPROC GWLP_WNDPROC
 #endif
 #include "../nemesis.h"
+
 static int selected_weapon = 0;
 static std::vector<bool> hitbox_selected = { false, false, false, false, false };
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -17,6 +18,11 @@ HMODULE hmod = NULL;
 
 IDirect3DStateBlock9* pStateBlock = NULL;
 
+// Config system variables
+static std::vector<std::string> config_list;
+static int selected_config = 0;
+static char new_config_name[128] = "";
+
 void InitImGui(LPDIRECT3DDEVICE9 pDevice)
 {
     ImGui::CreateContext();
@@ -26,10 +32,30 @@ void InitImGui(LPDIRECT3DDEVICE9 pDevice)
     ImGui_ImplDX9_Init(pDevice);
 
     gui::set_theme();
-    gui::menu_font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\verdanab.ttf", 13.f);;
+    gui::menu_font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\verdanab.ttf", 13.f);
+
+    // Initialize config list
+    config_list = Config::RefreshConfigFiles();
+
+    // Load default config if it exists
+    std::string default_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\x69\\Configs\\default.cfg";
+    if (std::filesystem::exists(default_path))
+    {
+        Config::LoadConfig("default");
+        for (size_t i = 0; i < config_list.size(); i++)
+        {
+            if (config_list[i] == "default")
+            {
+                selected_config = i;
+                break;
+            }
+        }
+    }
 }
 
-IDirect3DStateBlock9* pixel_state = NULL; IDirect3DVertexDeclaration9* vertDec; IDirect3DVertexShader9* vertShader;
+IDirect3DStateBlock9* pixel_state = NULL;
+IDirect3DVertexDeclaration9* vertDec;
+IDirect3DVertexShader9* vertShader;
 DWORD dwOld_D3DRS_COLORWRITEENABLE;
 
 void SaveState(IDirect3DDevice9* pDevice)
@@ -57,6 +83,7 @@ void RestoreState(IDirect3DDevice9* pDevice)
 }
 
 bool show_menu = true;
+
 long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
 {
     if (!alive)
@@ -99,9 +126,17 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     IM_COL32(16, 16, 16, 255),
                     IM_COL32(16, 16, 16, 255)
                 );
-                ImU32 accent_color = IM_COL32(0, 122, 187, 255);
+
+                // CORREÇÃO AQUI: Usar Color_t em vez de gui::Color
+                static bool modify_theme = CFG::Menu_ModifyTheme;
+                static Color_t theme_color = CFG::Menu_ThemeColor;
+                static bool old_modify_theme = false;
+                static Color_t old_theme_color = theme_color;
+
+                ImU32 accent_color = modify_theme ? IM_COL32(theme_color.r, theme_color.g, theme_color.b, theme_color.a) : IM_COL32(0, 122, 187, 255);
+
                 draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 1), ImVec2(p.x + s.x - 1, p.y + 3), accent_color);
-                draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 60), ImVec2(p.x + s.x - 1, p.y + 62), IM_COL32(40, 40, 40, 255));
+                draw_list->AddRectFilled(ImVec2(p.x + 60, p.y + 60), ImVec2(p.x + s.x - 1, p.y + 62), IM_COL32(40, 40, 40, 255));
                 draw_list->AddText(ImVec2(p.x + 6, p.y + 21), IM_COL32(5, 5, 5, 255), "X69 TF2");
                 draw_list->AddText(ImVec2(p.x + 5, p.y + 20), accent_color, "X69 TF2");
                 draw_list->AddText(ImVec2(p.x + 6, p.y + 33), IM_COL32(5, 5, 5, 255), "DEVELOPED BY");
@@ -128,6 +163,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     }
                 }
                 draw_list->AddRect(p, ImVec2(p.x + s.x, p.y + s.y), IM_COL32(40, 40, 40, 255));
+
                 /* tabs */
                 ImGui::SetCursorPosX(480);
                 ImGui::SetCursorPosY(25);
@@ -146,9 +182,8 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                 ImGui::EndGroup();
                 ImGui::NewLine();
                 ImGui::NewLine();
-                // ImGui::NewLine();
-                 // ImGui::NewLine();
-                     /* main content */
+
+                /* main content */
                 ImGui::SetCursorPosX(15);
                 ImGui::BeginGroup();
                 {
@@ -157,14 +192,13 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     {
                         if (gui::begin_group_scrollable("MAIN", ImVec2(380, 250), 5.0f, 0.0f))
                         {
-                            // Inicia um grupo para a linha do checkbox + keybind (para isolar o layout)
                             ImGui::BeginGroup();
                             gui::checkbox("Aimbot", CFG::Aimbot_Active);
-                            ImGui::SameLine(350.0f); // Ajuste este valor para alinhar o keybind à direita (ex: calcule baseado na largura do grupo - largura do keybind)
-                            static int aimbot_key = CFG::Aimbot_Key;         // Ou use uma variável do seu config, ex: CFG::Aimbot_K
-                            static int aimbot_bind_type = CFG::Aimbot_KeyMode;   // Ou use CFG::Aimbot_BindType (0=Always, 1=Hold on, 2=Toggle, 3=Hold off)
+                            ImGui::SameLine(350.0f);
+                            static int aimbot_key = CFG::Aimbot_Key;
+                            static int aimbot_bind_type = CFG::Aimbot_KeyMode;
                             gui::keybind("##AimbotKey", &aimbot_key, &aimbot_bind_type);
-                            ImGui::EndGroup(); // Fecha o grupo, agora os itens abaixo voltam ao alinhamento normal à esquerda
+                            ImGui::EndGroup();
                             gui::slider("FOV", &CFG::Aimbot_FOV, 0.f, 180.f);
                             gui::slider("Smoothing", &CFG::Aimbot_Hitscan_Smoothing, 0.f, 20.f);
                             gui::checkbox("Visible Check", CFG::Aimbot_VisibleCheck);
@@ -174,7 +208,6 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Auto Shoot", CFG::Aimbot_AutoShoot);
                             gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
                             gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
-
                         }
                         gui::end_group_scrollable();
 
@@ -191,6 +224,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Auto Scope", CFG::Aimbot_AutoScope);
                         }
                         gui::end_group();
+
                         if (gui::begin_group("HITBOXES", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             std::vector<gui::MultiComboItem> items = {
@@ -207,19 +241,20 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
                         }
                         gui::end_group();
+
                         ImGui::SameLine(390);
                         if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 5.0f, 5.0f))
                         {
-
-
                         }
                         gui::end_group();
                     }
+
                     // ANTI AIM TAB
                     if (active_tab == 1)
                     {
-
                     }
+
+                    // VISUALS TAB
                     if (active_tab == 2)
                     {
                         if (gui::begin_group_scrollable("ESP PLAYERS", ImVec2(380, 250), 5.0f, 5.0f))
@@ -243,6 +278,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::combo("Distance Position", &CFG::ESP_DistancePosition, std::vector<std::string>{"Side", "Bottom"});
                         }
                         gui::end_group_scrollable();
+
                         ImGui::SameLine(390);
                         if (gui::begin_group("ESP PICKUPS", ImVec2(380, 250), 5.0f, 5.0f))
                         {
@@ -256,6 +292,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Name Capture", CFG::ESP_NameCapture);
                         }
                         gui::end_group();
+
                         if (gui::begin_group("ESP LINES", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             gui::checkbox("Offscreen Indicators", CFG::ESP_Offscreen);
@@ -267,6 +304,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Lag Compensation", CFG::ESP_LagCompensation);
                         }
                         gui::end_group();
+
                         ImGui::SameLine(390);
                         if (gui::begin_group("ESP MEDIC", ImVec2(380, 250), 5.0f, 5.0f))
                         {
@@ -277,10 +315,10 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                         }
                         gui::end_group();
                     }
-                    // SKINS TAB
-                    if (active_tab == 3) // PLAYERS TAB
+
+                    // PLAYERS TAB
+                    if (active_tab == 3)
                     {
-                        // Lista de jogadores (lado esquerdo)
                         if (gui::begin_group_scrollable("PLAYERS IN SERVER", ImVec2(380, 500), 5.0f, 5.0f))
                         {
                             int playerCount = 0;
@@ -312,8 +350,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
 
                                 ImGui::PushID(i);
 
-                                // Determinar cor do nome baseado na flag
-                                ImVec4 nameColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // Default: branco
+                                ImVec4 nameColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
                                 if (priority.Cheater)
                                     nameColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
                                 else if (priority.RetardLegit)
@@ -323,106 +360,199 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 else if (priority.Suspect)
                                     nameColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
                                 else if (priority.RijinUser)
-                                    nameColor = ImVec4(1.0f, 0.0f, 1.0f, 1.0f);
+                                    nameColor = ImVec4(0.0f, 0.5f, 1.0f, 1.0f);
                                 else if (priority.LmaoboxUser)
-                                    nameColor = ImVec4(0.0f, 1.0f, 1.0f, 1.0f);
+                                    nameColor = ImVec4(1.0f, 0.7f, 0.3f, 1.0f);
                                 else if (priority.NethookUser)
                                     nameColor = ImVec4(0.5f, 0.0f, 0.5f, 1.0f);
                                 else if (priority.Ignored)
                                     nameColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 
-                                // Team indicator
                                 int team = pBaseEntity->m_iTeamNum();
                                 const char* teamTag = team == 2 ? "[RED]" : team == 3 ? "[BLU]" : "[SPEC]";
                                 ImVec4 teamColor = team == 2 ? ImVec4(1.0f, 0.2f, 0.2f, 1.0f) :
                                     team == 3 ? ImVec4(0.2f, 0.5f, 1.0f, 1.0f) :
                                     ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
 
-                                // Renderizar linha do jogador
                                 ImGui::TextColored(teamColor, "%s", teamTag);
                                 ImGui::SameLine();
                                 ImGui::PushStyleColor(ImGuiCol_Text, nameColor);
                                 ImGui::Selectable(pi.name, false, 0, ImVec2(320.0f, 0));
                                 ImGui::PopStyleColor();
 
-                                // Menu de contexto (botão direito)
                                 if (ImGui::BeginPopupContextItem())
                                 {
-                                    ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "%s", pi.name);
-                                    ImGui::Spacing();
+                                    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+                                    ImDrawList* draw = ImGui::GetWindowDrawList();
+                                    ImVec2 popup_pos = ImGui::GetWindowPos();
+                                    ImVec2 popup_size(284, 165);
+                                    ImVec2 header_size(284, 35);
 
-                                    // Botões de flag em grid 2x4
-                                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
-                                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 6));
+                                    int grid_size = 5;
+                                    int rows = (int)((popup_size.y - header_size.y) / grid_size);
+                                    int cols = (int)(popup_size.x / grid_size);
 
-                                    // Linha 1
-                                    if (ImGui::Button("Clear All", ImVec2(100, 0)))
+                                    for (int io = 0; io < cols; io++)
                                     {
+                                        for (int jo = 0; jo < rows; jo++)
+                                        {
+                                            float x = popup_pos.x + (io * grid_size);
+                                            float y = popup_pos.y + header_size.y + (jo * grid_size);
+                                            ImU32 color;
+                                            if ((io + jo) % 2 == 0)
+                                                color = IM_COL32(20, 20, 20, 255);
+                                            else
+                                                color = IM_COL32(25, 25, 25, 255);
+                                            draw->AddRectFilled(ImVec2(x, y), ImVec2(x + grid_size, y + grid_size), color);
+                                        }
+                                    }
+
+                                    ImVec2 header_pos = popup_pos;
+                                    ImU32 accent_faded = modify_theme ? IM_COL32(theme_color.r, theme_color.g, theme_color.b, 70) : IM_COL32(0, 122, 187, 70);
+                                    ImU32 accent_main = modify_theme ? IM_COL32(theme_color.r, theme_color.g, theme_color.b, theme_color.a) : IM_COL32(0, 122, 187, 255);
+                                    draw->AddRectFilledMultiColor(
+                                        header_pos,
+                                        ImVec2(header_pos.x + header_size.x, header_pos.y + header_size.y),
+                                        accent_faded,
+                                        accent_faded,
+                                        accent_main,
+                                        accent_main
+                                    );
+
+                                    ImVec2 text_size = ImGui::CalcTextSize(pi.name);
+                                    ImVec2 text_pos(
+                                        header_pos.x + (header_size.x - text_size.x) * 0.5f,
+                                        header_pos.y + (header_size.y - text_size.y) * 0.5f
+                                    );
+
+                                    draw->AddText(ImVec2(text_pos.x + 1, text_pos.y + 1), IM_COL32(10, 10, 10, 200), pi.name);
+                                    draw->AddText(text_pos, IM_COL32(240, 240, 240, 255), pi.name);
+                                    draw->AddRect(popup_pos, ImVec2(popup_pos.x + popup_size.x, popup_pos.y + popup_size.y), IM_COL32(40, 40, 40, 255));
+
+                                    ImGui::SetCursorPos(ImVec2(0, header_size.y));
+                                    ImGui::BeginChild("##buttons", ImVec2(284, 130), false, ImGuiWindowFlags_NoScrollbar);
+
+                                    const float btnWidth = 82.0f;
+                                    const float btnHeight = 32.0f;
+                                    const ImVec2 btnSize(btnWidth, btnHeight);
+                                    const float startX = 12.0f;
+                                    const float startY = 12.0f;
+                                    const float spacingX = 6.0f;
+                                    const float spacingY = 6.0f;
+
+                                    auto draw_flag_button = [&](const char* label, bool active, ImVec4 activeColor, float x, float y) -> bool {
+                                        ImGui::SetCursorPos(ImVec2(x, y));
+                                        ImVec2 pos = ImGui::GetCursorScreenPos();
+                                        bool hovered = ImGui::IsMouseHoveringRect(pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y));
+                                        bool clicked = hovered && ImGui::IsMouseClicked(0);
+
+                                        ImU32 bg_top, bg_bottom;
+                                        if (active) {
+                                            bg_top = IM_COL32(52, 52, 52, 255);
+                                            bg_bottom = IM_COL32(41, 41, 41, 255);
+                                        }
+                                        else if (hovered) {
+                                            bg_top = IM_COL32(35, 35, 35, 255);
+                                            bg_bottom = IM_COL32(25, 25, 25, 255);
+                                        }
+                                        else {
+                                            bg_top = IM_COL32(43, 43, 43, 255);
+                                            bg_bottom = IM_COL32(33, 33, 33, 255);
+                                        }
+
+                                        draw->AddRectFilledMultiColor(
+                                            pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y),
+                                            bg_top, bg_top, bg_bottom, bg_bottom
+                                        );
+
+                                        if (active) {
+                                            ImU32 accent_top = ImGui::ColorConvertFloat4ToU32(ImVec4(activeColor.x, activeColor.y, activeColor.z, 0.4f));
+                                            ImU32 accent_bottom = ImGui::ColorConvertFloat4ToU32(ImVec4(activeColor.x * 0.5f, activeColor.y * 0.5f, activeColor.z * 0.5f, 0.6f));
+                                            draw->AddRectFilledMultiColor(
+                                                pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y),
+                                                accent_top, accent_top, accent_bottom, accent_bottom
+                                            );
+                                        }
+
+                                        ImU32 border_color;
+                                        if (active) {
+                                            border_color = ImGui::ColorConvertFloat4ToU32(activeColor);
+                                        }
+                                        else {
+                                            border_color = IM_COL32(15, 15, 15, 155);
+                                        }
+                                        draw->AddRect(pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y), border_color, 0.0f, 0, 1.0f);
+
+                                        ImVec2 label_size = ImGui::CalcTextSize(label);
+                                        ImVec2 label_pos(
+                                            pos.x + (btnSize.x - label_size.x) * 0.5f,
+                                            pos.y + (btnSize.y - label_size.y) * 0.5f
+                                        );
+
+                                        draw->AddText(ImVec2(label_pos.x + 1, label_pos.y + 1), IM_COL32(10, 10, 10, 150), label);
+
+                                        ImU32 text_color;
+                                        if (active) {
+                                            text_color = ImGui::ColorConvertFloat4ToU32(activeColor);
+                                        }
+                                        else if (hovered) {
+                                            text_color = IM_COL32(220, 220, 220, 255);
+                                        }
+                                        else {
+                                            text_color = IM_COL32(180, 180, 180, 255);
+                                        }
+                                        draw->AddText(label_pos, text_color, label);
+
+                                        ImGui::Dummy(btnSize);
+                                        return clicked;
+                                        };
+
+                                    float col0 = startX;
+                                    float col1 = startX + btnWidth + spacingX;
+                                    float col2 = startX + (btnWidth + spacingX) * 2;
+                                    float row0 = startY;
+                                    float row1 = startY + btnHeight + spacingY;
+                                    float row2 = startY + (btnHeight + spacingY) * 2;
+
+                                    if (draw_flag_button("Cheater", priority.Cheater, ImVec4(1.0f, 0.0f, 0.0f, 1.0f), col0, row0)) {
+                                        priority = {}; priority.Cheater = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    if (draw_flag_button("Retard", priority.RetardLegit, ImVec4(1.0f, 0.5f, 0.0f, 1.0f), col1, row0)) {
+                                        priority = {}; priority.RetardLegit = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    if (draw_flag_button("Light", priority.CheaterLight, ImVec4(1.0f, 0.6f, 0.6f, 1.0f), col2, row0)) {
+                                        priority = {}; priority.CheaterLight = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    if (draw_flag_button("Suspect", priority.Suspect, ImVec4(1.0f, 1.0f, 0.0f, 1.0f), col0, row1)) {
+                                        priority = {}; priority.Suspect = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    if (draw_flag_button("Rijin", priority.RijinUser, ImVec4(0.0f, 0.5f, 1.0f, 1.0f), col1, row1)) {
+                                        priority = {}; priority.RijinUser = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    if (draw_flag_button("Lmaobox", priority.LmaoboxUser, ImVec4(1.0f, 0.7f, 0.3f, 1.0f), col2, row1)) {
+                                        priority = {}; priority.LmaoboxUser = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    if (draw_flag_button("Nethook", priority.NethookUser, ImVec4(0.5f, 0.0f, 0.5f, 1.0f), col0, row2)) {
+                                        priority = {}; priority.NethookUser = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    if (draw_flag_button("Ignored", priority.Ignored, ImVec4(0.5f, 0.5f, 0.5f, 1.0f), col1, row2)) {
+                                        priority = {}; priority.Ignored = true;
+                                        F::Players->Mark(i, priority);
+                                    }
+                                    if (draw_flag_button("Clear All", false, ImVec4(0.4f, 0.4f, 0.4f, 1.0f), col2, row2)) {
                                         F::Players->Mark(i, PlayerPriority{});
                                         ImGui::CloseCurrentPopup();
                                     }
-                                    ImGui::SameLine();
-                                    if (ImGui::Button(priority.Cheater ? "✓ Cheater" : "Cheater", ImVec2(100, 0)))
-                                    {
-                                        priority = {};
-                                        priority.Cheater = true;
-                                        F::Players->Mark(i, priority);
-                                    }
 
-                                    // Linha 2
-                                    if (ImGui::Button(priority.RetardLegit ? "✓ Retard" : "Retard", ImVec2(100, 0)))
-                                    {
-                                        priority = {};
-                                        priority.RetardLegit = true;
-                                        F::Players->Mark(i, priority);
-                                    }
-                                    ImGui::SameLine();
-                                    if (ImGui::Button(priority.CheaterLight ? "✓ Light" : "Light", ImVec2(100, 0)))
-                                    {
-                                        priority = {};
-                                        priority.CheaterLight = true;
-                                        F::Players->Mark(i, priority);
-                                    }
-
-                                    // Linha 3
-                                    if (ImGui::Button(priority.Suspect ? "✓ Suspect" : "Suspect", ImVec2(100, 0)))
-                                    {
-                                        priority = {};
-                                        priority.Suspect = true;
-                                        F::Players->Mark(i, priority);
-                                    }
-                                    ImGui::SameLine();
-                                    if (ImGui::Button(priority.RijinUser ? "✓ Rijin" : "Rijin", ImVec2(100, 0)))
-                                    {
-                                        priority = {};
-                                        priority.RijinUser = true;
-                                        F::Players->Mark(i, priority);
-                                    }
-
-                                    // Linha 4
-                                    if (ImGui::Button(priority.LmaoboxUser ? "✓ Lmaobox" : "Lmaobox", ImVec2(100, 0)))
-                                    {
-                                        priority = {};
-                                        priority.LmaoboxUser = true;
-                                        F::Players->Mark(i, priority);
-                                    }
-                                    ImGui::SameLine();
-                                    if (ImGui::Button(priority.NethookUser ? "✓ Nethook" : "Nethook", ImVec2(100, 0)))
-                                    {
-                                        priority = {};
-                                        priority.NethookUser = true;
-                                        F::Players->Mark(i, priority);
-                                    }
-
-                                    // Linha 5
-                                    if (ImGui::Button(priority.Ignored ? "✓ Ignored" : "Ignored", ImVec2(100, 0)))
-                                    {
-                                        priority = {};
-                                        priority.Ignored = true;
-                                        F::Players->Mark(i, priority);
-                                    }
-
-                                    ImGui::PopStyleVar(2);
+                                    ImGui::EndChild();
+                                    ImGui::PopStyleVar();
                                     ImGui::EndPopup();
                                 }
                                 ImGui::PopID();
@@ -436,72 +566,201 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                         }
                         gui::end_group_scrollable();
 
-                        // Legenda (lado direito)
                         ImGui::SameLine(390);
                         if (gui::begin_group_scrollable("LEGEND & INFO", ImVec2(380, 500), 5.0f, 5.0f))
                         {
-                            ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "TEAM INDICATORS");
-                            ImGui::Spacing();
-                            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "[RED]");
-                            ImGui::SameLine();
-                            ImGui::TextColored(ImVec4(0.2f, 0.5f, 1.0f, 1.0f), "[BLU]");
-                            ImGui::SameLine();
-                            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "[SPEC]");
-                            ImGui::Spacing();
-                            ImGui::Spacing();
-
                             ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "PLAYER FLAGS");
-                            ImGui::Spacing();
-                            ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Clean Player");
-                            ImGui::TextDisabled("No flags assigned");
-                            ImGui::Spacing();
+                            ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Clean");
+                            ImGui::SameLine(80); ImGui::TextDisabled("No flags");
                             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Cheater");
-                            ImGui::TextDisabled("Confirmed cheater");
-                            ImGui::Spacing();
-                            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Retard Legit");
-                            ImGui::TextDisabled("Suspicious legit player");
-                            ImGui::Spacing();
-                            ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.6f, 1.0f), "Cheater Light");
-                            ImGui::TextDisabled("Likely soft cheats");
-                            ImGui::Spacing();
+                            ImGui::SameLine(80); ImGui::TextDisabled("Confirmed cheater");
+                            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Retard");
+                            ImGui::SameLine(80); ImGui::TextDisabled("Suspicious legit");
+                            ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.6f, 1.0f), "Light");
+                            ImGui::SameLine(80); ImGui::TextDisabled("Soft cheats");
                             ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Suspect");
-                            ImGui::TextDisabled("Under observation");
-                            ImGui::Spacing();
-                            ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Rijin User");
-                            ImGui::TextDisabled("Using Rijin cheat");
-                            ImGui::Spacing();
-                            ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Lmaobox User");
-                            ImGui::TextDisabled("Using Lmaobox");
-                            ImGui::Spacing();
-                            ImGui::TextColored(ImVec4(0.5f, 0.0f, 0.5f, 1.0f), "Nethook User");
-                            ImGui::TextDisabled("Using Nethook");
-                            ImGui::Spacing();
+                            ImGui::SameLine(80); ImGui::TextDisabled("Under observation");
+                            ImGui::TextColored(ImVec4(0.0f, 0.5f, 1.0f, 1.0f), "Rijin");
+                            ImGui::SameLine(80); ImGui::TextDisabled("Rijin cheat");
+                            ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.3f, 1.0f), "Lmaobox");
+                            ImGui::SameLine(80); ImGui::TextDisabled("Lmaobox cheat");
+                            ImGui::TextColored(ImVec4(0.5f, 0.0f, 0.5f, 1.0f), "Nethook");
+                            ImGui::SameLine(80); ImGui::TextDisabled("Nethook cheat");
                             ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Ignored");
-                            ImGui::TextDisabled("Player is ignored");
+                            ImGui::SameLine(80); ImGui::TextDisabled("Player ignored");
                             ImGui::Spacing();
-                            ImGui::Spacing();
-
                             ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "HOW TO USE");
-                            ImGui::Spacing();
-                            ImGui::TextWrapped("Right-click any player to assign flags using the button grid.");
-                            ImGui::Spacing();
-                            ImGui::TextWrapped("Manual flags persist between sessions and appear with colored names.");
-                            ImGui::Spacing();
-                            ImGui::TextWrapped("Use 'Clear All' to remove all flags from a player.");
+                            ImGui::TextWrapped("Right-click players to assign flags. Manual flags persist between sessions. Use 'Clear All' to remove flags.");
                         }
                         gui::end_group_scrollable();
                     }
-                    // MISC TAB
 
+                    // MISC TAB - WITH CONFIG SYSTEM
                     if (active_tab == 4)
                     {
+                        ImGui::BeginGroup();
+                        {
+                            if (gui::begin_group_scrollable("RESTRICTIONS", ImVec2(380, 160), 5.0f, 0.0f))
+                            {
+                                static bool accord_limit = false;
+                                static bool remove_hidden = false;
+                                gui::checkbox("Accord limitcheck", accord_limit);
+                                gui::checkbox("Remove hidden cmds", remove_hidden);
+
+                                gui::checkbox("Modify menu theme", modify_theme);
+                                ImGui::SameLine(350.0f);
+                                gui::color_picker("##theme_color", &theme_color, false);
+
+                                // Atualizar o tema se mudou
+                                if (modify_theme != old_modify_theme ||
+                                    theme_color.r != old_theme_color.r ||
+                                    theme_color.g != old_theme_color.g ||
+                                    theme_color.b != old_theme_color.b ||
+                                    theme_color.a != old_theme_color.a)
+                                {
+                                    gui::set_theme(modify_theme ?
+                                        ImVec4(theme_color.r / 255.0f, theme_color.g / 255.0f, theme_color.b / 255.0f, 1.0f) :
+                                        ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f));
+                                    old_modify_theme = modify_theme;
+                                    old_theme_color = theme_color;
+                                    CFG::Menu_ModifyTheme = modify_theme;
+                                    CFG::Menu_ThemeColor = theme_color;
+                                }
+                            }
+                            gui::end_group_scrollable();
+
+                            if (gui::begin_group_scrollable("MOVEMENT", ImVec2(380, 330), 5.0f, 5.0f))
+                            {
+                                static bool auto_hop = false;
+                                static bool air_duck = false;
+                                static bool slide_walk = false;
+                                static int autostrafe_mode = 0;
+
+                                gui::checkbox("Auto hop", auto_hop);
+                                gui::checkbox("Air duck", air_duck);
+                                gui::checkbox("Slide walk", slide_walk);
+
+                                const char* autostrafe_modes[] = { "None", "Edge jump", "Reverse duck distance", "Fastduck", "Fast walk" };
+                                gui::combo("Autostrafe", &autostrafe_mode, autostrafe_modes, 5);
+
+                                ImGui::Spacing();
+
+                                ImDrawList* draw = ImGui::GetWindowDrawList();
+                                ImVec2 cursor_start = ImGui::GetCursorScreenPos();
+                                float line_height = 22.0f;
+                                float label_x = cursor_start.x;
+                                float keybind_x = cursor_start.x + 260.0f;
+
+                                draw->AddText(ImVec2(label_x, cursor_start.y), IM_COL32(180, 180, 180, 255), "Edge jump");
+                                draw->AddText(ImVec2(keybind_x, cursor_start.y), IM_COL32(150, 150, 150, 255), "[ NONE ]");
+                                ImGui::Dummy(ImVec2(0, line_height));
+
+                                cursor_start = ImGui::GetCursorScreenPos();
+                                draw->AddText(ImVec2(label_x, cursor_start.y), IM_COL32(180, 180, 180, 255), "Reverse duck distance");
+                                draw->AddText(ImVec2(keybind_x, cursor_start.y), IM_COL32(150, 150, 150, 255), "[ NONE ]");
+                                ImGui::Dummy(ImVec2(0, line_height));
+
+                                cursor_start = ImGui::GetCursorScreenPos();
+                                draw->AddText(ImVec2(label_x, cursor_start.y), IM_COL32(180, 180, 180, 255), "Fastduck");
+                                draw->AddText(ImVec2(keybind_x, cursor_start.y), IM_COL32(150, 150, 150, 255), "[ NONE ]");
+                                ImGui::Dummy(ImVec2(0, line_height));
+
+                                cursor_start = ImGui::GetCursorScreenPos();
+                                draw->AddText(ImVec2(label_x, cursor_start.y), IM_COL32(180, 180, 180, 255), "Fast walk");
+                                draw->AddText(ImVec2(keybind_x, cursor_start.y), IM_COL32(150, 150, 150, 255), "[ NONE ]");
+                                ImGui::Dummy(ImVec2(0, line_height));
+                            }
+                            gui::end_group_scrollable();
+                        }
+                        ImGui::EndGroup();
+
+                        // CONFIG SYSTEM - RIGHT COLUMN
+                        ImGui::SameLine(390);
+                        if (gui::begin_group_scrollable("CONFIG", ImVec2(380, 500), 5.0f, 5.0f))
+                        {
+                            gui::listbox("##config_listbox", &selected_config, config_list, 6, 360.0f, 145.0f);
+
+                            ImGui::Spacing();
+                            ImGui::Spacing();
+
+                            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
+                            ImGui::Text("New config name");
+                            ImGui::PopStyleColor();
+
+                            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.15f, 1.0f));
+                            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(120, 120, 120, 255));
+                            ImGui::PushItemWidth(360.0f);
+                            ImGui::InputText("##new_config", new_config_name, IM_ARRAYSIZE(new_config_name));
+                            ImGui::PopItemWidth();
+                            ImGui::PopStyleColor(2);
+
+                            ImGui::Spacing();
+                            ImGui::Spacing();
+
+                            // CONFIG BUTTONS WITH FUNCTIONALITY
+                            if (gui::button("Refresh", ImVec2(360, 30)))
+                            {
+                                config_list = Config::RefreshConfigFiles();
+                                if (selected_config >= config_list.size())
+                                    selected_config = config_list.empty() ? 0 : config_list.size() - 1;
+                            }
+
+                            if (gui::button("Create", ImVec2(360, 30)))
+                            {
+                                if (strlen(new_config_name) > 0)
+                                {
+                                    Config::CreateConfig(new_config_name);
+                                    config_list = Config::RefreshConfigFiles();
+
+                                    for (size_t i = 0; i < config_list.size(); i++)
+                                    {
+                                        if (config_list[i] == new_config_name)
+                                        {
+                                            selected_config = i;
+                                            break;
+                                        }
+                                    }
+
+                                    memset(new_config_name, 0, sizeof(new_config_name));
+                                }
+                            }
+
+                            if (gui::button("Save", ImVec2(360, 30)))
+                            {
+                                if (!config_list.empty() && selected_config >= 0 && selected_config < config_list.size())
+                                {
+                                    Config::SaveConfig(config_list[selected_config]);
+                                }
+                            }
+
+                            if (gui::button("Load", ImVec2(360, 30)))
+                            {
+                                if (!config_list.empty() && selected_config >= 0 && selected_config < config_list.size())
+                                {
+                                    Config::LoadConfig(config_list[selected_config]);
+                                }
+                            }
+
+                            if (gui::button("Delete", ImVec2(360, 30)))
+                            {
+                                if (!config_list.empty() && selected_config >= 0 && selected_config < config_list.size())
+                                {
+                                    Config::DeleteConfig(config_list[selected_config]);
+                                    config_list = Config::RefreshConfigFiles();
+                                    if (selected_config >= config_list.size())
+                                        selected_config = config_list.empty() ? 0 : config_list.size() - 1;
+                                }
+                            }
+                        }
+                        gui::end_group_scrollable();
                     }
-                    ImGui::EndGroup();
                 }
+                ImGui::EndGroup();
             }
             ImGui::End();
         }
         ImGui::EndFrame();
+
         ImGui::Render();
         ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
         pStateBlock->Apply();
@@ -510,11 +769,13 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
     RestoreState(pDevice);
     return oEndScene(pDevice);
 }
+
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (alive && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
         return true;
     return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 }
+
 BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam)
 {
     DWORD wndProcId;
@@ -524,16 +785,19 @@ BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam)
     window = handle;
     return FALSE;
 }
+
 HWND GetProcessWindow()
 {
     window = NULL;
     EnumWindows(EnumWindowsCallback, NULL);
     return window;
 }
+
 DWORD WINAPI MainThread(LPVOID lpReserved)
 {
     hmod = static_cast<HMODULE>(lpReserved);
     App->Start();
+
     bool attached = false;
     while (!attached && alive)
     {
@@ -550,63 +814,32 @@ DWORD WINAPI MainThread(LPVOID lpReserved)
         }
         Sleep(100);
     }
+
     App->Loop();
+
     while (alive)
     {
         Sleep(100);
     }
+
     if (window && oWndProc)
         SetWindowLongPtr(window, GWL_WNDPROC, (LONG_PTR)oWndProc);
+
     kiero::shutdown();
+
     if (init)
     {
         ImGui_ImplDX9_Shutdown();
         ImGui_ImplWin32_Shutdown();
         ImGui::DestroyContext();
     }
+
     App->Shutdown();
     Sleep(500);
     FreeLibraryAndExitThread(hmod, 0);
     return 0;
 }
-/*
-DWORD WINAPI MainThread(LPVOID lpReserved)
-{
-    hmod = static_cast<HMODULE>(lpReserved);
-    //App->Start();
-    bool attached = false;
-    while (!attached)
-    {
-        if (kiero::init(kiero::RenderType::D3D9) == kiero::Status::Success)
-        {
-            kiero::bind(42, (void**)&oEndScene, hkEndScene);
-            while (window == NULL) {
-                window = GetProcessWindow();
-                Sleep(100);
-            }
-            oWndProc = (WNDPROC)SetWindowLongPtr(window, GWL_WNDPROC, (LONG_PTR)WndProc);
-            attached = true;
-        }
-        Sleep(100);
-    }
-    while (alive)
-    {
-        Sleep(100);
-    }
-    if (window && oWndProc)
-        SetWindowLongPtr(window, GWL_WNDPROC, (LONG_PTR)oWndProc);
-    kiero::shutdown();
-    if (init)
-    {
-        ImGui_ImplDX9_Shutdown();
-        ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
-    }
-    Sleep(200);
-    FreeLibraryAndExitThread(hmod, 0);
-    return 0;
-}
-*/
+
 BOOL WINAPI DllMain(HMODULE hMod, DWORD dwReason, LPVOID lpReserved)
 {
     switch (dwReason)

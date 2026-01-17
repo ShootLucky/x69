@@ -15,7 +15,7 @@ namespace gui
 
     ImFont* title_font = nullptr;
 
-    void set_theme()
+    void set_theme(ImVec4 accent_color = ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f))
     {
         ImGuiStyle& style = ImGui::GetStyle();
         ImVec4* colors = style.Colors;
@@ -29,7 +29,7 @@ namespace gui
         style.FramePadding = ImVec2(5.f, 3.f);
         style.WindowTitleAlign = ImVec2(0.50f, 0.50f);
         style.ItemSpacing = ImVec2(0.f, 4.f);
-        style.ScrollbarSize = 4.0f;  // Scrollbar fino (4 pixels de largura)
+        style.ScrollbarSize = 4.0f;
         style.ScrollbarRounding = 2.0f;
 
 
@@ -47,32 +47,32 @@ namespace gui
         colors[ImGuiCol_TitleBgActive] = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
         colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
         colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
-        colors[ImGuiCol_ScrollbarBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);  // Background transparente
-        colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);  // Grab mais escuro
-        colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);  // Hover um pouco mais claro
+        colors[ImGuiCol_ScrollbarBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+        colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);
+        colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
         colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.4f, 0.4f, 0.4f, 1.00f);
-        colors[ImGuiCol_CheckMark] = ImVec4(0.69f, 0.27f, 0.95f, 1.00f);
-        colors[ImGuiCol_SliderGrab] = ImVec4(0.24f, 0.52f, 0.88f, 1.00f);
-        colors[ImGuiCol_SliderGrabActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+        colors[ImGuiCol_CheckMark] = accent_color;
+        colors[ImGuiCol_SliderGrab] = accent_color;
+        colors[ImGuiCol_SliderGrabActive] = accent_color;
         colors[ImGuiCol_Button] = ImVec4(0.07f, 0.08f, 0.09f, 1.00f);
-        colors[ImGuiCol_ButtonHovered] = ImVec4(0.59f, 0.00f, 1.00f, 1.00f);
-        colors[ImGuiCol_ButtonActive] = ImVec4(0.59f, 0.00f, 1.00f, 1.00f);
-        colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
-        colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
-        colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-        colors[ImGuiCol_Separator] = ImVec4(0.62f, 0.00f, 1.00f, 1.00f);
-        colors[ImGuiCol_SeparatorHovered] = ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
-        colors[ImGuiCol_SeparatorActive] = ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
-        colors[ImGuiCol_ResizeGrip] = ImVec4(0.26f, 0.59f, 0.98f, 0.20f);
-        colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
-        colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
-        colors[ImGuiCol_TabHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
-        colors[ImGuiCol_Tab] = ImVec4(0.18f, 0.35f, 0.58f, 0.86f);
+        colors[ImGuiCol_ButtonHovered] = accent_color;
+        colors[ImGuiCol_ButtonActive] = accent_color;
+        colors[ImGuiCol_Header] = accent_color;
+        colors[ImGuiCol_HeaderHovered] = accent_color;
+        colors[ImGuiCol_HeaderActive] = accent_color;
+        colors[ImGuiCol_Separator] = accent_color;
+        colors[ImGuiCol_SeparatorHovered] = ImVec4(accent_color.x * 0.5f, accent_color.y * 0.5f, accent_color.z * 0.5f, accent_color.w);
+        colors[ImGuiCol_SeparatorActive] = ImVec4(accent_color.x * 0.5f, accent_color.y * 0.5f, accent_color.z * 0.5f, accent_color.w);
+        colors[ImGuiCol_ResizeGrip] = ImVec4(accent_color.x * 0.5f, accent_color.y * 0.5f, accent_color.z * 0.5f, accent_color.w * 0.2f);
+        colors[ImGuiCol_ResizeGripHovered] = ImVec4(accent_color.x * 0.67f, accent_color.y * 0.67f, accent_color.z * 0.67f, accent_color.w);
+        colors[ImGuiCol_ResizeGripActive] = ImVec4(accent_color.x * 0.95f, accent_color.y * 0.95f, accent_color.z * 0.95f, accent_color.w);
+        colors[ImGuiCol_TabHovered] = ImVec4(accent_color.x * 0.8f, accent_color.y * 0.8f, accent_color.z * 0.8f, accent_color.w);
+        colors[ImGuiCol_Tab] = ImVec4(accent_color.x * 0.58f, accent_color.y * 0.58f, accent_color.z * 0.58f, accent_color.w * 0.86f);
         colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
         colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
         colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
         colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-        colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+        colors[ImGuiCol_TextSelectedBg] = ImVec4(accent_color.x * 0.35f, accent_color.y * 0.35f, accent_color.z * 0.35f, accent_color.w);
         colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
         colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
         colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
@@ -1109,10 +1109,17 @@ namespace gui
         return changed;
     }
 
-    struct RGB { double r, g, b; };
-    struct HSV { double h, s, v; };
+    struct RGB {
+        double r, g, b;
+    };
 
-    HSV rgb_to_hsv(const RGB& In) {
+    struct HSV {
+        double h, s, v;
+    };
+
+    // ===== FUNÇÕES DE CONVERSÃO =====
+    HSV rgb_to_hsv(const RGB& In)
+    {
         HSV m_Result;
         double Min, Max, Delta;
 
@@ -1143,20 +1150,25 @@ namespace gui
         if (In.r >= Max) {
             m_Result.h = (In.g - In.b) / Delta;
         }
-        else if (In.g >= Max) {
-            m_Result.h = 2 + (In.b - In.r) / Delta;
-        }
         else {
-            m_Result.h = 4 + (In.r - In.g) / Delta;
+            if (In.g >= Max) {
+                m_Result.h = 2 + (In.b - In.r) / Delta;
+            }
+            else {
+                m_Result.h = 4 + (In.r - In.g) / Delta;
+            }
         }
 
         m_Result.h *= 60;
-        if (m_Result.h < 0) m_Result.h += 360;
+
+        if (m_Result.h < 0)
+            m_Result.h += 360;
 
         return m_Result;
     }
 
-    RGB hsv_to_rgb(const HSV& In) {
+    RGB hsv_to_rgb(const HSV& In)
+    {
         RGB m_Result;
         double HH, P, Q, T, FF;
         long i;
@@ -1171,47 +1183,59 @@ namespace gui
         HH = (In.h >= 360 ? 0 : In.h) / 60;
         i = (long)HH;
         FF = HH - i;
-
         P = In.v * (1 - In.s);
         Q = In.v * (1 - (In.s * FF));
         T = In.v * (1 - (In.s * (1 - FF)));
 
         switch (i) {
-        case 0: m_Result.r = In.v; m_Result.g = T; m_Result.b = P; break;
-        case 1: m_Result.r = Q; m_Result.g = In.v; m_Result.b = P; break;
-        case 2: m_Result.r = P; m_Result.g = In.v; m_Result.b = T; break;
-        case 3: m_Result.r = P; m_Result.g = Q; m_Result.b = In.v; break;
-        case 4: m_Result.r = T; m_Result.g = P; m_Result.b = In.v; break;
-        case 5: default: m_Result.r = In.v; m_Result.g = P; m_Result.b = Q; break;
+        case 0:
+            m_Result.r = In.v;
+            m_Result.g = T;
+            m_Result.b = P;
+            break;
+        case 1:
+            m_Result.r = Q;
+            m_Result.g = In.v;
+            m_Result.b = P;
+            break;
+        case 2:
+            m_Result.r = P;
+            m_Result.g = In.v;
+            m_Result.b = T;
+            break;
+        case 3:
+            m_Result.r = P;
+            m_Result.g = Q;
+            m_Result.b = In.v;
+            break;
+        case 4:
+            m_Result.r = T;
+            m_Result.g = P;
+            m_Result.b = In.v;
+            break;
+        case 5:
+        default:
+            m_Result.r = In.v;
+            m_Result.g = P;
+            m_Result.b = Q;
+            break;
         }
 
         return m_Result;
     }
 
-    struct Color {
-        int r, g, b, a;
-        Color(int _r = 255, int _g = 255, int _b = 255, int _a = 255) : r(_r), g(_g), b(_b), a(_a) {}
-        ImU32 ToU32() const { return IM_COL32(r, g, b, a); }
-        ImVec4 ToVec4() const { return ImVec4(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f); }
-        void FromHSV(float h, float s, float v, float alpha = 1.0f) {
-            RGB rgb = hsv_to_rgb({ h * 360.0, s, v });
-            r = static_cast<int>(rgb.r * 255.0f);
-            g = static_cast<int>(rgb.g * 255.0f);
-            b = static_cast<int>(rgb.b * 255.0f);
-            a = static_cast<int>(alpha * 255.0f);
-        }
+    // ===== CORES DA BARRA DE HUE =====
+    static Color_t bar_colors[7] = {
+        Color_t(255, 0, 0, 255),
+        Color_t(255, 255, 0, 255),
+        Color_t(0, 255, 0, 255),
+        Color_t(0, 255, 255, 255),
+        Color_t(0, 0, 255, 255),
+        Color_t(255, 0, 255, 255),
+        Color_t(255, 0, 0, 255)
     };
 
-    static ImU32 bar_colors[7] = {
-        IM_COL32(255, 0, 0, 255),
-        IM_COL32(255, 255, 0, 255),
-        IM_COL32(0, 255, 0, 255),
-        IM_COL32(0, 255, 255, 255),
-        IM_COL32(0, 0, 255, 255),
-        IM_COL32(255, 0, 255, 255),
-        IM_COL32(255, 0, 0, 255)
-    };
-
+    // ===== ESTADO DO COLOR PICKER =====
     struct ColorPickerState {
         bool open = false;
         float hue = 0.0f;
@@ -1222,7 +1246,8 @@ namespace gui
 
     static std::map<ImGuiID, ColorPickerState> color_picker_states;
 
-    bool color_picker(const char* label, Color* color, bool show_alpha = true) {
+    // ===== FUNÇÃO COLOR PICKER =====
+    bool color_picker(const char* label, Color_t* color, bool show_alpha = true) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
 
@@ -1230,20 +1255,34 @@ namespace gui
         ColorPickerState& state = color_picker_states[id];
 
         ImVec2 pos = ImGui::GetCursorScreenPos();
-
         ImDrawList* draw = window->DrawList;
-        draw->AddRectFilled(ImVec2(pos.x, pos.y), ImVec2(pos.x + 16.0f, pos.y + 8.0f), color->ToU32());
-        draw->AddRect(ImVec2(pos.x, pos.y), ImVec2(pos.x + 16.0f, pos.y + 8.0f), IM_COL32(15, 15, 15, 155));
+
+        // Preview box (quadradinho de cor)
+        draw->AddRectFilled(
+            ImVec2(pos.x, pos.y),
+            ImVec2(pos.x + 16.0f, pos.y + 8.0f),
+            IM_COL32(color->r, color->g, color->b, color->a)
+        );
+        draw->AddRect(
+            ImVec2(pos.x, pos.y),
+            ImVec2(pos.x + 16.0f, pos.y + 8.0f),
+            IM_COL32(15, 15, 15, 155)
+        );
 
         ImGui::SetCursorScreenPos(pos);
         ImGui::InvisibleButton("##color_picker_preview", ImVec2(16.0f, 8.0f));
 
         bool changed = false;
 
+        // Abrir/fechar ao clicar
         if (ImGui::IsItemClicked()) {
             state.open = !state.open;
             if (state.open) {
-                HSV hsv = rgb_to_hsv({ color->r / 255.0, color->g / 255.0, color->b / 255.0 });
+                HSV hsv = rgb_to_hsv({
+                    (double)(color->r / 255.0),
+                    (double)(color->g / 255.0),
+                    (double)(color->b / 255.0)
+                    });
                 state.hue = static_cast<float>(hsv.h / 360.0);
                 state.cursor_pos.x = static_cast<float>(hsv.s * 150.0f);
                 state.cursor_pos.y = 150.0f - static_cast<float>(hsv.v * 150.0f);
@@ -1251,103 +1290,257 @@ namespace gui
             }
         }
 
-        float target_alpha = state.open ? 255.0f : 0.0f;
-        state.anim_alpha += (target_alpha - state.anim_alpha) * 0.1f;
+        // Animação
+        float target_alpha = state.open ? 1.0f : 0.0f;
+        state.anim_alpha += (target_alpha - state.anim_alpha) * 0.15f;
 
         if (state.anim_alpha > 0.01f) {
-            ImU32 alpha_u = static_cast<ImU32>(state.anim_alpha);
+            int alpha_int = static_cast<int>(state.anim_alpha * 255);
+            if (alpha_int > 255) alpha_int = 255;
+            if (alpha_int < 0) alpha_int = 0;
 
-            ImDrawList* fg_draw = ImGui::GetForegroundDrawList();
+            draw = ImGui::GetForegroundDrawList();
 
-            fg_draw->AddRectFilled(ImVec2(pos.x + 23.0f, pos.y), ImVec2(pos.x + 203.0f, pos.y + 180.0f), IM_COL32(35, 35, 35, alpha_u));
-            fg_draw->AddRect(ImVec2(pos.x + 23.0f, pos.y), ImVec2(pos.x + 203.0f, pos.y + 180.0f), IM_COL32(15, 15, 15, alpha_u));
+            // Fundo do picker
+            draw->AddRectFilled(
+                ImVec2(pos.x + 23, pos.y),
+                ImVec2(pos.x + 203, pos.y + 180),
+                IM_COL32(35, 35, 35, alpha_int)
+            );
+            draw->AddRect(
+                ImVec2(pos.x + 23, pos.y),
+                ImVec2(pos.x + 203, pos.y + 180),
+                IM_COL32(15, 15, 15, alpha_int)
+            );
 
-            fg_draw->AddRect(ImVec2(pos.x + 29.0f, pos.y + 6.0f), ImVec2(pos.x + 180.0f, pos.y + 162.0f), IM_COL32(15, 15, 15, alpha_u));
+            // Área de seleção de cor (Saturação/Brilho)
+            draw->AddRect(
+                ImVec2(pos.x + 29, pos.y + 6),
+                ImVec2(pos.x + 180, pos.y + 162),
+                IM_COL32(15, 15, 15, alpha_int)
+            );
 
             RGB hue_rgb = hsv_to_rgb({ state.hue * 360.0, 1.0, 1.0 });
-            fg_draw->AddRectFilledMultiColor(ImVec2(pos.x + 30.0f, pos.y + 7.0f), ImVec2(pos.x + 180.0f, pos.y + 163.0f),
-                IM_COL32(255, 255, 255, alpha_u), IM_COL32(static_cast<int>(hue_rgb.r * 255), static_cast<int>(hue_rgb.g * 255), static_cast<int>(hue_rgb.b * 255), alpha_u),
-                IM_COL32(255, 255, 255, alpha_u), IM_COL32(static_cast<int>(hue_rgb.r * 255), static_cast<int>(hue_rgb.g * 255), static_cast<int>(hue_rgb.b * 255), alpha_u));
+            draw->AddRectFilledMultiColor(
+                ImVec2(pos.x + 30, pos.y + 7),
+                ImVec2(pos.x + 180, pos.y + 163),
+                IM_COL32(255, 255, 255, alpha_int),
+                IM_COL32((int)(hue_rgb.r * 255), (int)(hue_rgb.g * 255), (int)(hue_rgb.b * 255), alpha_int),
+                IM_COL32(255, 255, 255, alpha_int),
+                IM_COL32((int)(hue_rgb.r * 255), (int)(hue_rgb.g * 255), (int)(hue_rgb.b * 255), alpha_int)
+            );
 
-            fg_draw->AddRectFilledMultiColor(ImVec2(pos.x + 30.0f, pos.y + 7.0f), ImVec2(pos.x + 180.0f, pos.y + 163.0f),
-                IM_COL32(0, 0, 0, 0), IM_COL32(0, 0, 0, 0),
-                IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 255));
+            // Overlay de preto (controlar brilho)
+            draw->AddRectFilledMultiColor(
+                ImVec2(pos.x + 30, pos.y + 7),
+                ImVec2(pos.x + 180, pos.y + 163),
+                IM_COL32(0, 0, 0, 0),
+                IM_COL32(0, 0, 0, 0),
+                IM_COL32(0, 0, 0, 255),
+                IM_COL32(0, 0, 0, 255)
+            );
 
-            fg_draw->AddRectFilled(ImVec2(pos.x + 30.0f + state.cursor_pos.x - 2.0f, pos.y + 7.0f + state.cursor_pos.y - 2.0f),
-                ImVec2(pos.x + 30.0f + state.cursor_pos.x + 2.0f, pos.y + 7.0f + state.cursor_pos.y + 2.0f),
-                IM_COL32(130, 130, 170, alpha_u));
+            // Cursor de seleção
+            draw->AddRectFilled(
+                ImVec2(pos.x + 30 + (148.0f * (state.cursor_pos.x / 150.0f)),
+                    pos.y + 6 + (148.0f * (state.cursor_pos.y / 150.0f))),
+                ImVec2(pos.x + 34 + (148.0f * (state.cursor_pos.x / 150.0f)),
+                    pos.y + 10 + (148.0f * (state.cursor_pos.y / 150.0f))),
+                IM_COL32(130, 130, 170, alpha_int)
+            );
 
-            fg_draw->AddRect(ImVec2(pos.x + 30.0f, pos.y + 167.0f), ImVec2(pos.x + 180.0f, pos.y + 175.0f), IM_COL32(15, 15, 15, alpha_u));
+            // Barra de HUE
+            draw->AddRect(
+                ImVec2(pos.x + 30, pos.y + 167),
+                ImVec2(pos.x + 180, pos.y + 175),
+                IM_COL32(15, 15, 15, alpha_int)
+            );
 
             for (int i = 0; i < 6; ++i) {
-                fg_draw->AddRectFilledMultiColor(ImVec2(pos.x + 30.0f + i * 25.0f, pos.y + 167.0f), ImVec2(pos.x + 30.0f + (i + 1) * 25.0f, pos.y + 175.0f),
-                    bar_colors[i], bar_colors[i + 1],
-                    bar_colors[i], bar_colors[i + 1]);
+                draw->AddRectFilledMultiColor(
+                    ImVec2(pos.x + 30 + (25 * i), pos.y + 167),
+                    ImVec2(pos.x + 30 + (25 * (i + 1)), pos.y + 175),
+                    IM_COL32(bar_colors[i].r, bar_colors[i].g, bar_colors[i].b, bar_colors[i].a),
+                    IM_COL32(bar_colors[i + 1].r, bar_colors[i + 1].g, bar_colors[i + 1].b, bar_colors[i + 1].a),
+                    IM_COL32(bar_colors[i].r, bar_colors[i].g, bar_colors[i].b, bar_colors[i].a),
+                    IM_COL32(bar_colors[i + 1].r, bar_colors[i + 1].g, bar_colors[i + 1].b, bar_colors[i + 1].a)
+                );
             }
 
-            fg_draw->AddRectFilled(ImVec2(pos.x + 30.0f + (150.0f * state.hue), pos.y + 166.0f),
-                ImVec2(pos.x + 33.0f + (150.0f * state.hue), pos.y + 177.0f),
-                IM_COL32(154, 152, 155, alpha_u));
-            fg_draw->AddRect(ImVec2(pos.x + 29.0f + (150.0f * state.hue), pos.y + 165.0f),
-                ImVec2(pos.x + 33.0f + (150.0f * state.hue), pos.y + 177.0f),
-                IM_COL32(15, 15, 15, alpha_u));
+            // Indicador de HUE
+            draw->AddRectFilled(
+                ImVec2(pos.x + 30 + (150.0f * state.hue), pos.y + 166),
+                ImVec2(pos.x + 33 + (150.0f * state.hue), pos.y + 177),
+                IM_COL32(154, 152, 155, alpha_int)
+            );
+            draw->AddRect(
+                ImVec2(pos.x + 29 + (150.0f * state.hue), pos.y + 165),
+                ImVec2(pos.x + 33 + (150.0f * state.hue), pos.y + 177),
+                IM_COL32(15, 15, 15, alpha_int)
+            );
 
+            // Barra de Alpha (se habilitada)
             if (show_alpha) {
-                fg_draw->AddRect(ImVec2(pos.x + 187.0f, pos.y + 7.0f), ImVec2(pos.x + 195.0f, pos.y + 162.0f), IM_COL32(15, 15, 15, alpha_u));
-                fg_draw->AddRectFilledMultiColor(ImVec2(pos.x + 187.0f, pos.y + 7.0f), ImVec2(pos.x + 195.0f, pos.y + 162.0f),
-                    IM_COL32(color->r, color->g, color->b, 0), IM_COL32(color->r, color->g, color->b, 0),
-                    IM_COL32(color->r, color->g, color->b, 255), IM_COL32(color->r, color->g, color->b, 255));
+                draw->AddRect(
+                    ImVec2(pos.x + 187, pos.y + 7),
+                    ImVec2(pos.x + 195, pos.y + 162),
+                    IM_COL32(15, 15, 15, alpha_int)
+                );
 
-                fg_draw->AddRectFilled(ImVec2(pos.x + 186.0f, pos.y + 7.0f + (155.0f * state.alpha)),
-                    ImVec2(pos.x + 197.0f, pos.y + 10.0f + (155.0f * state.alpha)),
-                    IM_COL32(153, 153, 159, alpha_u));
-                fg_draw->AddRect(ImVec2(pos.x + 185.0f, pos.y + 6.0f + (155.0f * state.alpha)),
-                    ImVec2(pos.x + 197.0f, pos.y + 10.0f + (155.0f * state.alpha)),
-                    IM_COL32(15, 15, 15, alpha_u));
+                draw->AddRectFilledMultiColor(
+                    ImVec2(pos.x + 187, pos.y + 7),
+                    ImVec2(pos.x + 195, pos.y + 162),
+                    IM_COL32(color->r, color->g, color->b, 0),
+                    IM_COL32(color->r, color->g, color->b, 0),
+                    IM_COL32(color->r, color->g, color->b, 255),
+                    IM_COL32(color->r, color->g, color->b, 255)
+                );
 
-                fg_draw->AddRectFilled(ImVec2(pos.x + 187.0f, pos.y + 7.0f + (155.0f * state.alpha)),
-                    ImVec2(pos.x + 195.0f, pos.y + 8.0f + (155.0f * state.alpha)),
-                    IM_COL32(153, 153, 159, alpha_u));
-                fg_draw->AddRectFilled(ImVec2(pos.x + 187.0f, pos.y + 6.0f + (155.0f * state.alpha)),
-                    ImVec2(pos.x + 195.0f, pos.y + 7.0f + (155.0f * state.alpha)),
-                    IM_COL32(153, 153, 159, alpha_u));
+                draw->AddRectFilled(
+                    ImVec2(pos.x + 186, pos.y + 7 + (155.0f * state.alpha)),
+                    ImVec2(pos.x + 197, pos.y + 10 + (155.0f * state.alpha)),
+                    IM_COL32(153, 153, 159, alpha_int)
+                );
+                draw->AddRect(
+                    ImVec2(pos.x + 185, pos.y + 6 + (155.0f * state.alpha)),
+                    ImVec2(pos.x + 197, pos.y + 10 + (155.0f * state.alpha)),
+                    IM_COL32(15, 15, 15, alpha_int)
+                );
+
+                draw->AddRectFilled(
+                    ImVec2(pos.x + 187, pos.y + 7 + (155.0f * state.alpha)),
+                    ImVec2(pos.x + 195, pos.y + 8 + (155.0f * state.alpha)),
+                    IM_COL32(153, 153, 159, alpha_int)
+                );
+                draw->AddRectFilled(
+                    ImVec2(pos.x + 187, pos.y + 6 + (155.0f * state.alpha)),
+                    ImVec2(pos.x + 195, pos.y + 7 + (155.0f * state.alpha)),
+                    IM_COL32(153, 153, 159, alpha_int)
+                );
             }
 
-            if (state.open) {
-                ImRect palette_rect(ImVec2(pos.x + 30.0f, pos.y + 6.0f), ImVec2(pos.x + 180.0f, pos.y + 162.0f));
-                if (ImGui::IsMouseHoveringRect(palette_rect.Min, palette_rect.Max) && ImGui::IsMouseDown(0)) {
-                    state.cursor_pos = ImGui::GetMousePos() - palette_rect.Min;
-                    state.cursor_pos.x = ImClamp(state.cursor_pos.x, 0.0f, 150.0f);
-                    state.cursor_pos.y = ImClamp(state.cursor_pos.y, 0.0f, 150.0f);
+            // Interação
+            if (state.open && ImGui::IsMouseDown(0)) {
+                ImVec2 mouse_pos = ImGui::GetMousePos();
+
+                // Área de saturação/brilho
+                if (ImGui::IsMouseHoveringRect(
+                    ImVec2(pos.x + 30, pos.y + 6),
+                    ImVec2(pos.x + 180, pos.y + 162)))
+                {
+                    state.cursor_pos.x = mouse_pos.x - (pos.x + 30);
+                    state.cursor_pos.y = mouse_pos.y - (pos.y + 7);
+
+                    if (state.cursor_pos.x < 0.0f) state.cursor_pos.x = 0.0f;
+                    if (state.cursor_pos.x > 150.0f) state.cursor_pos.x = 150.0f;
+                    if (state.cursor_pos.y < 0.0f) state.cursor_pos.y = 0.0f;
+                    if (state.cursor_pos.y > 150.0f) state.cursor_pos.y = 150.0f;
+
+                    float sat = state.cursor_pos.x / 150.0f;
+                    float val = 1.0f - (state.cursor_pos.y / 150.0f);
+                    RGB new_rgb = hsv_to_rgb({ state.hue * 360.0, sat, val });
+                    color->r = static_cast<unsigned char>(new_rgb.r * 255.0f);
+                    color->g = static_cast<unsigned char>(new_rgb.g * 255.0f);
+                    color->b = static_cast<unsigned char>(new_rgb.b * 255.0f);
+                    color->a = static_cast<unsigned char>(state.alpha * 255.0f);
+                    changed = true;
                 }
+                // Barra de HUE
+                else if (ImGui::IsMouseHoveringRect(
+                    ImVec2(pos.x + 30, pos.y + 167),
+                    ImVec2(pos.x + 180, pos.y + 175)))
+                {
+                    state.hue = (mouse_pos.x - (pos.x + 30)) / 150.0f;
+                    if (state.hue < 0.0f) state.hue = 0.0f;
+                    if (state.hue > 1.0f) state.hue = 1.0f;
 
-                ImRect hue_rect(ImVec2(pos.x + 30.0f, pos.y + 167.0f), ImVec2(pos.x + 180.0f, pos.y + 175.0f));
-                if (ImGui::IsMouseHoveringRect(hue_rect.Min, hue_rect.Max) && ImGui::IsMouseDown(0)) {
-                    state.hue = ImClamp((ImGui::GetMousePos().x - hue_rect.Min.x) / 150.0f, 0.0f, 1.0f);
+                    float sat = state.cursor_pos.x / 150.0f;
+                    float val = 1.0f - (state.cursor_pos.y / 150.0f);
+                    RGB new_rgb = hsv_to_rgb({ state.hue * 360.0, sat, val });
+                    color->r = static_cast<unsigned char>(new_rgb.r * 255.0f);
+                    color->g = static_cast<unsigned char>(new_rgb.g * 255.0f);
+                    color->b = static_cast<unsigned char>(new_rgb.b * 255.0f);
+                    changed = true;
                 }
-
-                if (show_alpha) {
-                    ImRect alpha_rect(ImVec2(pos.x + 187.0f, pos.y + 7.0f), ImVec2(pos.x + 195.0f, pos.y + 162.0f));
-                    if (ImGui::IsMouseHoveringRect(alpha_rect.Min, alpha_rect.Max) && ImGui::IsMouseDown(0)) {
-                        state.alpha = ImClamp((ImGui::GetMousePos().y - alpha_rect.Min.y) / 155.0f, 0.0f, 1.0f);
-                    }
+                // Barra de Alpha
+                else if (show_alpha && ImGui::IsMouseHoveringRect(
+                    ImVec2(pos.x + 187, pos.y + 7),
+                    ImVec2(pos.x + 195, pos.y + 162)))
+                {
+                    state.alpha = (mouse_pos.y - (pos.y + 7)) / 155.0f;
+                    if (state.alpha < 0.0f) state.alpha = 0.0f;
+                    if (state.alpha > 1.0f) state.alpha = 1.0f;
+                    if (state.alpha > 0.99f) state.alpha = 1.0f;
+                    color->a = static_cast<unsigned char>(state.alpha * 255.0f);
+                    changed = true;
                 }
+            }
 
-                float sat = state.cursor_pos.x / 150.0f;
-                float val = 1.0f - (state.cursor_pos.y / 150.0f);
-                color->FromHSV(state.hue, sat, val, state.alpha);
-
-                changed = true;
-
-                ImRect full_rect(ImVec2(pos.x + 23.0f, pos.y), ImVec2(pos.x + 203.0f, pos.y + (show_alpha ? 180.0f : 164.0f)));
-                if (ImGui::IsMouseClicked(0) && !ImGui::IsMouseHoveringRect(full_rect.Min, full_rect.Max)) {
+            // Fechar ao clicar fora
+            if (state.open && ImGui::IsMouseClicked(0)) {
+                ImVec2 mouse_pos = ImGui::GetMousePos();
+                if (!ImGui::IsMouseHoveringRect(
+                    ImVec2(pos.x + 23, pos.y),
+                    ImVec2(pos.x + 203, pos.y + 180)))
+                {
                     state.open = false;
                 }
             }
         }
 
-        ImGui::SetCursorScreenPos(pos);
-
+        ImGui::SetCursorScreenPos(ImVec2(pos.x + 20.0f, pos.y));
         return changed;
+    }
+    bool button(const char* label, ImVec2 size = ImVec2(360, 32))
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+
+        ImGuiContext* ctx = ImGui::GetCurrentContext();
+        const ImGuiStyle& style = ctx->Style;
+        ImGuiID id = window->GetID(label);
+
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImRect bb(pos, ImVec2(pos.x + size.x, pos.y + size.y));
+
+        ImGui::ItemSize(bb, style.FramePadding.y);
+        if (!ImGui::ItemAdd(bb, id))
+            return false;
+
+        bool hovered, held;
+        bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+
+        // Renderizar o botão
+        ImDrawList* draw = window->DrawList;
+
+        // Gradiente de fundo (top = mais claro, bottom = mais escuro)
+        ImU32 color_top = hovered ? IM_COL32(85, 85, 85, 255) : IM_COL32(72, 72, 72, 255);
+        ImU32 color_bottom = hovered ? IM_COL32(95, 95, 95, 255) : IM_COL32(107, 107, 107, 255);
+
+        draw->AddRectFilledMultiColor(
+            bb.Min, bb.Max,
+            color_bottom, color_bottom,
+            color_top, color_top
+        );
+
+        // Borda
+        draw->AddRect(bb.Min, bb.Max, IM_COL32(15, 15, 15, 155));
+
+        // Texto centralizado com sombra
+        ImVec2 text_size = ImGui::CalcTextSize(label);
+        ImVec2 text_pos(
+            pos.x + (size.x - text_size.x) * 0.5f,
+            pos.y + (size.y - text_size.y) * 0.5f
+        );
+
+        // Sombra do texto
+        draw->AddText(ImVec2(text_pos.x + 1, text_pos.y + 1), IM_COL32(10, 10, 10, 235), label);
+
+        // Texto principal
+        ImU32 text_color = hovered ? IM_COL32(220, 220, 220, 255) : IM_COL32(180, 180, 180, 255);
+        draw->AddText(text_pos, text_color, label);
+
+        return pressed;
     }
 }

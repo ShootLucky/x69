@@ -381,4 +381,6 @@ namespace CFG
 	CFGVAR(Outlines_Color_EnemyProjectiles, Color_t(255, 0, 0, 255));
 #pragma endregion
 	CFGVAR(CurrentSection, 0);
+	CFGVAR(Menu_ThemeColor, Color_t(0, 122, 187, 255));
+	CFGVAR(Menu_ModifyTheme, false);
 }

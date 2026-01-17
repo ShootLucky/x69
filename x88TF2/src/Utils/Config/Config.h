@@ -18,6 +18,9 @@ namespace Config
     };
     inline std::vector<ConfigVarInitializer> vars{};
 
+    // Config directory path
+    inline const std::string CONFIG_DIR = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\x69\\Configs";
+
     static std::string Obfuscate(const std::string& data) {
         std::string obfuscated = data;
         const char key = 0x5A; // Simple XOR key
@@ -72,6 +75,7 @@ namespace Config
         output_file << obfuscated;
         output_file.close();
     }
+
     static void Load(const std::filesystem::path& path)
     {
         std::ifstream input_file(path, std::ios::binary);
@@ -119,42 +123,62 @@ namespace Config
 
     static std::vector<std::string> RefreshConfigFiles() {
         std::vector<std::string> files;
-        std::string dir = "configs";
-        if (!std::filesystem::exists(dir)) std::filesystem::create_directory(dir);
-        for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".cfg") {
+
+        // Create directory if it doesn't exist
+        if (!std::filesystem::exists(CONFIG_DIR))
+        {
+            std::filesystem::create_directories(CONFIG_DIR);
+        }
+
+        // Scan for .cfg files
+        for (const auto& entry : std::filesystem::directory_iterator(CONFIG_DIR))
+        {
+            if (entry.is_regular_file() && entry.path().extension() == ".cfg")
+            {
                 files.push_back(entry.path().stem().string());
             }
         }
-        if (files.empty()) files.push_back("default");
+
+        // Create default config if no configs exist
+        if (files.empty())
+        {
+            std::filesystem::path default_path = CONFIG_DIR + "\\default.cfg";
+            Save(default_path);
+            files.push_back("default");
+        }
+
         return files;
     }
 
     static void CreateConfig(const std::string& name) {
         if (name.empty()) return;
-        std::filesystem::path path = "configs/" + name + ".cfg";
+        std::filesystem::path path = CONFIG_DIR + "\\" + name + ".cfg";
         Save(path);
     }
 
     static void SaveConfig(const std::string& name) {
-        std::filesystem::path path = "configs/" + name + ".cfg";
+        std::filesystem::path path = CONFIG_DIR + "\\" + name + ".cfg";
         Save(path);
     }
 
     static void LoadConfig(const std::string& name) {
-        std::filesystem::path path = "configs/" + name + ".cfg";
+        std::filesystem::path path = CONFIG_DIR + "\\" + name + ".cfg";
         if (std::filesystem::exists(path)) {
             Load(path);
         }
     }
 
     static void DeleteConfig(const std::string& name) {
-        std::filesystem::path path = "configs/" + name + ".cfg";
+        // Don't allow deleting default config
+        if (name == "default") return;
+
+        std::filesystem::path path = CONFIG_DIR + "\\" + name + ".cfg";
         if (std::filesystem::exists(path)) {
             std::filesystem::remove(path);
         }
     }
 }
+
 #define CFGVAR(var, val) inline auto var{ val }; \
 namespace configvar_initializers\
 {\
@@ -164,6 +188,7 @@ Config::vars.push_back(Config::ConfigVarInitializer{#var, &var, typeid(var).hash
 return true;\
 }();\
 }
+
 #define CFGVAR_NOSAVE(var, val) inline auto var{ val }; \
 namespace configvar_initializers\
 {\
