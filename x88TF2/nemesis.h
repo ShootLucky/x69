@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <Windows.h>
 #include <string>
@@ -8,15 +8,44 @@
 #include "src/CFG.h"
 #include "../src/Features/PlayersList/PlayersList.h"
 #include "../src/Features/Menu/notification_system/notifs.h"
+#include "../src/Features/indicators/indicators.h"
+#include "../nemesis.h"
 
 namespace gui
 {
     ImFont* menu_font = nullptr;
-
+    ImFont* indicator_font = nullptr;
     ImFont* title_font = nullptr;
+
+    // ===== VARIÃVEIS GLOBAIS PARA TEMA =====
+    static ImVec4 g_current_accent_color = ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f);
+
+    // ===== FUNÃ‡ÃƒO PARA OBTER COR ATUAL DO TEMA =====
+    inline ImU32 GetAccentColor(int alpha = 255)
+    {
+        return IM_COL32(
+            (int)(g_current_accent_color.x * 255),
+            (int)(g_current_accent_color.y * 255),
+            (int)(g_current_accent_color.z * 255),
+            alpha
+        );
+    }
+
+    inline ImU32 GetAccentColorFaded(int alpha = 70)
+    {
+        return IM_COL32(
+            (int)(g_current_accent_color.x * 255),
+            (int)(g_current_accent_color.y * 255),
+            (int)(g_current_accent_color.z * 255),
+            alpha
+        );
+    }
 
     void set_theme(ImVec4 accent_color = ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f))
     {
+        // Atualizar cor global
+        g_current_accent_color = accent_color;
+
         ImGuiStyle& style = ImGui::GetStyle();
         ImVec4* colors = style.Colors;
         style.FrameBorderSize = 1.0f;
@@ -122,7 +151,7 @@ namespace gui
 
         if (progress > 0.01f)
         {
-            ImU32 accent_color = IM_COL32(0, 122, 187, (int)(255 * progress));
+            ImU32 accent_color = GetAccentColor((int)(255 * progress));
             ImU32 bottom_grad = IM_COL32(25, 25, 25, (int)(255 * progress));
 
             draw->AddRectFilledMultiColor
@@ -195,7 +224,13 @@ namespace gui
             float fill_width = width * actual_t;
             ImVec2 fill_end = ImVec2(track_pos.x + fill_width, track_pos.y + track_height);
 
-            ImU32 accent_top = IM_COL32(0, 122, 187, 255);
+            // Usar a cor do tema customizado
+            ImU32 accent_top = IM_COL32(
+                (int)(g_current_accent_color.x * 255),
+                (int)(g_current_accent_color.y * 255),
+                (int)(g_current_accent_color.z * 255),
+                255
+            );
             ImU32 accent_bottom = IM_COL32(25, 25, 25, 255);
 
             dl->AddRectFilledMultiColor
@@ -241,7 +276,13 @@ namespace gui
         storage->SetFloat(id, progress);
 
         ImVec4 col_inactive = ImColor(157, 148, 140, 255);
-        ImVec4 col_active = ImColor(11, 163, 248, 255);
+        // Usar a cor do tema customizado
+        ImVec4 col_active = ImVec4(
+            g_current_accent_color.x,
+            g_current_accent_color.y,
+            g_current_accent_color.z,
+            1.0f
+        );
 
         ImU32 text_col = ImGui::GetColorU32(ImLerp(col_inactive, col_active, progress));
 
@@ -286,8 +327,8 @@ namespace gui
         ImU32 text_color = IM_COL32(220, 220, 220, 255);
         ImU32 text_shadow = IM_COL32(10, 10, 10, 150);
 
-        ImU32 accent_main = IM_COL32(0, 122, 187, 255);
-        ImU32 accent_faded = IM_COL32(0, 122, 187, 70);
+        ImU32 accent_main = GetAccentColor(255);
+        ImU32 accent_faded = GetAccentColorFaded(70);
 
         ImGui::Dummy(size);
         draw->AddRectFilled(pos, end, bg_color);
@@ -324,7 +365,7 @@ namespace gui
         ImGui::EndGroup();
     }
 
-    // Variáveis para controlar o scroll group
+    // VariÃ¡veis para controlar o scroll group
     static ImVec2 g_ScrollGroupPos;
     static ImVec2 g_ScrollGroupSize;
 
@@ -351,8 +392,8 @@ namespace gui
         ImU32 text_color = IM_COL32(220, 220, 220, 255);
         ImU32 text_shadow = IM_COL32(10, 10, 10, 150);
 
-        ImU32 accent_main = IM_COL32(0, 122, 187, 255);
-        ImU32 accent_faded = IM_COL32(0, 122, 187, 70);
+        ImU32 accent_main = GetAccentColor(255);
+        ImU32 accent_faded = GetAccentColorFaded(70);
 
         ImGui::Dummy(size);
         draw->AddRectFilled(pos, end, bg_color);
@@ -373,9 +414,9 @@ namespace gui
         draw->AddRect(pos, end, border_color);
 
         float header_height = 15.0f;
-        // Posição do child: mais próximo da borda esquerda
+        // PosiÃ§Ã£o do child: mais prÃ³ximo da borda esquerda
         ImVec2 child_pos = ImVec2(pos.x + 8.0f, pos.y + header_height + 5.0f);
-        // Tamanho do child: vai até quase a borda direita (deixa espaço apenas para o scrollbar de 4px)
+        // Tamanho do child: vai atÃ© quase a borda direita (deixa espaÃ§o apenas para o scrollbar de 4px)
         ImVec2 child_size = ImVec2(size.x - 12.0f, size.y - header_height - 10.0f);
 
         ImGui::SetCursorScreenPos(child_pos);
@@ -959,8 +1000,15 @@ namespace gui
                         IM_COL32(60, 60, 60, 255));
                 }
 
-                ImU32 text_col = (item_hovered || selected) ? IM_COL32(0, 122, 187, 255)
-                    : IM_COL32(120, 120, 120, 255);
+                // Usar a cor do tema customizado
+                ImU32 text_col = (item_hovered || selected) ?
+                    IM_COL32(
+                        (int)(g_current_accent_color.x * 255),
+                        (int)(g_current_accent_color.y * 255),
+                        (int)(g_current_accent_color.z * 255),
+                        255
+                    ) : IM_COL32(120, 120, 120, 255);
+
                 draw->AddText(item_pos, text_col, temp[i].first.c_str());
 
                 if (item_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -1112,7 +1160,7 @@ namespace gui
     struct RGB { double r, g, b; };
     struct HSV { double h, s, v; };
 
-    // ===== FUNÇÕES DE CONVERSÃO =====
+    // ===== FUNÃ‡Ã•ES DE CONVERSÃƒO =====
     inline HSV rgb_to_hsv(const RGB& In)
     {
         HSV m_Result;
@@ -1198,7 +1246,7 @@ namespace gui
 
     static std::map<ImGuiID, ColorPickerState> g_color_picker_states;
 
-    // ===== CORES DO ARCO-ÍRIS =====
+    // ===== CORES DO ARCO-ÃRIS =====
     static Color_t rainbow_colors[7] = {
         Color_t(255, 0, 0, 255),     // Vermelho
         Color_t(255, 255, 0, 255),   // Amarelo
@@ -1209,7 +1257,6 @@ namespace gui
         Color_t(255, 0, 0, 255)      // Vermelho
     };
 
-    // ===== FUNÇÃO PRINCIPAL =====
     bool color_picker(const char* label, Color_t* color, bool show_alpha = true)
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -1221,48 +1268,66 @@ namespace gui
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImDrawList* draw = window->DrawList;
 
-        // ===== PREVIEW BOX =====
-        draw->AddRectFilled(pos, ImVec2(pos.x + 16, pos.y + 8),
+        float box_size = 14.0f;
+        draw->AddRectFilled(pos, ImVec2(pos.x + box_size, pos.y + box_size),
             IM_COL32(color->r, color->g, color->b, color->a));
-        draw->AddRect(pos, ImVec2(pos.x + 16, pos.y + 8),
+        draw->AddRect(pos, ImVec2(pos.x + box_size, pos.y + box_size),
             IM_COL32(15, 15, 15, 155));
 
         ImGui::SetCursorScreenPos(pos);
-        ImGui::InvisibleButton(label, ImVec2(16, 8));
+        ImGui::InvisibleButton(label, ImVec2(box_size, box_size));
 
         bool value_changed = false;
 
-        // ===== ABRIR/FECHAR =====
         if (ImGui::IsItemClicked()) {
             state.is_open = !state.is_open;
 
             if (state.is_open) {
-                // Converter cor atual para HSV
                 HSV hsv = rgb_to_hsv({ color->r / 255.0, color->g / 255.0, color->b / 255.0 });
                 state.hue = (float)(hsv.h / 360.0);
-                state.sv_cursor.x = (float)(hsv.s * 150.0);
-                state.sv_cursor.y = (float)((1.0 - hsv.v) * 150.0);
+                state.sv_cursor.x = (float)(hsv.s * 148.0);
+                state.sv_cursor.y = (float)((1.0 - hsv.v) * 148.0);
                 state.alpha = color->a / 255.0f;
             }
         }
 
-        // ===== ANIMAÇÃO =====
         if (state.is_open) {
-            state.fade_alpha += 20;
+            state.fade_alpha += 25;
             if (state.fade_alpha > 255) state.fade_alpha = 255;
         }
         else {
-            state.fade_alpha -= 20;
+            state.fade_alpha -= 25;
             if (state.fade_alpha < 0) state.fade_alpha = 0;
         }
 
-        // ===== RENDERIZAR PICKER =====
         if (state.fade_alpha > 0) {
-            draw = ImGui::GetForegroundDrawList();
+            ImVec2 picker_pos = ImVec2(pos.x + box_size + 5, pos.y);
+            float picker_width = show_alpha ? 198.0f : 180.0f;
+            float picker_height = 168.0f;
 
-            ImVec2 picker_pos = ImVec2(pos.x + 23, pos.y);
-            float picker_width = 180.0f;
-            float picker_height = 180.0f;
+            // BLOQUEIO TOTAL - impede arrastar a janela de fundo
+            if (state.is_open) {
+                ImGui::SetNextWindowPos(picker_pos);
+                ImGui::SetNextWindowSize(ImVec2(picker_width, picker_height));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(0, 0, 0, 0));
+                ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
+
+                ImGui::Begin("##colorpicker_blocker", nullptr,
+                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+                    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
+
+                // Janela invisÃ­vel que captura inputs e impede que passem para trÃ¡s
+                ImGui::InvisibleButton("##blocker", ImVec2(picker_width, picker_height));
+
+                ImGui::End();
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar(2);
+            }
+
+            draw = ImGui::GetForegroundDrawList();
 
             // Fundo
             draw->AddRectFilled(picker_pos,
@@ -1272,15 +1337,10 @@ namespace gui
                 ImVec2(picker_pos.x + picker_width, picker_pos.y + picker_height),
                 IM_COL32(15, 15, 15, state.fade_alpha));
 
-            // ===== ÁREA SV (Saturação/Valor) =====
+            // Ãrea SV
             ImVec2 sv_pos = ImVec2(picker_pos.x + 6, picker_pos.y + 6);
             float sv_size = 150.0f;
 
-            // Borda
-            draw->AddRect(sv_pos, ImVec2(sv_pos.x + sv_size + 1, sv_pos.y + sv_size + 1),
-                IM_COL32(15, 15, 15, state.fade_alpha));
-
-            // Calcular cor do HUE
             RGB hue_color = hsv_to_rgb({ state.hue * 360.0, 1.0, 1.0 });
             ImU32 hue_col = IM_COL32(
                 (int)(hue_color.r * 255),
@@ -1289,177 +1349,180 @@ namespace gui
                 state.fade_alpha
             );
 
-            // Gradiente horizontal (branco -> cor do hue)
+            // Gradiente de saturaÃ§Ã£o (horizontal) - CORRIGIDO
             draw->AddRectFilledMultiColor(
-                ImVec2(sv_pos.x + 1, sv_pos.y + 1),
-                ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
-                IM_COL32(255, 255, 255, state.fade_alpha),
-                hue_col,
-                IM_COL32(255, 255, 255, state.fade_alpha),
-                hue_col
+                sv_pos, ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
+                IM_COL32(255, 255, 255, state.fade_alpha),  // Top-left (branco)
+                IM_COL32(255, 255, 255, state.fade_alpha),  // Top-right (branco)  
+                hue_col,                                     // Bottom-left (cor HUE)
+                hue_col                                      // Bottom-right (cor HUE)
             );
 
-            // Gradiente vertical (transparente -> preto)
+            // Gradiente de valor/brilho (vertical)
             draw->AddRectFilledMultiColor(
-                ImVec2(sv_pos.x + 1, sv_pos.y + 1),
-                ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
+                sv_pos, ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
                 IM_COL32(0, 0, 0, 0),
                 IM_COL32(0, 0, 0, 0),
                 IM_COL32(0, 0, 0, state.fade_alpha),
                 IM_COL32(0, 0, 0, state.fade_alpha)
             );
 
-            // Cursor (pequeno quadrado)
-            float cursor_x = sv_pos.x + state.sv_cursor.x;
-            float cursor_y = sv_pos.y + state.sv_cursor.y;
-            draw->AddRectFilled(
-                ImVec2(cursor_x - 2, cursor_y - 2),
-                ImVec2(cursor_x + 2, cursor_y + 2),
-                IM_COL32(255, 255, 255, state.fade_alpha)
-            );
-            draw->AddRect(
-                ImVec2(cursor_x - 2, cursor_y - 2),
-                ImVec2(cursor_x + 2, cursor_y + 2),
-                IM_COL32(0, 0, 0, state.fade_alpha)
-            );
-
-            // ===== BARRA DE HUE =====
-            ImVec2 hue_pos = ImVec2(sv_pos.x, sv_pos.y + sv_size + 4);
-            float hue_height = 8.0f;
-
-            draw->AddRect(hue_pos, ImVec2(hue_pos.x + sv_size, hue_pos.y + hue_height),
+            draw->AddRect(sv_pos, ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
                 IM_COL32(15, 15, 15, state.fade_alpha));
 
-            // Desenhar arco-íris
+            // Cursor
+            float cursor_x = sv_pos.x + state.sv_cursor.x + 1;
+            float cursor_y = sv_pos.y + state.sv_cursor.y + 1;
+            draw->AddCircle(ImVec2(cursor_x, cursor_y), 5.0f, IM_COL32(0, 0, 0, state.fade_alpha), 16, 2.0f);
+            draw->AddCircle(ImVec2(cursor_x, cursor_y), 5.0f, IM_COL32(255, 255, 255, state.fade_alpha), 16, 1.5f);
+
+            // Barra de HUE vertical
+            ImVec2 hue_pos = ImVec2(sv_pos.x + sv_size + 6, sv_pos.y);
+            float hue_width = 12.0f;
+            float hue_height = 150.0f;
+
             for (int i = 0; i < 6; i++) {
-                float segment_width = sv_size / 6.0f;
+                float segment_height = hue_height / 6.0f;
                 draw->AddRectFilledMultiColor(
-                    ImVec2(hue_pos.x + (segment_width * i), hue_pos.y),
-                    ImVec2(hue_pos.x + (segment_width * (i + 1)), hue_pos.y + hue_height),
+                    ImVec2(hue_pos.x, hue_pos.y + (segment_height * i)),
+                    ImVec2(hue_pos.x + hue_width, hue_pos.y + (segment_height * (i + 1))),
+                    IM_COL32(rainbow_colors[i].r, rainbow_colors[i].g, rainbow_colors[i].b, state.fade_alpha),
                     IM_COL32(rainbow_colors[i].r, rainbow_colors[i].g, rainbow_colors[i].b, state.fade_alpha),
                     IM_COL32(rainbow_colors[i + 1].r, rainbow_colors[i + 1].g, rainbow_colors[i + 1].b, state.fade_alpha),
-                    IM_COL32(rainbow_colors[i].r, rainbow_colors[i].g, rainbow_colors[i].b, state.fade_alpha),
                     IM_COL32(rainbow_colors[i + 1].r, rainbow_colors[i + 1].g, rainbow_colors[i + 1].b, state.fade_alpha)
                 );
             }
 
-            // Indicador do HUE
-            float hue_indicator_x = hue_pos.x + (sv_size * state.hue);
-            draw->AddRectFilled(
-                ImVec2(hue_indicator_x - 1, hue_pos.y - 1),
-                ImVec2(hue_indicator_x + 2, hue_pos.y + hue_height + 1),
-                IM_COL32(255, 255, 255, state.fade_alpha)
+            draw->AddRect(hue_pos, ImVec2(hue_pos.x + hue_width, hue_pos.y + hue_height),
+                IM_COL32(15, 15, 15, state.fade_alpha));
+
+            float hue_indicator_y = hue_pos.y + (hue_height * state.hue);
+            draw->AddLine(
+                ImVec2(hue_pos.x - 1, hue_indicator_y),
+                ImVec2(hue_pos.x + hue_width + 1, hue_indicator_y),
+                IM_COL32(0, 0, 0, state.fade_alpha), 3.0f
             );
-            draw->AddRect(
-                ImVec2(hue_indicator_x - 1, hue_pos.y - 1),
-                ImVec2(hue_indicator_x + 2, hue_pos.y + hue_height + 1),
-                IM_COL32(0, 0, 0, state.fade_alpha)
+            draw->AddLine(
+                ImVec2(hue_pos.x - 1, hue_indicator_y),
+                ImVec2(hue_pos.x + hue_width + 1, hue_indicator_y),
+                IM_COL32(255, 255, 255, state.fade_alpha), 1.5f
             );
 
-            // ===== BARRA DE ALPHA =====
+            // Barra de Alpha
             if (show_alpha) {
-                ImVec2 alpha_pos = ImVec2(sv_pos.x + sv_size + 4, sv_pos.y);
-                float alpha_width = 8.0f;
+                ImVec2 alpha_pos = ImVec2(hue_pos.x + hue_width + 6, sv_pos.y);
+                float alpha_width = 12.0f;
+                float alpha_height = 150.0f;
 
-                draw->AddRect(alpha_pos, ImVec2(alpha_pos.x + alpha_width, alpha_pos.y + sv_size),
-                    IM_COL32(15, 15, 15, state.fade_alpha));
+                // Xadrez
+                for (int y = 0; y < 15; y++) {
+                    for (int x = 0; x < 2; x++) {
+                        ImU32 checker_col = ((x + y) % 2 == 0) ?
+                            IM_COL32(200, 200, 200, state.fade_alpha) :
+                            IM_COL32(140, 140, 140, state.fade_alpha);
+                        draw->AddRectFilled(
+                            ImVec2(alpha_pos.x + (x * 6), alpha_pos.y + (y * 10)),
+                            ImVec2(alpha_pos.x + (x * 6) + 6, alpha_pos.y + (y * 10) + 10),
+                            checker_col
+                        );
+                    }
+                }
 
                 // Gradiente de alpha
                 draw->AddRectFilledMultiColor(
                     alpha_pos,
-                    ImVec2(alpha_pos.x + alpha_width, alpha_pos.y + sv_size),
+                    ImVec2(alpha_pos.x + alpha_width, alpha_pos.y + alpha_height),
                     IM_COL32(color->r, color->g, color->b, 0),
                     IM_COL32(color->r, color->g, color->b, 0),
                     IM_COL32(color->r, color->g, color->b, state.fade_alpha),
                     IM_COL32(color->r, color->g, color->b, state.fade_alpha)
                 );
 
-                // Indicador do alpha
-                float alpha_indicator_y = alpha_pos.y + (sv_size * state.alpha);
-                draw->AddRectFilled(
-                    ImVec2(alpha_pos.x - 1, alpha_indicator_y - 1),
-                    ImVec2(alpha_pos.x + alpha_width + 1, alpha_indicator_y + 2),
-                    IM_COL32(255, 255, 255, state.fade_alpha)
+                draw->AddRect(alpha_pos, ImVec2(alpha_pos.x + alpha_width, alpha_pos.y + alpha_height),
+                    IM_COL32(15, 15, 15, state.fade_alpha));
+
+                float alpha_indicator_y = alpha_pos.y + (alpha_height * state.alpha);
+                draw->AddLine(
+                    ImVec2(alpha_pos.x - 1, alpha_indicator_y),
+                    ImVec2(alpha_pos.x + alpha_width + 1, alpha_indicator_y),
+                    IM_COL32(0, 0, 0, state.fade_alpha), 3.0f
                 );
-                draw->AddRect(
-                    ImVec2(alpha_pos.x - 1, alpha_indicator_y - 1),
-                    ImVec2(alpha_pos.x + alpha_width + 1, alpha_indicator_y + 2),
-                    IM_COL32(0, 0, 0, state.fade_alpha)
+                draw->AddLine(
+                    ImVec2(alpha_pos.x - 1, alpha_indicator_y),
+                    ImVec2(alpha_pos.x + alpha_width + 1, alpha_indicator_y),
+                    IM_COL32(255, 255, 255, state.fade_alpha), 1.5f
                 );
             }
 
-            // ===== INTERAÇÃO =====
-            if (state.is_open && ImGui::IsMouseDown(0)) {
+            // InteraÃ§Ã£o - CORRIGIDO para nÃ£o arrastar o menu
+            if (state.is_open) {
                 ImVec2 mouse = ImGui::GetMousePos();
+                bool mouse_down = ImGui::IsMouseDown(0);
 
-                // Clicou na área SV?
-                if (mouse.x >= sv_pos.x && mouse.x <= sv_pos.x + sv_size &&
-                    mouse.y >= sv_pos.y && mouse.y <= sv_pos.y + sv_size)
-                {
-                    state.sv_cursor.x = mouse.x - sv_pos.x;
-                    state.sv_cursor.y = mouse.y - sv_pos.y;
+                // SÃ³ permite interaÃ§Ã£o se o mouse estiver dentro do picker
+                bool mouse_in_picker = (mouse.x >= picker_pos.x && mouse.x <= picker_pos.x + picker_width &&
+                    mouse.y >= picker_pos.y && mouse.y <= picker_pos.y + picker_height);
 
-                    // Limitar aos bounds
-                    if (state.sv_cursor.x < 0) state.sv_cursor.x = 0;
-                    if (state.sv_cursor.x > sv_size) state.sv_cursor.x = sv_size;
-                    if (state.sv_cursor.y < 0) state.sv_cursor.y = 0;
-                    if (state.sv_cursor.y > sv_size) state.sv_cursor.y = sv_size;
-
-                    value_changed = true;
-                }
-                // Clicou na barra de HUE?
-                else if (mouse.x >= hue_pos.x && mouse.x <= hue_pos.x + sv_size &&
-                    mouse.y >= hue_pos.y && mouse.y <= hue_pos.y + hue_height)
-                {
-                    state.hue = (mouse.x - hue_pos.x) / sv_size;
-                    if (state.hue < 0) state.hue = 0;
-                    if (state.hue > 1) state.hue = 1;
-                    value_changed = true;
-                }
-                // Clicou na barra de Alpha?
-                else if (show_alpha) {
-                    ImVec2 alpha_pos = ImVec2(sv_pos.x + sv_size + 4, sv_pos.y);
-                    if (mouse.x >= alpha_pos.x && mouse.x <= alpha_pos.x + 8 &&
-                        mouse.y >= alpha_pos.y && mouse.y <= alpha_pos.y + sv_size)
+                if (mouse_down && mouse_in_picker) {
+                    // Ãrea SV
+                    if (mouse.x >= sv_pos.x && mouse.x <= sv_pos.x + sv_size &&
+                        mouse.y >= sv_pos.y && mouse.y <= sv_pos.y + sv_size)
                     {
-                        state.alpha = (mouse.y - alpha_pos.y) / sv_size;
-                        if (state.alpha < 0) state.alpha = 0;
-                        if (state.alpha > 1) state.alpha = 1;
+                        state.sv_cursor.x = ImClamp(mouse.x - sv_pos.x - 1, 0.0f, 148.0f);
+                        state.sv_cursor.y = ImClamp(mouse.y - sv_pos.y - 1, 0.0f, 148.0f);
                         value_changed = true;
+                    }
+                    // Barra HUE
+                    else if (mouse.x >= hue_pos.x && mouse.x <= hue_pos.x + hue_width &&
+                        mouse.y >= hue_pos.y && mouse.y <= hue_pos.y + hue_height)
+                    {
+                        state.hue = ImClamp((mouse.y - hue_pos.y) / hue_height, 0.0f, 1.0f);
+                        value_changed = true;
+                    }
+                    // Barra Alpha
+                    else if (show_alpha) {
+                        ImVec2 alpha_pos = ImVec2(hue_pos.x + hue_width + 6, sv_pos.y);
+                        float alpha_width = 12.0f;
+                        float alpha_height = 150.0f;
+
+                        if (mouse.x >= alpha_pos.x && mouse.x <= alpha_pos.x + alpha_width &&
+                            mouse.y >= alpha_pos.y && mouse.y <= alpha_pos.y + alpha_height)
+                        {
+                            state.alpha = ImClamp((mouse.y - alpha_pos.y) / alpha_height, 0.0f, 1.0f);
+                            value_changed = true;
+                        }
+                    }
+
+                    if (value_changed) {
+                        float sat = state.sv_cursor.x / 148.0f;
+                        float val = 1.0f - (state.sv_cursor.y / 148.0f);
+                        RGB new_color = hsv_to_rgb({ state.hue * 360.0, sat, val });
+
+                        color->r = (unsigned char)(new_color.r * 255.0);
+                        color->g = (unsigned char)(new_color.g * 255.0);
+                        color->b = (unsigned char)(new_color.b * 255.0);
+                        color->a = (unsigned char)(state.alpha * 255.0);
                     }
                 }
 
-                // Atualizar cor
-                if (value_changed) {
-                    float sat = state.sv_cursor.x / sv_size;
-                    float val = 1.0f - (state.sv_cursor.y / sv_size);
-                    RGB new_color = hsv_to_rgb({ state.hue * 360.0, sat, val });
+                // Fechar ao clicar fora
+                if (ImGui::IsMouseClicked(0)) {
+                    bool clicked_inside =
+                        mouse.x >= picker_pos.x && mouse.x <= picker_pos.x + picker_width &&
+                        mouse.y >= picker_pos.y && mouse.y <= picker_pos.y + picker_height;
 
-                    color->r = (unsigned char)(new_color.r * 255.0);
-                    color->g = (unsigned char)(new_color.g * 255.0);
-                    color->b = (unsigned char)(new_color.b * 255.0);
-                    color->a = (unsigned char)(state.alpha * 255.0);
-                }
-            }
+                    bool clicked_preview =
+                        mouse.x >= pos.x && mouse.x <= pos.x + box_size &&
+                        mouse.y >= pos.y && mouse.y <= pos.y + box_size;
 
-            // Fechar ao clicar fora
-            if (state.is_open && ImGui::IsMouseClicked(0)) {
-                ImVec2 mouse = ImGui::GetMousePos();
-                bool clicked_inside =
-                    mouse.x >= picker_pos.x && mouse.x <= picker_pos.x + picker_width &&
-                    mouse.y >= picker_pos.y && mouse.y <= picker_pos.y + picker_height;
-
-                bool clicked_preview =
-                    mouse.x >= pos.x && mouse.x <= pos.x + 16 &&
-                    mouse.y >= pos.y && mouse.y <= pos.y + 8;
-
-                if (!clicked_inside && !clicked_preview) {
-                    state.is_open = false;
+                    if (!clicked_inside && !clicked_preview) {
+                        state.is_open = false;
+                    }
                 }
             }
         }
 
-        ImGui::SetCursorScreenPos(ImVec2(pos.x + 20, pos.y));
+        ImGui::SetCursorScreenPos(ImVec2(pos.x + box_size + 2, pos.y));
         return value_changed;
     }
     bool button(const char* label, ImVec2 size = ImVec2(360, 32))
@@ -1482,7 +1545,7 @@ namespace gui
         bool hovered, held;
         bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
 
-        // Renderizar o botão
+        // Renderizar o botÃ£o
         ImDrawList* draw = window->DrawList;
 
         // Gradiente de fundo (top = mais claro, bottom = mais escuro)

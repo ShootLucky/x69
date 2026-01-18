@@ -29,7 +29,6 @@
     <ClCompile Include="src\Hooks\IEngineVGuiInternal_Paint.cpp" />
     <ClCompile Include="src\Features\Misc\Misc.cpp" />
     <ClCompile Include="src\Features\EnginePrediction\EnginePrediction.cpp" />
-    <ClCompile Include="src\Features\Menu\Menu.cpp" />
     <ClCompile Include="src\Features\ESP\ESP.cpp" />
     <ClCompile Include="src\Features\Aimbot\Aimbot.cpp" />
     <ClCompile Include="src\Features\Aimbot\AimbotHitscan\AimbotHitscan.cpp" />
@@ -47,7 +46,6 @@
     <ClCompile Include="src\Hooks\CBaseEntity_SetAbsVelocity.cpp" />
     <ClCompile Include="src\Hooks\IInput_GetUserCmd.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
-    <ClCompile Include="src\Features\Radio\Radio.cpp" />
     <ClCompile Include="src\Hooks\netgraphstringchanger.cpp" />
     <ClCompile Include="src\Hooks\CHudTFCrosshair_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\CTFPlayerShared_IsPlayerDominated.cpp" />
@@ -81,12 +79,8 @@
     <ClCompile Include="src\Hooks\INetChannel_SendNetMsg.cpp" />
     <ClCompile Include="src\Hooks\CUserMessages_DispatchUserMessage.cpp" />
     <ClCompile Include="src\Hooks\FX_FireBullets.cpp" />
-    <ClCompile Include="src\Features\Menu\notification_system\notifs.cpp" />
     <ClCompile Include="src\Hooks\CBaseHudChatLine_InsertAndColorizeText.cpp" />
     <ClCompile Include="src\Hooks\CGameEventManager_FireEventIntern.cpp" />
-    <ClCompile Include="src\Features\Menu\functions_menu\functions_menu.cpp" />
-    <ClCompile Include="src\Features\Menu\notification_system\icons_notify.cpp" />
-    <ClCompile Include="src\Features\SpectatorList\SpectatorList.cpp" />
     <ClCompile Include="src\imgui\imgui.cpp" />
     <ClCompile Include="src\imgui\imgui_demo.cpp" />
     <ClCompile Include="src\imgui\imgui_draw.cpp" />
@@ -94,6 +88,9 @@
     <ClCompile Include="src\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="src\imgui\imgui_widgets.cpp" />
     <ClCompile Include="include\kiero.cpp" />
+    <ClCompile Include="src\Features\indicators\indicators.cpp" />
+    <ClCompile Include="src\Features\Menu\notification_system\notifs.cpp" />
+    <ClCompile Include="src\Features\Menu\notification_system\icons_notify.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -246,7 +243,6 @@
     <ClInclude Include="src\CFG.h" />
     <ClInclude Include="src\Features\Misc\Misc.h" />
     <ClInclude Include="src\Features\EnginePrediction\EnginePrediction.h" />
-    <ClInclude Include="src\Features\Menu\Menu.h" />
     <ClInclude Include="src\Features\ESP\ESP.h" />
     <ClInclude Include="src\Features\Aimbot\Aimbot.h" />
     <ClInclude Include="src\Features\Aimbot\AimbotHitscan\AimbotHitscan.h" />
@@ -257,7 +253,6 @@
     <ClInclude Include="src\Features\MovementSimulation\MovementSimulation.h" />
     <ClInclude Include="src\Features\ProjectileSim\ProjectileSim.h" />
     <ClInclude Include="src\Features\PlayersList\PlayersList.h" />
-    <ClInclude Include="src\Features\Radio\Radio.h" />
     <ClInclude Include="src\SDK\TF2\utlmemory.h" />
     <ClInclude Include="src\SDK\TF2\utlblockmemory.h" />
     <ClInclude Include="src\SDK\TF2\NetVars\CTFPartyClient.h" />
@@ -267,10 +262,6 @@
     <ClInclude Include="src\Features\VisualUtils\VisualUtils.h" />
     <ClInclude Include="src\Features\Outlines\Outlines.h" />
     <ClInclude Include="src\Features\SeedPred\SeedPred.h" />
-    <ClInclude Include="src\Features\Menu\notification_system\notifs.h" />
-    <ClInclude Include="src\Features\Menu\functions_menu\functions_menu.h" />
-    <ClInclude Include="src\Features\Menu\notification_system\icons_notify.h" />
-    <ClInclude Include="src\Features\SpectatorList\SpectatorList.h" />
     <ClInclude Include="src\imgui\imconfig.h" />
     <ClInclude Include="src\imgui\imgui.h" />
     <ClInclude Include="src\imgui\imgui_impl_dx9.h" />
@@ -283,5 +274,8 @@
     <ClInclude Include="include\kiero.h" />
     <ClInclude Include="nemesis.h" />
     <ClInclude Include="src\Utils\Config\Config.h" />
+    <ClInclude Include="src\Features\indicators\indicators.h" />
+    <ClInclude Include="src\Features\Menu\notification_system\notifs.h" />
+    <ClInclude Include="src\Features\Menu\notification_system\icons_notify.h" />
   </ItemGroup>
 </Project>

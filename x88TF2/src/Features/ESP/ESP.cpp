@@ -12,7 +12,7 @@
 #include <cstdint> // for uintptr_t
 #define PI 3.14159265358979323846f
 #define DEG2RAD(deg) ((deg) * PI / 180.0f)
-C_BaseEntity * CESP::RainEntity = nullptr;
+C_BaseEntity* CESP::RainEntity = nullptr;
 IClientNetworkable* CESP::RainNetworkable = nullptr;
 C_BaseEntity* CESP::WindEntity = nullptr;
 IClientNetworkable* CESP::WindNetworkable = nullptr;
@@ -106,18 +106,17 @@ void CESP::Rain()
         RainEntity->GetClientNetworkable()->PostDataUpdate(DATA_UPDATE_CREATED);
     }
 }
-// Apenas desenha caixa (box ESP) — funções auxiliares simples
 void CESP::DrawBox(int left, int top, int w, int h, const Color_t& clr)
 {
     if (w <= 0 || h <= 0) return;
-    H::Draw->OutlinedRect(left, top, w, h, clr);
+    H::Draw->Rect(left, top, w, h, clr);
 }
 void CESP::DrawBox2D(int left, int top, int w, int h, const Color_t& clr)
 {
     Color_t black = Color_t(0, 0, 0, 255);
-    H::Draw->OutlinedRect(left - 1, top - 1, w + 2, h + 2, black);
-    H::Draw->OutlinedRect(left, top, w, h, clr);
-    H::Draw->OutlinedRect(left + 1, top + 1, w - 2, h - 2, black);
+    H::Draw->Rect(left - 1, top - 1, w + 2, h + 2, black);
+    H::Draw->Rect(left, top, w, h, clr);
+    H::Draw->Rect(left + 1, top + 1, w - 2, h - 2, black);
 }
 void CESP::DrawBox3D(Vec3 scr[8], const Color_t& clr, bool useAA)
 {
@@ -142,95 +141,30 @@ void CESP::DrawBoxCorner(int left, int top, int w, int h, const Color_t& clr)
     Color_t black = Color_t(0, 0, 0, 255);
     int cornerLen = std::min(w, h) / 5;
     if (cornerLen < 1) return;
-    // Black outline lines (outside)
-    // Top-left
     H::Draw->Line(left - 1, top - 1, left + cornerLen, top - 1, black);
     H::Draw->Line(left - 1, top - 1, left - 1, top + cornerLen, black);
     H::Draw->Line(left + 1, top + 1, left + cornerLen, top + 1, black);
     H::Draw->Line(left + 1, top + 1, left + 1, top + cornerLen, black);
-    // Top-right
     H::Draw->Line(left + w - cornerLen, top - 1, left + w + 1, top - 1, black);
     H::Draw->Line(left + w + 1, top - 1, left + w + 1, top + cornerLen, black);
     H::Draw->Line(left + w - cornerLen, top + 1, left + w - 1, top + 1, black);
     H::Draw->Line(left + w - 1, top + 1, left + w - 1, top + cornerLen, black);
-    // Bottom-left
     H::Draw->Line(left - 1, top + h - cornerLen, left - 1, top + h + 1, black);
     H::Draw->Line(left - 1, top + h + 1, left + cornerLen, top + h + 1, black);
     H::Draw->Line(left + 1, top + h - cornerLen, left + 1, top + h - 1, black);
     H::Draw->Line(left + 1, top + h - 1, left + cornerLen, top + h - 1, black);
-    // Bottom-right
     H::Draw->Line(left + w - cornerLen, top + h + 1, left + w + 1, top + h + 1, black);
     H::Draw->Line(left + w + 1, top + h - cornerLen, left + w + 1, top + h + 1, black);
     H::Draw->Line(left + w - cornerLen, top + h - 1, left + w - 1, top + h - 1, black);
     H::Draw->Line(left + w - 1, top + h - cornerLen, left + w - 1, top + h - 1, black);
-    // Inner colored lines
-    // Top-left
     H::Draw->Line(left, top, left + cornerLen, top, clr);
     H::Draw->Line(left, top, left, top + cornerLen, clr);
-    // Top-right
     H::Draw->Line(left + w - cornerLen, top, left + w, top, clr);
     H::Draw->Line(left + w, top, left + w, top + cornerLen, clr);
-    // Bottom-left
     H::Draw->Line(left, top + h - cornerLen, left, top + h, clr);
     H::Draw->Line(left, top + h, left + cornerLen, top + h, clr);
-    // Bottom-right
     H::Draw->Line(left + w - cornerLen, top + h, left + w, top + h, clr);
     H::Draw->Line(left + w, top + h - cornerLen, left + w, top + h, clr);
-}
-void CESP::DrawBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr)
-{
-    if (!H::Draw) return;
-    H::Draw->Line(static_cast<int>(std::round(a.x)), static_cast<int>(std::round(a.y)),
-        static_cast<int>(std::round(b.x)), static_cast<int>(std::round(b.y)),
-        clr);
-}
-void CESP::DrawThinLine(const Vec3& a, const Vec3& b, const Color_t& clr)
-{
-    if (!H::Draw) return;
-    int ax = static_cast<int>(std::round(a.x));
-    int ay = static_cast<int>(std::round(a.y));
-    int bx = static_cast<int>(std::round(b.x));
-    int by = static_cast<int>(std::round(b.y));
-    // Draw only main line
-    H::Draw->Line(ax, ay, bx, by, clr);
-}
-void CESP::DrawOutlinedLine(const Vec3& a, const Vec3& b, const Color_t& clr, const Color_t& outlineClr)
-{
-    if (!H::Draw) return;
-    int ax = static_cast<int>(std::round(a.x));
-    int ay = static_cast<int>(std::round(a.y));
-    int bx = static_cast<int>(std::round(b.x));
-    int by = static_cast<int>(std::round(b.y));
-    float dx = static_cast<float>(bx - ax);
-    float dy = static_cast<float>(by - ay);
-    int off = 1;
-    if (std::abs(dx) > std::abs(dy)) {
-        // Horizontal-ish line, offset vertically
-        H::Draw->Line(ax, ay - off, bx, by - off, outlineClr);
-        H::Draw->Line(ax, ay + off, bx, by + off, outlineClr);
-    }
-    else {
-        // Vertical-ish line, offset horizontally
-        H::Draw->Line(ax - off, ay, bx - off, by, outlineClr);
-        H::Draw->Line(ax + off, ay, bx + off, by, outlineClr);
-    }
-    // Draw main line
-    H::Draw->Line(ax, ay, bx, by, clr);
-}
-void CESP::DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr, bool useAA)
-{
-    if (!H::Draw) return;
-    int ax = static_cast<int>(std::round(a.x));
-    int ay = static_cast<int>(std::round(a.y));
-    int bx = static_cast<int>(std::round(b.x));
-    int by = static_cast<int>(std::round(b.y));
-    // Draw main line
-    H::Draw->Line(ax, ay, bx, by, clr);
-    // Removed AA for thinner lines
-}
-void CESP::DrawScreenLine(const Vec3& a, const Vec3& b, const Color_t& clr)
-{
-    DrawSmoothBoneLine(a, b, clr);
 }
 void CESP::DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
     if (!H::Draw) return;
@@ -264,7 +198,21 @@ void CESP::DrawImpactBox(const Vec3& worldPos, const Color_t& clr) {
         DrawOutlinedLine(scr[e.first], scr[e.second], clr, CFG::Color_ESP_Outline);
     }
 }
-// --- Helper: desenha apenas o wireframe projetado (sem pontos/glow) ---
+void CESP::DrawThinLine(const Vec3& a, const Vec3& b, const Color_t& clr)
+{
+    H::Draw->Line(static_cast<int>(a.x), static_cast<int>(a.y), static_cast<int>(b.x), static_cast<int>(b.y), clr);
+}
+void CESP::DrawOutlinedLine(const Vec3& a, const Vec3& b, const Color_t& clr, const Color_t& outlineClr)
+{
+    H::Draw->Line(static_cast<int>(a.x) - 1, static_cast<int>(a.y) - 1, static_cast<int>(b.x) - 1, static_cast<int>(b.y) - 1, outlineClr);
+    H::Draw->Line(static_cast<int>(a.x), static_cast<int>(a.y), static_cast<int>(b.x), static_cast<int>(b.y), clr);
+    H::Draw->Line(static_cast<int>(a.x) + 1, static_cast<int>(a.y) + 1, static_cast<int>(b.x) + 1, static_cast<int>(b.y) + 1, outlineClr);
+}
+void CESP::DrawSmoothBoneLine(const Vec3& a, const Vec3& b, const Color_t& clr, bool useAA)
+{
+    // Implementação simples sem AA por enquanto; adicione anti-aliasing se necessário
+    H::Draw->Line(static_cast<int>(a.x), static_cast<int>(a.y), static_cast<int>(b.x), static_cast<int>(b.y), clr);
+}
 void CESP::DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool useAA)
 {
     if (!H::Draw) return;
@@ -307,18 +255,14 @@ void CESP::PlayerArrow(C_TFPlayer* Player, Color_t Clr) {
     const float y1 = (sw * arrows_distance + 5.0f) * sin(degrees - PI / 2);
     const float x2 = (sw * arrows_distance * (arrows_shape ? aspect : 1.0f) + 15.0f) * cos(degrees - PI / 2);
     const float y2 = (sw * arrows_distance + 15.0f) * sin(degrees - PI / 2);
-    // arrow sizing
-    const float arrow_length = 25.0f; // distance from tip to base
-    const float arrow_width = 22.0f; // base width of triangle
-    // direction from base-ish to tip
+    const float arrow_length = 25.0f;
+    const float arrow_width = 22.0f;
     Vec3 dir = Vec3(x2 - x1, y2 - y1, 0.0f);
     float dirLen = dir.Length();
     if (dirLen <= 0.0001f) return;
     Vec3 unitDir = dir / dirLen;
-    // robust base point: move back from tip by arrow_length along unitDir
     Vec3 tip = Vec3(x2, y2, 0.0f);
     Vec3 base = tip - unitDir * arrow_length;
-    // perpendicular vector for base width
     Vec3 perp = Vec3(-unitDir.y, unitDir.x, 0.0f);
     Vec3 left = base + perp * (arrow_width * 0.5f);
     Vec3 right = base - perp * (arrow_width * 0.5f);
@@ -328,11 +272,11 @@ void CESP::PlayerArrow(C_TFPlayer* Player, Color_t Clr) {
     Color_t shapeColor = Clr;
     int style = CFG::ESP_Offscreen_Style;
     bool filled = CFG::ESP_Offscreen_Filled;
-    if (style == 0) { // Triangle
+    if (style == 0) {
         Vertex_t triangle[3];
-        triangle[0].Init(Vector2D(center_x + tip.x, center_y + tip.y)); // apex (tip)
-        triangle[1].Init(Vector2D(center_x + left.x, center_y + left.y)); // base left
-        triangle[2].Init(Vector2D(center_x + right.x, center_y + right.y)); // base right
+        triangle[0].Init(Vector2D(center_x + tip.x, center_y + tip.y));
+        triangle[1].Init(Vector2D(center_x + left.x, center_y + left.y));
+        triangle[2].Init(Vector2D(center_x + right.x, center_y + right.y));
         if (filled) {
             H::Draw->Polygon(3, triangle, shapeColor);
         }
@@ -345,19 +289,19 @@ void CESP::PlayerArrow(C_TFPlayer* Player, Color_t Clr) {
                 static_cast<int>(triangle[0].m_Position.x), static_cast<int>(triangle[0].m_Position.y), shapeColor);
         }
     }
-    else if (style == 1) { // Circle
-        const float circle_radius = 12.0f; // Arbitrary size
-        Vec3 circle_center = (tip + left + right) / 3.0f; // Centroid for placement
+    else if (style == 1) {
+        const float circle_radius = 12.0f;
+        Vec3 circle_center = (tip + left + right) / 3.0f;
         int cx = static_cast<int>(center_x + circle_center.x);
         int cy = static_cast<int>(center_y + circle_center.y);
         if (filled) {
-            H::Draw->FilledCircle(cx, cy, circle_radius, 32, shapeColor);
+            H::Draw->CircleFilled(cx, cy, circle_radius, 32, shapeColor);
         }
         else {
-            H::Draw->OutlinedCircle(cx, cy, circle_radius, 32, shapeColor);
+            H::Draw->Circle(cx, cy, circle_radius, 32, shapeColor);
         }
     }
-    else if (style == 2) { // Horizontal bar (tangential to the circle)
+    else if (style == 2) {
         const float bar_length = 37.0f;
         const float bar_width = 8.0f;
         const float half_length = bar_length * 0.5f;
@@ -401,21 +345,20 @@ void CESP::DrawFOVCircle(float fov, const Color_t& color) {
     if (fov_desired) viewFOV = fov_desired->GetFloat();
     if (viewFOV <= 0.0f) viewFOV = 90.0f;
     float radius = tanf(DEG2RAD(fov) / 2.0f) / tanf(DEG2RAD(viewFOV) / 2.0f) * (h / 2.0f);
-    H::Draw->OutlinedCircle(centerX, centerY, radius, 64, color);
+    H::Draw->Circle(centerX, centerY, radius, 64, color);
 }
 void CESP::CustomFOV(CViewSetup* pSetup)
 {
     if (!pSetup) return;
     auto pLocal = H::Entities->GetLocal();
     if (!pLocal) return;
-    float fov = pSetup->fov; // default to current
+    float fov = pSetup->fov;
     if (CFG::Visuals_CustomFov_Enable) fov = CFG::Visuals_CustomFov_Amount;
     if (InCond(pLocal, 1)) {
-        if (CFG::Visuals_RemoveScopedZoom) fov = 90.0f; // or CFG::Visuals_CustomFov_Amount
+        if (CFG::Visuals_RemoveScopedZoom) fov = 90.0f;
     }
     pSetup->fov = fov;
 }
-// Helper function for GetHitboxPosition
 Vec3 GetHitboxPosition(C_TFPlayer* pPlayer, int iHitbox) {
     matrix3x4_t boneMatrix[128];
     if (!pPlayer->SetupBones(boneMatrix, 128, BONE_USED_BY_HITBOX, I::GlobalVars->curtime)) {
@@ -429,7 +372,7 @@ Vec3 GetHitboxPosition(C_TFPlayer* pPlayer, int iHitbox) {
     if (!pHDR) {
         return Vec3();
     }
-    auto pSet = pHDR->pHitboxSet(0); // Assuming hitbox set 0
+    auto pSet = pHDR->pHitboxSet(0);
     if (!pSet) {
         return Vec3();
     }
@@ -442,7 +385,94 @@ Vec3 GetHitboxPosition(C_TFPlayer* pPlayer, int iHitbox) {
     Math::VectorTransform(pBox->bbmax, boneMatrix[pBox->bone], vMax);
     return (vMin + vMax) * 0.5f;
 }
-// ---------------------------------------------------------------
+
+// ============================================================================
+// ANIMAÇÃO DE BARRA DE VIDA
+// ============================================================================
+
+float CESP::GetAnimatedHealthValue(int entIndex, int currentHealth, int maxHealth)
+{
+    float currentTime = I::GlobalVars->realtime;
+    float deltaTime = I::GlobalVars->frametime;
+
+    // Se não existe animação para esta entidade, criar
+    if (m_AnimatedHealth.find(entIndex) == m_AnimatedHealth.end())
+    {
+        m_AnimatedHealth[entIndex] = 0.0f;
+        m_InitialAppearTime[entIndex] = currentTime;
+    }
+
+    float& animHealth = m_AnimatedHealth[entIndex];
+    float targetHealth = static_cast<float>(currentHealth);
+
+    // Verificar se é primeira vez aparecendo (animação de crescimento inicial)
+    float timeSinceAppear = currentTime - m_InitialAppearTime[entIndex];
+    if (timeSinceAppear < 1.0f) // 1 segundo para aparecer
+    {
+        // Crescimento de 0 até a vida atual
+        float progress = timeSinceAppear; // 0.0 a 1.0
+        animHealth = targetHealth * progress;
+        return animHealth;
+    }
+
+    // Animação normal de mudança de vida
+    float difference = targetHealth - animHealth;
+
+    if (fabsf(difference) < 0.5f)
+    {
+        animHealth = targetHealth;
+        return animHealth;
+    }
+
+    // Velocidade de animação
+    float speed = 150.0f; // HP por segundo
+    float maxChange = speed * deltaTime;
+
+    if (fabsf(difference) <= maxChange)
+    {
+        animHealth = targetHealth;
+    }
+    else
+    {
+        if (difference > 0.0f)
+            animHealth += maxChange; // Subindo (cura)
+        else
+            animHealth -= maxChange; // Descendo (dano)
+    }
+
+    return animHealth;
+}
+
+Color_t CESP::GetHealthBarColor(int health, int maxHealth)
+{
+    if (!CFG::ESP_HealthBarGradient)
+    {
+        // Retornar cor única (verde por padrão)
+        return CFG::ESP_HealthBarColor;
+    }
+
+    // Sistema de gradiente com 3 cores
+    float ratio = static_cast<float>(health) / static_cast<float>(maxHealth);
+    ratio = std::clamp(ratio, 0.0f, 1.0f);
+
+    Color_t resultColor;
+
+    if (ratio <= 0.5f)
+    {
+        // Interpolar entre Low (0%) e Mid (50%)
+        float t = ratio * 2.0f; // 0.0 a 1.0
+        resultColor = ColorLerp(CFG::ESP_HealthBarGradientLow, CFG::ESP_HealthBarGradientMid, t);
+    }
+    else
+    {
+        // Interpolar entre Mid (50%) e High (100%)
+        float t = (ratio - 0.5f) * 2.0f; // 0.0 a 1.0
+        resultColor = ColorLerp(CFG::ESP_HealthBarGradientMid, CFG::ESP_HealthBarGradientHigh, t);
+    }
+
+    return resultColor;
+}
+
 void CESP::Run()
 {
     if (!CFG::ESP_Enable) return;
@@ -456,9 +486,6 @@ void CESP::Run()
             pLocal->RemoveCond(1);
         }
     }
-    // For Remove Fire, assuming remove muzzle flash or similar; implementation may require additional hooks
-    // Placeholder: if (CFG::Visuals_RemoveFire) { /* suppress particles or effects */ }
-    // Bullet Tracers drawing
     const int maxClients = I::EngineClient->GetMaxClients();
     const int highestIndex = I::ClientEntityList->GetHighestEntityIndex();
     const int end = std::max(maxClients, highestIndex);
@@ -466,7 +493,6 @@ void CESP::Run()
     pLocal->IsInValidTeam(&localTeam);
     int localIndex = I::EngineClient->GetLocalPlayer();
     auto pResource = GetTFPlayerResource();
-    // Opcional: Atualiza cache para objetivos (como Intel) - baseado em Amalgam
     H::Entities->UpdateCache();
     for (int i = 0; i <= end; ++i)
     {
@@ -478,10 +504,9 @@ void CESP::Run()
         const char* networkName = pBase->GetClientClass()->m_pNetworkName;
         int team = pBase->m_iTeamNum();
         bool isTeammate = (localTeam != -1 && team == localTeam);
-        bool isEnemy = !isTeammate && team > 1; // >1 to exclude spec
+        bool isEnemy = !isTeammate && team > 1;
         bool isLocal = (i == localIndex);
         bool drawESP = false;
-        bool drawSkeleton = false;
         bool isPlayer = false;
         bool isBuilding = false;
         bool isPickup = false;
@@ -490,7 +515,6 @@ void CESP::Run()
         int health = 0;
         int max_health = 100;
         Color_t clr = Color_t(255, 255, 255, 255);
-        bool drawBacktrackSkeleton = false;
         C_TFPlayer* pPlayer = nullptr;
         if (strcmp(networkName, "CTFPlayer") == 0)
         {
@@ -499,17 +523,12 @@ void CESP::Run()
             if (pPlayer->m_lifeState() != LIFE_ALIVE) continue;
             isPlayer = true;
             bool isCloaked = InCond(pPlayer, 4);
-            if (isCloaked && (CFG::ESP_HideCloaked || CFG::ESP_SkeletonHideCloaked)) {
-                if ((CFG::ESP_HideCloaked && CFG::ESP_SkeletonHideCloaked) || (!CFG::ESP_SkeletonLocalPlayer)) continue;
-            }
+            if (isCloaked && CFG::ESP_HideCloaked) continue;
             clr = isLocal ? CFG::Color_Local : (team == TF_TEAM_RED ? CFG::Color_TeamRed : CFG::Color_TeamBlue);
             drawESP = (isLocal ? CFG::ESP_LocalPlayer : true) && !(CFG::ESP_Team && isTeammate && !isLocal) && !(isCloaked && CFG::ESP_HideCloaked);
-            drawSkeleton = (isLocal ? CFG::ESP_SkeletonLocalPlayer : CFG::ESP_Skeleton) && !(CFG::ESP_SkeletonTeam && isTeammate && !isLocal) && !(isCloaked && CFG::ESP_SkeletonHideCloaked);
-            // Check for thirdperson for local player
             if (isLocal) {
                 if (!CFG::Misc_ThirdPerson_Enable) {
                     drawESP = false;
-                    drawSkeleton = false;
                 }
             }
             player_info_t info{};
@@ -527,20 +546,10 @@ void CESP::Run()
             if (max_health <= 0) max_health = pPlayer->GetMaxHealth();
             if (max_health <= 0) max_health = 100;
             if (health < 0) health = 0;
-            // Backtrack check
-            int backtrackType = CFG::ESP_Skeleton_BacktrackType; // Combined
-            bool backtrackCondition = false;
-            if (backtrackType & (1 << 3)) backtrackCondition = true; // All
-            else {
-                if (isEnemy && (backtrackType & (1 << 0))) backtrackCondition = true;
-                if (isTeammate && (backtrackType & (1 << 1))) backtrackCondition = true;
-                if (isLocal && (backtrackType & (1 << 2))) backtrackCondition = true;
-            }
-            drawBacktrackSkeleton = CFG::ESP_Skeleton_Backtrack && backtrackCondition;
         }
         else if (strcmp(networkName, "CObjectSentrygun") == 0 || strcmp(networkName, "CObjectDispenser") == 0 || strcmp(networkName, "CObjectTeleporter") == 0)
         {
-            if (!CFG::ESP_Build && !CFG::ESP_SkeletonBuild) continue;
+            if (!CFG::ESP_Build) continue;
             isBuilding = true;
             if (CFG::ESP_BuildOnlyEnemy && !isEnemy) continue;
             clr = isTeammate ? CFG::Color_BuildingTeam : CFG::Color_BuildingEnemy;
@@ -554,7 +563,6 @@ void CESP::Run()
             health = static_cast<C_BaseObject*>(pBase)->m_iHealth();
             max_health = static_cast<C_BaseObject*>(pBase)->m_iMaxHealth();
             drawESP = CFG::ESP_Build && !(CFG::ESP_BuildOnlyEnemy && !isEnemy);
-            drawSkeleton = CFG::ESP_SkeletonBuild && !(CFG::ESP_SkeletonBuildOnlyEnemy && !isEnemy);
         }
         else if ((strcmp(networkName, "CTFAmmoPack") == 0 ||
             strstr(networkName, "item_healthkit_") ||
@@ -562,9 +570,8 @@ void CESP::Run()
             (strcmp(networkName, "CBaseAnimating") == 0 &&
                 (H::Entities->IsHealthPack(pBase) || H::Entities->IsAmmoPack(pBase))))
         {
-            // Skip se for debris de building (ex: sentry broken -> debris model similar a ammo, mas class != CTFAmmoPack e sem strstr)
             if (strstr(networkName, "debris") && !strstr(networkName, "item_")) continue;
-            if (!CFG::ESP_Pickups) continue; // Removed skeleton
+            if (!CFG::ESP_Pickups) continue;
             isPickup = true;
             bool isAmmo = (strcmp(networkName, "CTFAmmoPack") == 0 ||
                 strstr(networkName, "ammopack") ||
@@ -578,7 +585,6 @@ void CESP::Run()
                 clr = CFG::Color_Medkit;
             }
             drawESP = CFG::ESP_Pickups;
-            drawSkeleton = false;
         }
         else if (strcmp(networkName, "CCaptureFlag") == 0 ||
             strcmp(networkName, "CTFItemTeamFlag") == 0 ||
@@ -587,14 +593,12 @@ void CESP::Run()
             strcmp(networkName, "CTeamControlPoint") == 0 ||
             strcmp(networkName, "CFuncTrackTrain") == 0)
         {
-            if (CFG::ESP_Team && isTeammate) continue; // Respeita opção de team: skip se for do time local
+            if (CFG::ESP_Team && isTeammate) continue;
             isFlag = true;
             if (strstr(networkName, "flag") || strstr(networkName, "Flag")) name = "Intel";
             else if (strcmp(networkName, "CTeamControlPoint") == 0) name = "Control Point";
             else name = "Payload Cart";
             drawESP = CFG::ESP_CaptureFlag;
-            // Chams e Skeleton independentes
-            drawSkeleton = false;
             clr = CFG::Color_Flag;
         }
         else continue;
@@ -603,8 +607,7 @@ void CESP::Run()
         Vec3 mins = pBase->m_vecMins();
         Vec3 maxs = pBase->m_vecMaxs();
         if (!IsFiniteVec(mins) || !IsFiniteVec(maxs) || !IsFiniteVec(origin)) continue;
-        // Melhoria para box dinâmico: Use hull_min/max do modelo se mins/maxs da entity forem zero/inválidos
-        if (mins.Length() < 0.1f || maxs.Length() < 0.1f) { // Threshold para detectar bbox inválido
+        if (mins.Length() < 0.1f || maxs.Length() < 0.1f) {
             if (auto pAnim = pBase->As<C_BaseAnimating>()) {
                 auto pModel = pAnim->GetModel();
                 if (pModel) {
@@ -612,7 +615,6 @@ void CESP::Run()
                     if (pStudio) {
                         mins = pStudio->hull_min;
                         maxs = pStudio->hull_max;
-                        // Fallback hardcoded se hull ainda inválido (raro)
                         if (mins.Length() < 0.1f || maxs.Length() < 0.1f) {
                             if (isPickup) {
                                 mins = Vec3(-8, -8, 0);
@@ -631,7 +633,6 @@ void CESP::Run()
                 }
             }
         }
-        // Removido: Atualiza cache para objetivos (como Intel) - baseado em Amalgam
         mins += origin;
         maxs += origin;
         Vec3 points[8] = {
@@ -667,7 +668,7 @@ void CESP::Run()
                 allProjected = false;
             }
         }
-        if (!allProjected) continue; // skip if any behind camera
+        if (!allProjected) continue;
         float left = std::numeric_limits<float>::max();
         float top = std::numeric_limits<float>::max();
         float right = std::numeric_limits<float>::min();
@@ -695,7 +696,7 @@ void CESP::Run()
             continue;
         }
         else {
-            if (drawESP || drawSkeleton) { // Desenhar mesmo se só chams/skeleton
+            if (drawESP) {
                 bool draw_box = CFG::ESP_Box;
                 bool draw_name = CFG::ESP_Name;
                 if (isPickup) {
@@ -706,78 +707,178 @@ void CESP::Run()
                     draw_box = CFG::ESP_BoxCapture;
                     draw_name = CFG::ESP_NameCapture;
                 }
-                if (draw_box && drawESP) { // Box só se drawESP
+                if (draw_box && drawESP) {
                     int boxLeft = static_cast<int>(std::round(left));
                     int boxTop = static_cast<int>(std::round(top));
                     int boxW = width;
                     int boxH = height;
                     bool useAA = (dist < 1500.0f);
                     switch (CFG::ESP_BoxType) {
-                    case 0: // 2D
-                        DrawBox2D(boxLeft, boxTop, boxW, boxH, clr);
-                        break;
-                    case 1: // 3D
-                        DrawBox3D(screenPts, clr, useAA);
-                        break;
-                    case 2: // Corner
-                        DrawBoxCorner(boxLeft, boxTop, boxW, boxH, clr);
-                        break;
-                    default:
-                        break;
+                    case 0: DrawBox2D(boxLeft, boxTop, boxW, boxH, clr); break;
+                    case 1: DrawBox3D(screenPts, clr, useAA); break;
+                    case 2: DrawBoxCorner(boxLeft, boxTop, boxW, boxH, clr); break;
+                    default: break;
                     }
                 }
                 if (draw_name && !name.empty())
                 {
-                    const CFont& font = H::Fonts->Get(EFonts::ESP);
+                    const CFont& fontObj = H::Fonts->Get(EFonts::ESP);
+                    HFont font = fontObj.m_dwFont;
                     Color_t nameClr = isBuilding ? CFG::Color_BuildingName : CFG::Color_Name;
-                    H::Draw->String(font, static_cast<int>((left + right) / 2.0f), static_cast<int>(top) - 15, nameClr, POS_CENTERX, name.c_str());
+                    H::Draw->Text(static_cast<int>((left + right) / 2.0f), static_cast<int>(top) - 15, font, nameClr, ALIGN_CENTER_H, name.c_str());
                 }
                 if (CFG::ESP_Health && max_health > 0 && (isPlayer || isBuilding))
                 {
+                    // Obter vida animada
+                    float animatedHealth = GetAnimatedHealthValue(i, health, max_health);
+
                     int healthType = CFG::ESP_HealthType;
-                    int barX = static_cast<int>(std::round(left)) - 6;
-                    int barY = static_cast<int>(std::round(top)) - 1;
-                    int barW = 4;
-                    int barH = height + 2;
+                    int position = CFG::ESP_HealthBarPosition; // 0=Left, 1=Right, 2=Top, 3=Bottom
                     bool hasBar = (healthType == 0 || healthType == 2);
-                    if (hasBar) {
-                        H::Draw->Rect(barX, barY, barW, barH, CFG::Color_HealthBarBG);
-                        if (barH > 2 && health > 0)
+
+                    // Calcular posições baseadas na escolha
+                    int barX, barY, barW, barH;
+                    bool isVertical = (position == 0 || position == 1); // Left ou Right = vertical
+
+                    if (isVertical)
+                    {
+                        // Barra vertical (Left ou Right)
+                        barW = 4;
+                        barH = height + 2;
+                        barY = static_cast<int>(std::round(top)) - 1;
+
+                        if (position == 0) // Left
+                            barX = static_cast<int>(std::round(left)) - 6;
+                        else // Right
+                            barX = static_cast<int>(std::round(right)) + 2;
+                    }
+                    else
+                    {
+                        // Barra horizontal (Top ou Bottom)
+                        barW = width + 2;
+                        barH = 4;
+                        barX = static_cast<int>(std::round(left)) - 1;
+
+                        if (position == 2) // Top
+                            barY = static_cast<int>(std::round(top)) - 6;
+                        else // Bottom
+                            barY = static_cast<int>(std::round(bottom)) + 2;
+                    }
+
+                    if (hasBar)
+                    {
+                        // Desenhar fundo
+                        H::Draw->RectFilled(barX, barY, barW, barH, CFG::Color_HealthBarBG);
+
+                        if (animatedHealth > 0)
                         {
-                            float ratio = static_cast<float>(health) / static_cast<float>(max_health);
-                            int fillH = static_cast<int>(std::round((barH - 2) * std::min(1.0f, ratio)));
-                            int fillY = barY + (barH - 1) - fillH;
-                            Color_t c;
-                            if (health > max_health) {
-                                c = CFG::Color_Overheal;
+                            // Calcular proporção
+                            float ratio = animatedHealth / static_cast<float>(max_health);
+                            ratio = std::min(1.0f, ratio);
+
+                            // Calcular tamanho preenchido baseado na orientação
+                            int fillW, fillH, fillX, fillY;
+
+                            if (isVertical)
+                            {
+                                // Barra vertical - cresce de baixo para cima
+                                fillW = 2;
+                                fillH = static_cast<int>(std::round((barH - 2) * ratio));
+                                fillX = barX + 1;
+                                fillY = barY + (barH - 1) - fillH;
                             }
-                            else {
-                                c = ColorLerp(CFG::Color_HealthLow, CFG::Color_HealthHigh, ratio);
+                            else
+                            {
+                                // Barra horizontal - cresce da esquerda para direita
+                                fillW = static_cast<int>(std::round((barW - 2) * ratio));
+                                fillH = 2;
+                                fillX = barX + 1;
+                                fillY = barY + 1;
                             }
-                            H::Draw->Rect(barX + 1, fillY, 2, fillH, c);
+
+                            // ✅ NOVO SISTEMA DE COR
+                            Color_t healthColor;
+
+                            // Verificar overheal
+                            if (health > max_health)
+                            {
+                                healthColor = CFG::Color_Overheal;
+                            }
+                            else
+                            {
+                                // Usar o sistema de gradiente ou cor única
+                                healthColor = GetHealthBarColor(health, max_health);
+                            }
+
+                            // Desenhar barra preenchida
+                            if ((isVertical && fillH > 0) || (!isVertical && fillW > 0))
+                            {
+                                H::Draw->RectFilled(fillX, fillY, fillW, fillH, healthColor);
+                            }
                         }
                     }
-                    if (healthType == 1 || healthType == 2) {
-                        const CFont& font = H::Fonts->Get(EFonts::ESP);
+
+                    // Desenhar texto de vida (se habilitado)
+                    if (healthType == 1 || healthType == 2)
+                    {
+                        const CFont& fontObj = H::Fonts->Get(EFonts::ESP);
+                        HFont font = fontObj.m_dwFont;
                         std::string healthStr = std::to_string(health);
-                        int textW = font.GetStringWidth(healthStr.c_str());
-                        int textH = H::Fonts->GetFontHeight(EFonts::ESP);
-                        int textX;
-                        if (hasBar) {
-                            textX = barX - textW - 2;
-                        }
-                        else {
+
+                        int textW, textH;
+                        H::Draw->GetTextSize(font, healthStr.c_str(), textW, textH);
+
+                        int textX, textY;
+
+                        // Posicionar texto baseado na posição da barra
+                        switch (position)
+                        {
+                        case 0: // Left
+                            if (hasBar)
+                                textX = barX - textW - 2;
+                            else
+                                textX = static_cast<int>(left) - textW - 2;
+                            textY = static_cast<int>(top);
+                            break;
+
+                        case 1: // Right
+                            if (hasBar)
+                                textX = barX + barW + 2;
+                            else
+                                textX = static_cast<int>(right) + 5;
+                            textY = static_cast<int>(top);
+                            break;
+
+                        case 2: // Top
+                            textX = static_cast<int>((left + right) / 2.0f) - (textW / 2);
+                            if (hasBar)
+                                textY = barY - textH - 2;
+                            else
+                                textY = static_cast<int>(top) - textH - 2;
+                            break;
+
+                        case 3: // Bottom
+                            textX = static_cast<int>((left + right) / 2.0f) - (textW / 2);
+                            if (hasBar)
+                                textY = barY + barH + 2;
+                            else
+                                textY = static_cast<int>(bottom) + 5;
+                            break;
+
+                        default:
                             textX = static_cast<int>(left) - textW - 2;
+                            textY = static_cast<int>(top);
+                            break;
                         }
-                        int textY = static_cast<int>(top);
-                        H::Draw->String(font, textX, textY, CFG::Color_HealthText, POS_DEFAULT, healthStr.c_str());
+
+                        H::Draw->Text(textX, textY, font, CFG::Color_HealthText, ALIGN_DEFAULT, healthStr.c_str());
                     }
                 }
             }
             if (isPlayer && drawESP) {
                 int playerClass = pPlayer->m_iClass();
-                // ESP Conds (inspired by Amalgam and Seowned implementations)
-                const CFont& font = H::Fonts->Get(EFonts::ESP);
+                const CFont& fontObj = H::Fonts->Get(EFonts::ESP);
+                HFont font = fontObj.m_dwFont;
                 int rightTextX = static_cast<int>(right) + 5;
                 int rightTextY = static_cast<int>(top);
                 if (CFG::ESP_Conds) {
@@ -787,36 +888,31 @@ void CESP::Run()
                     if (InCond(pPlayer, 5)) conds.push_back("Uber");
                     if (InCond(pPlayer, 22)) conds.push_back("Burning");
                     if (InCond(pPlayer, 7)) conds.push_back("Taunt");
-                    // Add more conditions as needed (e.g., Bonked, Jarated, etc.)
                     for (const auto& c : conds) {
-                        H::Draw->String(font, rightTextX, rightTextY, CFG::Color_CondsText, POS_DEFAULT, c.c_str());
+                        H::Draw->Text(rightTextX, rightTextY, font, CFG::Color_CondsText, ALIGN_DEFAULT, c.c_str());
                         rightTextY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
                     }
                 }
                 if (CFG::ESP_Buffs || CFG::ESP_Debuffs) {
                     std::vector<std::string> buffs, debuffs;
-                    // Buffs (positive)
                     if (InCond(pPlayer, 5)) buffs.push_back("Uber");
                     if (InCond(pPlayer, 11)) buffs.push_back("Kritz");
                     if (InCond(pPlayer, 16)) buffs.push_back("Banner");
                     if (InCond(pPlayer, 18)) buffs.push_back("Charging");
-                    // Debuffs (negative)
                     if (InCond(pPlayer, 22)) debuffs.push_back("Burning");
                     if (InCond(pPlayer, 25)) debuffs.push_back("Bleeding");
                     if (InCond(pPlayer, 14)) debuffs.push_back("Bonked");
                     if (InCond(pPlayer, 21)) debuffs.push_back("Marked");
-                    if (InCond(pPlayer, 28)) debuffs.push_back("Milk"); // Assuming cond 28 for milk
-                    // Draw buffs if enabled
+                    if (InCond(pPlayer, 28)) debuffs.push_back("Milk");
                     if (CFG::ESP_Buffs) {
                         for (const auto& b : buffs) {
-                            H::Draw->String(font, rightTextX, rightTextY, Color_t(0, 255, 0, 255), POS_DEFAULT, b.c_str());
+                            H::Draw->Text(rightTextX, rightTextY, font, Color_t(0, 255, 0, 255), ALIGN_DEFAULT, b.c_str());
                             rightTextY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
                         }
                     }
-                    // Draw debuffs if enabled
                     if (CFG::ESP_Debuffs) {
                         for (const auto& d : debuffs) {
-                            H::Draw->String(font, rightTextX, rightTextY, Color_t(255, 0, 0, 255), POS_DEFAULT, d.c_str());
+                            H::Draw->Text(rightTextX, rightTextY, font, Color_t(255, 0, 0, 255), ALIGN_DEFAULT, d.c_str());
                             rightTextY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
                         }
                     }
@@ -824,50 +920,26 @@ void CESP::Run()
                 if (CFG::ESP_DistanceEnemy && isEnemy) {
                     std::string distStr = std::to_string(static_cast<int>(dist)) + " m";
                     if (CFG::ESP_DistancePosition == 0) {
-                        H::Draw->String(font, rightTextX, rightTextY, Color_t(255, 255, 255, 255), POS_DEFAULT, distStr.c_str());
+                        H::Draw->Text(rightTextX, rightTextY, font, Color_t(255, 255, 255, 255), ALIGN_DEFAULT, distStr.c_str());
                         rightTextY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
                     }
                     else {
-                        H::Draw->String(font, static_cast<int>((left + right) / 2.0f), static_cast<int>(bottom) + 5, Color_t(255, 255, 255, 255), POS_CENTERX, distStr.c_str());
+                        H::Draw->Text(static_cast<int>((left + right) / 2.0f), static_cast<int>(bottom) + 5, font, Color_t(255, 255, 255, 255), ALIGN_CENTER_H, distStr.c_str());
                     }
                 }
                 if (CFG::ESP_Ping) {
                     static int pingOffset = NetVars::GetNetVar("CPlayerResource", "m_iPing");
                     int ping = pResource ? *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(pResource) + pingOffset + i * sizeof(int)) : 0;
                     std::string pingStr = std::to_string(ping) + " ms";
-                    H::Draw->String(font, rightTextX, rightTextY, Color_t(255, 255, 255, 255), POS_DEFAULT, pingStr.c_str());
+                    H::Draw->Text(rightTextX, rightTextY, font, Color_t(255, 255, 255, 255), ALIGN_DEFAULT, pingStr.c_str());
                     rightTextY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
                 }
-                if (CFG::ESP_KRDPlayer) {
-                    static int scoreOffset = NetVars::GetNetVar("CTFPlayerResource", "m_iScore");
-                    static int deathsOffset = NetVars::GetNetVar("CTFPlayerResource", "m_iDeaths");
-                    int kills = pResource ? *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(pResource) + scoreOffset + i * sizeof(int)) : 0;
-                    int deaths = pResource ? *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(pResource) + deathsOffset + i * sizeof(int)) : 0;
-                    float ratio = deaths > 0 ? static_cast<float>(kills) / deaths : kills;
-                    Color_t krdColor = Color_t(255, 255, 255, 255);
-                    if (ratio > 5.0f) krdColor = Color_t(0, 0, 255, 255); // blue suspicious
-                    else if (ratio > 2.0f) krdColor = Color_t(0, 255, 0, 255); // green good
-                    else if (ratio >= 1.0f) krdColor = Color_t(255, 255, 0, 255); // yellow medium
-                    else krdColor = Color_t(255, 0, 0, 255); // red bad
-                    std::string krdStr = "K/D: " + std::to_string(kills) + "/" + std::to_string(deaths);
-                    H::Draw->String(font, rightTextX, rightTextY, krdColor, POS_DEFAULT, krdStr.c_str());
-                    rightTextY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
-                }
-                if (CFG::ESP_LagCompensation) {
-                    int totalRecords = 0;
-                    F::LagRecords->HasRecords(pPlayer, &totalRecords);
-                    std::string lagStr = "LagComp: " + std::to_string(totalRecords) + " ticks";
-                    H::Draw->String(font, rightTextX, rightTextY, Color_t(255, 255, 255, 255), POS_DEFAULT, lagStr.c_str());
-                    rightTextY += H::Fonts->GetFontHeight(EFonts::ESP) + 1;
-                }
-                // ESP Sniper Lines (inspired by Seowned and Amalgam - draw aim projection lines for enemy snipers)
                 if (CFG::ESP_SniperLines && isEnemy && playerClass == 2) {
                     Vec3 eyePos = pPlayer->GetShootPos();
                     Vec3 ang = pPlayer->GetEyeAngles();
                     Vec3 fwd;
                     Math::AngleVectors(ang, &fwd);
-                    Vec3 end = eyePos + fwd * 16384.0f; // Long distance
-                    // Trace to wall (optional, for realism)
+                    Vec3 end = eyePos + fwd * 16384.0f;
                     CGameTrace tr;
                     CTraceFilterWorldAndPropsOnly filter;
                     Ray_t ray;
@@ -913,7 +985,6 @@ void CESP::Run()
                         }
                     }
                 }
-                // ESP Tracer (inspired by Seowned - draw tracers from crosshair to enemy players)
                 if (CFG::ESP_Tracer && isEnemy) {
                     Vec3 head = GetHitboxPosition(pPlayer, 0);
                     Vec3 scrHead;
@@ -932,16 +1003,17 @@ void CESP::Run()
                     {
                         if (auto pWeapon = pPlayer->GetWeaponFromSlot(1))
                         {
-                            const CFont& smallFont = H::Fonts->Get(EFonts::ESP_SMALL);
-                            H::Draw->String(
-                                smallFont,
+                            const CFont& smallFontObj = H::Fonts->Get(EFonts::ESP_SMALL);
+                            HFont smallFont = smallFontObj.m_dwFont;
+                            H::Draw->TextF(
                                 rightTextX,
                                 rightTextY,
+                                smallFont,
                                 CFG::Color_UberText,
-                                POS_DEFAULT,
+                                ALIGN_DEFAULT,
                                 "%d%%", static_cast<int>(pWeapon->As<C_WeaponMedigun>()->m_flChargeLevel() * 100.0f)
                             );
-                            rightTextY += smallFont.m_nTall + 1;
+                            rightTextY += H::Fonts->GetFontHeight(EFonts::ESP_SMALL) + 1;
                         }
                     }
                 }
@@ -957,192 +1029,19 @@ void CESP::Run()
                                 int nBarH = 2;
                                 int nDrawY = static_cast<int>(top) + height + nBarH + 1;
                                 float flFillW = Math::RemapValClamped(flCharge, 0.0f, 1.0f, 0.0f, static_cast<float>(width));
-                                H::Draw->OutlinedRect(static_cast<int>(left) - 1, nDrawY - 1, static_cast<int>(flFillW) + 2, nBarH + 2, outlineColor);
-                                H::Draw->Rect(static_cast<int>(left), nDrawY, static_cast<int>(flFillW), nBarH, uberColor);
+                                H::Draw->Rect(static_cast<int>(left) - 1, nDrawY - 1, static_cast<int>(flFillW) + 2, nBarH + 2, outlineColor);
+                                H::Draw->RectFilled(static_cast<int>(left), nDrawY, static_cast<int>(flFillW), nBarH, uberColor);
                                 if (pMedigun->m_iItemDefinitionIndex() == Medic_s_TheVaccinator)
                                 {
                                     if (flCharge >= 0.25f)
-                                        H::Draw->Rect(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.25f) - 1, nDrawY, 2, nBarH, outlineColor);
+                                        H::Draw->RectFilled(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.25f) - 1, nDrawY, 2, nBarH, outlineColor);
                                     if (flCharge >= 0.5f)
-                                        H::Draw->Rect(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.5f) - 1, nDrawY, 2, nBarH, outlineColor);
+                                        H::Draw->RectFilled(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.5f) - 1, nDrawY, 2, nBarH, outlineColor);
                                     if (flCharge >= 0.75f)
-                                        H::Draw->Rect(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.75f) - 1, nDrawY, 2, nBarH, outlineColor);
+                                        H::Draw->RectFilled(static_cast<int>(left) + static_cast<int>(static_cast<float>(width) * 0.75f) - 1, nDrawY, 2, nBarH, outlineColor);
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-        if ((drawSkeleton || drawBacktrackSkeleton) && (isPlayer || isBuilding) && onScreen) // Draw skeleton only if on screen
-        {
-            auto pAnimating = pBase->As<C_BaseAnimating>();
-            if (!pAnimating) continue;
-            matrix3x4_t boneMatrix[128] = {};
-            const int maxBones = 128;
-            bool ok = pAnimating->SetupBones(boneMatrix, maxBones, BONE_USED_BY_ANYTHING, I::GlobalVars->curtime);
-            if (!ok) continue;
-            auto pModel = pAnimating->GetModel();
-            if (!pModel) continue;
-            auto pHDR = I::ModelInfoClient->GetStudiomodel(pModel);
-            if (!pHDR) continue;
-            int numBones = std::min(static_cast<int>(pHDR->numbones), maxBones);
-            int hitboxSet = pAnimating->m_nHitboxSet();
-            int hitboxCount = pHDR->iHitboxCount(hitboxSet);
-            bool useAA = (dist < 1500.0f);
-            if (drawSkeleton)
-            {
-                std::map<std::string, Vec3> keyBoneScreens;
-                std::map<std::string, int> keyBoneIndices = {
-                    {"bip_head", -1},
-                    {"bip_neck", -1},
-                    {"bip_spine_3", -1},
-                    {"bip_spine_2", -1},
-                    {"bip_spine_1", -1},
-                    {"bip_spine_0", -1},
-                    {"bip_pelvis", -1},
-                    {"bip_hip_L", -1},
-                    {"bip_knee_L", -1},
-                    {"bip_foot_L", -1},
-                    {"bip_hip_R", -1},
-                    {"bip_knee_R", -1},
-                    {"bip_foot_R", -1},
-                    {"bip_upperArm_L", -1},
-                    {"bip_lowerArm_L", -1},
-                    {"bip_hand_L", -1},
-                    {"bip_upperArm_R", -1},
-                    {"bip_lowerArm_R", -1},
-                    {"bip_hand_R", -1}
-                };
-                for (int b = 0; b < numBones; ++b)
-                {
-                    mstudiobone_t* pBone = pHDR->pBone(b);
-                    if (!pBone) continue;
-                    std::string boneName = pBone->pszName();
-                    auto it = keyBoneIndices.find(boneName);
-                    if (it != keyBoneIndices.end())
-                        it->second = b;
-                }
-                for (const auto& kv : keyBoneIndices)
-                {
-                    int b = kv.second;
-                    if (b == -1) continue;
-                    Vec3 bonePosWorld{};
-                    Math::VectorTransform(Vec3{ 0.0f, 0.0f, 0.0f }, boneMatrix[b], bonePosWorld);
-                    Vec3 screenPos;
-                    if (H::Draw->W2S(bonePosWorld, screenPos))
-                    {
-                        keyBoneScreens[kv.first] = screenPos;
-                    }
-                }
-                Color_t boneColor = isBuilding ? clr : CFG::Color_Skeleton;
-                const std::vector<std::vector<std::string>> chains = {
-                    {"bip_head", "bip_neck", "bip_spine_3", "bip_spine_2", "bip_spine_1", "bip_spine_0", "bip_pelvis"},
-                    {"bip_pelvis", "bip_hip_L", "bip_knee_L", "bip_foot_L"},
-                    {"bip_pelvis", "bip_hip_R", "bip_knee_R", "bip_foot_R"},
-                    {"bip_spine_3", "bip_upperArm_L", "bip_lowerArm_L", "bip_hand_L"},
-                    {"bip_spine_3", "bip_upperArm_R", "bip_lowerArm_R", "bip_hand_R"}
-                };
-                for (const auto& chain : chains)
-                {
-                    for (size_t idx = 0; idx < chain.size() - 1; ++idx)
-                    {
-                        auto it1 = keyBoneScreens.find(chain[idx]);
-                        auto it2 = keyBoneScreens.find(chain[idx + 1]);
-                        if (it1 != keyBoneScreens.end() && it2 != keyBoneScreens.end())
-                        {
-                            DrawOutlinedLine(it1->second, it2->second, boneColor, CFG::Color_ESP_Outline);
-                        }
-                    }
-                }
-            }
-            // Backtrack drawing
-            if (isPlayer && (drawBacktrackSkeleton)) {
-                int totalRecords = 0;
-                if (F::LagRecords->HasRecords(pPlayer, &totalRecords)) {
-                    for (int n = 1; n <= totalRecords; ++n) { // start from 1 to skip current
-                        auto pRecord = F::LagRecords->GetRecord(pPlayer, n);
-                        if (!pRecord || !pRecord->Player)
-                            continue;
-                        F::LagRecordMatrixHelper->Set(pRecord);
-                        // Recompute boneMatrix for backtrack record (fix: call SetupBones again with record's simtime)
-                        ok = pAnimating->SetupBones(
-                            boneMatrix,
-                            maxBones,
-                            BONE_USED_BY_ANYTHING,
-                            pRecord->SimulationTime
-                        );
-                        if (!ok) continue;
-                        float alphaFactor = 1.0f - static_cast<float>(n) / static_cast<float>(totalRecords + 1);
-                        Color_t fadedClr = CFG::Color_BacktrackSkeleton;
-                        fadedClr.a = static_cast<unsigned char>(static_cast<float>(fadedClr.a) * alphaFactor);
-                        // Draw backtrack skeleton
-                        if (drawBacktrackSkeleton) {
-                            std::map<std::string, Vec3> keyBoneScreens;
-                            std::map<std::string, int> keyBoneIndices = {
-                                {"bip_head", -1},
-                                {"bip_neck", -1},
-                                {"bip_spine_3", -1},
-                                {"bip_spine_2", -1},
-                                {"bip_spine_1", -1},
-                                {"bip_spine_0", -1},
-                                {"bip_pelvis", -1},
-                                {"bip_hip_L", -1},
-                                {"bip_knee_L", -1},
-                                {"bip_foot_L", -1},
-                                {"bip_hip_R", -1},
-                                {"bip_knee_R", -1},
-                                {"bip_foot_R", -1},
-                                {"bip_upperArm_L", -1},
-                                {"bip_lowerArm_L", -1},
-                                {"bip_hand_L", -1},
-                                {"bip_upperArm_R", -1},
-                                {"bip_lowerArm_R", -1},
-                                {"bip_hand_R", -1}
-                            };
-                            for (int b = 0; b < numBones; ++b)
-                            {
-                                mstudiobone_t* pBone = pHDR->pBone(b);
-                                if (!pBone) continue;
-                                std::string boneName = pBone->pszName();
-                                auto it = keyBoneIndices.find(boneName);
-                                if (it != keyBoneIndices.end())
-                                    it->second = b;
-                            }
-                            for (const auto& kv : keyBoneIndices)
-                            {
-                                int b = kv.second;
-                                if (b == -1) continue;
-                                Vec3 bonePosWorld{};
-                                Math::VectorTransform(Vec3{ 0.0f, 0.0f, 0.0f }, boneMatrix[b], bonePosWorld);
-                                Vec3 screenPos;
-                                if (H::Draw->W2S(bonePosWorld, screenPos))
-                                {
-                                    keyBoneScreens[kv.first] = screenPos;
-                                }
-                            }
-                            Color_t boneColor = fadedClr;
-                            const std::vector<std::vector<std::string>> chains = {
-                                {"bip_head", "bip_neck", "bip_spine_3", "bip_spine_2", "bip_spine_1", "bip_spine_0", "bip_pelvis"},
-                                {"bip_pelvis", "bip_hip_L", "bip_knee_L", "bip_foot_L"},
-                                {"bip_pelvis", "bip_hip_R", "bip_knee_R", "bip_foot_R"},
-                                {"bip_spine_3", "bip_upperArm_L", "bip_lowerArm_L", "bip_hand_L"},
-                                {"bip_spine_3", "bip_upperArm_R", "bip_lowerArm_R", "bip_hand_R"}
-                            };
-                            for (const auto& chain : chains)
-                            {
-                                for (size_t idx = 0; idx < chain.size() - 1; ++idx)
-                                {
-                                    auto it1 = keyBoneScreens.find(chain[idx]);
-                                    auto it2 = keyBoneScreens.find(chain[idx + 1]);
-                                    if (it1 != keyBoneScreens.end() && it2 != keyBoneScreens.end())
-                                    {
-                                        DrawOutlinedLine(it1->second, it2->second, boneColor, CFG::Color_ESP_Outline);
-                                    }
-                                }
-                            }
-                        }
-                        F::LagRecordMatrixHelper->Restore();
                     }
                 }
             }

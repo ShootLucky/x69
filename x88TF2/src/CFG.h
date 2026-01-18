@@ -10,8 +10,8 @@ namespace CFG
 	CFGVAR(Aimbot_Melee_KeyMode, 0);
 	CFGVAR(Aimbot_Projectile_KeyMode, 0);
 	CFGVAR(Aimbot_FOV, 45.f);
-	CFGVAR(Aimbot_VisibleCheck, true);
-	CFGVAR(Aimbot_TeamCheck, true);
+	CFGVAR(Aimbot_VisibleCheck, false);
+	CFGVAR(Aimbot_TeamCheck, false);
 	CFGVAR(Aimbot_Hitscan_Smoothing, 5.f);
 	CFGVAR(Aimbot_Hitbox_Head, false);
 	CFGVAR(Aimbot_Hitbox_Legs, false);
@@ -25,7 +25,7 @@ namespace CFG
 	CFGVAR(Aimbot_Projectile_FOV, 45.f);
 	CFGVAR(Aimbot_Projectile_Smoothing, 5.f);
 	CFGVAR(Aimbot_Projectile_TicksPredict, 0);
-	CFGVAR(Aimbot_Projectile_TeamCheck, true);
+	CFGVAR(Aimbot_Projectile_TeamCheck, false);
 	CFGVAR(Debug_SplashPoints, false);
 	CFGVAR(Aimbot_Projectile_Mode, 0);
 	CFGVAR(Aimbot_ActiveShoot, false);
@@ -37,10 +37,10 @@ namespace CFG
 	CFGVAR(Aimbot_AutoScope, false);
 	CFGVAR(Aimbot_MinigunTapfire, false);
 	CFGVAR(Aimbot_WaitForCharge, false)
-		CFGVAR(Aimbot_Target_Players, true);
+		CFGVAR(Aimbot_Target_Players, false);
 	CFGVAR(Aimbot_Target_Buildings, false);
-	CFGVAR(Aimbot_Ignore_Friends, true);
-	CFGVAR(Aimbot_Ignore_Invulnerable, true);
+	CFGVAR(Aimbot_Ignore_Friends, false);
+	CFGVAR(Aimbot_Ignore_Invulnerable, false);
 	CFGVAR(Aimbot_ActiveMelee, false);
 	CFGVAR(Aimbot_Hitscan_Mode, 0);
 	CFGVAR(Aimbot_Hitscan_Sort, 0);
@@ -72,8 +72,8 @@ namespace CFG
 	CFGVAR(Aimbot_Melee_FOV, 45.f);
 	CFGVAR(Aimbot_Melee_Smoothing, 5.f);
 	CFGVAR(Aimbot_Melee_PredictSwingTime, 0.18f);
-	CFGVAR(Aimbot_Ignore_Invisible, true);
-	CFGVAR(Aimbot_Ignore_Taunting, true);
+	CFGVAR(Aimbot_Ignore_Invisible, false);
+	CFGVAR(Aimbot_Ignore_Taunting, false);
 	CFGVAR(Aimbot_Projectile_Active, false);
 	CFGVAR(Aimbot_Projectile_Advanced_Head_Aim, false);
 	CFGVAR(Aimbot_Projectile_Auto_Double_Donk, false);
@@ -82,11 +82,11 @@ namespace CFG
 	CFGVAR(Aimbot_Projectile_Max_Simulation_Time, 2.0f);
 	CFGVAR(Aimbot_Projectile_Rocket_Splash, false);
 	CFGVAR(Aimbot_Hitscan_Hitbox, 0);
-	CFGVAR(Aimbot_Hitscan_Scan_Head, true);
-	CFGVAR(Aimbot_Hitscan_Scan_Body, true);
+	CFGVAR(Aimbot_Hitscan_Scan_Head, false);
+	CFGVAR(Aimbot_Hitscan_Scan_Body, false);
 	CFGVAR(Aimbot_Hitscan_Scan_Arms, false);
 	CFGVAR(Aimbot_Hitscan_Scan_Legs, false);
-	CFGVAR(Aimbot_Hitscan_Scan_Buildings, true);
+	CFGVAR(Aimbot_Hitscan_Scan_Buildings, false);
 	CFGVAR(Aimbot_Projectile_SplashBot, false);
 	CFGVAR(Aimbot_Projectile_SplashPoints, 80.0f);
 	CFGVAR(Aimbot_Active, false);
@@ -100,6 +100,13 @@ namespace CFG
 	CFGVAR(ESP_BoxType, 0);
 	CFGVAR(ESP_Name, false);
 	CFGVAR(ESP_Health, false);
+	CFGVAR(ESP_HealthType, 0);
+	CFGVAR(ESP_HealthBarPosition, 0); // 0=Left, 1=Right, 2=Top, 3=Bottom
+	CFGVAR(ESP_HealthBarGradient, true); // Ativar/Desativar gradiente
+	CFGVAR(ESP_HealthBarColor, Color_t(0, 255, 0, 255)); // Cor única (verde padrão)
+	CFGVAR(ESP_HealthBarGradientLow, Color_t(255, 0, 0, 255)); // Gradiente: Baixa vida (vermelho)
+	CFGVAR(ESP_HealthBarGradientMid, Color_t(255, 255, 0, 255)); // Gradiente: Média vida (amarelo)
+	CFGVAR(ESP_HealthBarGradientHigh, Color_t(0, 255, 0, 255)); // Gradiente: Alta vida (verde)
 	CFGVAR(ESP_Team, false);
 	// Novas opções para Skeleton ESP e Chams Box
 	CFGVAR(ESP_Skeleton, false);
@@ -132,7 +139,6 @@ namespace CFG
 	CFGVAR(ESP_BoxCapture, false);
 	CFGVAR(ESP_NameCapture, false);
 	CFGVAR(Visuals_Draw_Movement_Path_Style, 0);
-	CFGVAR(ESP_HealthType, 0);
 	CFGVAR(ESP_Skeleton_Backtrack, false);
 	CFGVAR(ESP_Skeleton_BacktrackType, 0);
 	CFGVAR(Logs_Enable, false);
@@ -151,7 +157,7 @@ namespace CFG
 	CFGVAR(Visuals_ViewModel_Up, 0.f);
 	CFGVAR(Visuals_Removals_Mode, 0);
 	CFGVAR(Visuals_Rain, false);
-	CFGVAR(Visual_Spectatorlist, true);
+	CFGVAR(Visual_Spectatorlist, false);
 	CFGVAR(ESP_Arrows, false);
 	CFGVAR(ESP_Conds, false);
 	CFGVAR(ESP_SniperLines, false);
@@ -257,9 +263,9 @@ namespace CFG
 	CFGVAR(Outlines_Players_Show_Teammate_Medics, false);
 #pragma endregion
 #pragma region Misc
-	CFGVAR(Misc_AutoJump, true); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key Misc_AntiAFK_Enable
-	CFGVAR(Misc_AntiAFK_Enable, true);
-	CFGVAR(Misc_Edge_Jump_Key, true);
+	CFGVAR(Misc_AutoJump, false); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key Misc_AntiAFK_Enable
+	CFGVAR(Misc_AntiAFK_Enable, false);
+	CFGVAR(Misc_Edge_Jump_Key, false);
 	CFGVAR(Misc_SetupBones_Optimization, false);
 	CFGVAR(Misc_Accuracy_Improvements, false);
 	CFGVAR(Radio, false)
@@ -275,7 +281,7 @@ namespace CFG
 	CFGVAR(Radio_Prev, false);
 	CFGVAR(Radio_VolUp, false);
 	CFGVAR(Radio_VolDown, false);
-	CFGVAR(Misc_AccuracyImprovements, true);
+	CFGVAR(Misc_AccuracyImprovements, false);
 	CFGVAR(Misc_Fake_Taunt, false);
 	CFGVAR(Misc_ThirdPerson_Distance, 0.f);
 	CFGVAR(Misc_ThirdPerson_Enable, false);
@@ -379,6 +385,38 @@ namespace CFG
 	CFGVAR(Outlines_Color_LocalProjectiles, Color_t(255, 255, 255, 255));
 	CFGVAR(Outlines_Color_TeammateProjectiles, Color_t(0, 255, 0, 255));
 	CFGVAR(Outlines_Color_EnemyProjectiles, Color_t(255, 0, 0, 255));
+#pragma region Indicators
+	// Main Indicators Panel
+	CFGVAR(Indicators_Enable, false);
+
+	// Keybinds Panel
+	CFGVAR(Indicators_Keybinds_Enable, false);
+
+	// Watermark
+	CFGVAR(Indicators_Watermark_Enable, false);
+
+	// Watermark options
+	CFGVAR(Watermark_ShowName, false);
+	CFGVAR(Watermark_ShowFPS, false);
+	CFGVAR(Watermark_ShowTime, false);
+	CFGVAR(Watermark_ShowPing, false);
+
+	// AntiAim settings (se não existirem já)
+	CFGVAR(AntiAim_FakeLag_Enable, false);
+	CFGVAR(AntiAim_FakeLag_Limit, 24);
+
+	// Exploits settings (se não existirem já)
+	CFGVAR(Exploits_DoubleTap_Style, 0);  // 0=active, 1=hold, 2=toggled, 3=force off
+
+	CFGVAR(Indicators_Pos_X, 10.f);
+	CFGVAR(Indicators_Pos_Y, 530.f);
+	CFGVAR(Keybinds_Pos_X, 10.f);
+	CFGVAR(Keybinds_Pos_Y, 624.f);
+	CFGVAR(Watermark_Pos_X, 10.f);
+	CFGVAR(Watermark_Pos_Y, 10.f);
+	CFGVAR(Spectators_Pos_X, 10.f);
+	CFGVAR(Spectators_Pos_Y, 718.f);
+#pragma endregion
 #pragma endregion
 	CFGVAR(CurrentSection, 0);
 	CFGVAR(Menu_ThemeColor, Color_t(0, 122, 187, 255));

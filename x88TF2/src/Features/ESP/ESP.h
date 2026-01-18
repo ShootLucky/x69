@@ -1,25 +1,22 @@
-// esp.h
 #pragma once
 #include "../src/SDK/SDK.h"
 #include "../src/SDK/Helpers/Draw/Draw.h"
 #include "../src/SDK/Helpers/Entities/Entities.h"
 #include "../src/CFG.h"
-#include "../LagRecords/Backtrack.h" // Adjusted include path if necessary
+#include "../LagRecords/Backtrack.h"
+#include <map>
+
 class CESP {
 public:
-	// Executa a lógica do ESP e desenha na tela (chamar por frame).
 	void Run();
-	// Inicializa recursos necessários (opcional).
 	void Init();
-	// Libera recursos (opcional).
 	void Shutdown();
-	// Estado (consulta rápida).
 	bool IsEnabled() const noexcept { return CFG::ESP_Enable; }
 	void CustomFOV(CViewSetup* pSetup);
 	void Rain();
 	void PlayerArrow(C_TFPlayer* Player, Color_t Clr);
+
 private:
-	// Helpers de desenho — implementados em ESP.cpp
 	void DrawBox(int left, int top, int w, int h, const Color_t& clr);
 	void DrawBox2D(int left, int top, int w, int h, const Color_t& clr);
 	void DrawBox3D(Vec3 scr[8], const Color_t& clr, bool useAA = true);
@@ -35,10 +32,17 @@ private:
 	void DrawProjectedHitboxWire(const Vec3 proj[8], const Color_t& clr, bool useAA = true);
 	void DrawOffscreenArrow(const Vec3& origin, const Color_t& clr);
 	void DrawFOVCircle(float fov, const Color_t& color);
+	float GetAnimatedHealthValue(int entIndex, int currentHealth, int maxHealth);
+	Color_t GetHealthBarColor(int health, int maxHealth);
 	bool m_bInitialized = false;
 	static C_BaseEntity* RainEntity;
 	static IClientNetworkable* RainNetworkable;
 	static C_BaseEntity* WindEntity;
 	static IClientNetworkable* WindNetworkable;
+
+	// Sistema de animação de vida
+	std::map<int, float> m_AnimatedHealth; // entIndex -> vida animada
+	std::map<int, float> m_InitialAppearTime; // entIndex -> tempo de aparição
 };
+
 extern CESP gESP;

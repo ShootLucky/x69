@@ -1,8 +1,11 @@
-﻿// notifs.cpp - x88 Theme Edition
-#include "notifs.h"
+﻿#include "notifs.h"
 #include "icons_notify.h"
 #include "../menu.h"
 #include <cmath>
+#include <chrono>
+#include <vector>
+#include <string>
+#include <iostream>  // For std::cout if using console logs
 
 // ===== X88 DESIGN CONSTANTS =====
 constexpr int MAX_ALPHA = 255;
@@ -22,35 +25,6 @@ constexpr int BASE_WIDTH = 1920;
 constexpr int BASE_HEIGHT = 1080;
 constexpr size_t MAX_NOTIFICATIONS = 20;
 constexpr int MAX_TEXT_WIDTH = 270;
-
-// X88 Theme Colors - Dark & Professional
-constexpr Color_t BG_PRIMARY = Color_t(12, 12, 15, 245);        // Darker background
-constexpr Color_t BG_SECONDARY = Color_t(18, 18, 22, 230);      // Slightly lighter
-constexpr Color_t ACCENT_PRIMARY = Color_t(120, 120, 255, 255); // Purple-ish blue
-constexpr Color_t ACCENT_GLOW = Color_t(120, 120, 255, 40);     // Glow effect
-constexpr Color_t BORDER_MAIN = Color_t(45, 45, 55, 200);       // Subtle border
-constexpr Color_t BORDER_ACCENT = Color_t(120, 120, 255, 180);  // Accent border
-constexpr Color_t TEXT_PRIMARY = Color_t(240, 240, 245, 255);   // Almost white
-constexpr Color_t TEXT_SECONDARY = Color_t(180, 180, 190, 255); // Dimmed text
-
-// Icon accent colors
-constexpr Color_t PING_GREEN = Color_t(80, 220, 130, 255);
-constexpr Color_t PING_YELLOW = Color_t(255, 200, 80, 255);
-constexpr Color_t PING_RED = Color_t(255, 90, 90, 255);
-constexpr Color_t DAMAGE_COLOR = Color_t(255, 100, 100, 255);
-constexpr Color_t DEATH_COLOR = Color_t(255, 70, 70, 255);
-constexpr Color_t RESPAWN_COLOR = Color_t(100, 255, 150, 255);
-constexpr Color_t CLASS_COLOR = Color_t(255, 180, 100, 255);
-
-// Player flag colors - more muted for x88 theme
-constexpr Color_t NETHOOK_COLOR = Color_t(150, 100, 200, 255);
-constexpr Color_t LMAOBOX_COLOR = Color_t(80, 220, 220, 255);
-constexpr Color_t RIJIN_COLOR = Color_t(255, 100, 200, 255);
-constexpr Color_t CHEATER_COLOR = Color_t(255, 80, 80, 255);
-constexpr Color_t CHEATER_LIGHT_COLOR = Color_t(255, 140, 140, 255);
-constexpr Color_t SUSPECT_COLOR = Color_t(255, 200, 80, 255);
-constexpr Color_t RETARD_LEGIT_COLOR = Color_t(255, 180, 60, 255);
-constexpr Color_t IGNORED_COLOR = Color_t(140, 140, 150, 255);
 
 inline Color_t apply_alpha(Color_t c, int alpha) {
     return Color_t(c.r, c.g, c.b, static_cast<unsigned char>(alpha));
@@ -105,31 +79,27 @@ struct TextSize {
     int height;
 };
 
-TextSize get_string_size(const CFont& font, const char* text) {
+TextSize get_string_size(HFont font, const char* text) {
     if (!text || !text[0])
         return { 0, 0 };
-    wchar_t wbuf[1024];
-    if (MultiByteToWideChar(CP_UTF8, 0, text, -1, wbuf, 1024) == 0) {
-        return { 0, 0 };
-    }
     int width = 0;
     int height = 0;
-    I::MatSystemSurface->GetTextSize(font.m_dwFont, wbuf, width, height);
+    H::Draw->GetTextSize(font, text, width, height);
     return { width, height };
 }
 
 // Texto com outline mais sutil e moderno
-void DrawModernText(const CFont& font, int x, int y, Color_t color, const char* text, int alpha) {
+void DrawModernText(HFont font, int x, int y, Color_t color, const char* text, int alpha) {
     // Sombra suave
     Color_t shadow = Color_t(0, 0, 0, alpha * 0.6f);
-    H::Draw->String(font, x + 1, y + 1, shadow, POS_DEFAULT, text);
+    H::Draw->Text(x + 1, y + 1, font, shadow, ALIGN_DEFAULT, text);
 
     // Texto principal
     color.a = static_cast<unsigned char>(alpha);
-    H::Draw->String(font, x, y, color, POS_DEFAULT, text);
+    H::Draw->Text(x, y, font, color, ALIGN_DEFAULT, text);
 }
 
-std::vector<std::string> WrapText(const std::string& text, const CFont& font, int max_width) {
+std::vector<std::string> WrapText(const std::string& text, HFont font, int max_width) {
     std::vector<std::string> lines;
     std::string current_line;
     std::string word;
@@ -169,125 +139,130 @@ std::vector<std::string> WrapText(const std::string& text, const CFont& font, in
 
 // X88 Style Notification Box - Clean & Modern
 void DrawNotificationBox(int x, int y, int w, int h, int alpha, int corner_radius, Color_t accent_color) {
-    // Background principal - mais escuro
+    // Background - Rounded rect
     Color_t bg = apply_alpha(BG_PRIMARY, alpha);
-    H::Draw->FillRectRounded(x, y, w, h, corner_radius, bg);
+    H::Draw->RectRounded(x, y, w, h, corner_radius, bg);
 
-    // Barra lateral esquerda (accent color) - usando FillRectRounded com corner_radius 0
-    Color_t accent_bar = apply_alpha(accent_color, alpha);
-    H::Draw->FillRectRounded(x, y, 3, h, 0, accent_bar);
+    // Subtle glow behind accent
+    Color_t glow = apply_alpha(ACCENT_GLOW, alpha);
+    H::Draw->RectGradient(x, y, w, h, glow, Color_t(0, 0, 0, 0), true);
+
+    // Accent border - left side
+    Color_t accent = apply_alpha(accent_color, alpha);
+    H::Draw->RectFilled(x, y, 3, h, accent);
+
+    // Main border
+    Color_t border = apply_alpha(BORDER_MAIN, alpha / 2);
+    H::Draw->RectOutlined(x, y, w, h, border, border);
+
+    // Inner shadow
+    Color_t shadow = Color_t(0, 0, 0, alpha / 4);
+    H::Draw->RectGradient(x + 1, y + 1, w - 2, 4, shadow, Color_t(0, 0, 0, 0), false);
 }
 
-void NotificationSystem::add_notification(const std::string& message, int duration_ms) {
-    notifications.emplace_back(message, duration_ms);
+CNotify gNotify;
+
+void CNotify::add_notification(const std::string& message, int duration_ms) {
+    if (CFG::Logs_Enable) {
+        // Log based on type (combo box)
+        switch (CFG::Logs_Type) {
+        case 1: // Basic logs (e.g., console)
+            std::cout << "[LOG] " << message << std::endl;
+            break;
+        case 2: // Verbose (e.g., file) - Add <fstream> if using file logging
+            // std::ofstream log_file("logs.txt", std::ios::app);
+            // log_file << "[VERBOSE] " << message << std::endl;
+            break;
+        default: break;
+        }
+    }
+    notifications.push_front(Notification_t(message, duration_ms));
+    if (notifications.size() > MAX_NOTIFICATIONS)
+        notifications.pop_back();
 }
 
-void NotificationSystem::run() {
-    H::Draw->UpdateScreenSize();
-    int SCREEN_WIDTH = H::Draw->GetScreenW();
-    int SCREEN_HEIGHT = H::Draw->GetScreenH();
+void CNotify::Draw() {
+    if (!CFG::Logs_Enable)
+        return;
 
-    float scale_x = static_cast<float>(SCREEN_WIDTH) / BASE_WIDTH;
-    float scale_y = static_cast<float>(SCREEN_HEIGHT) / BASE_HEIGHT;
-    float scale = std::min(scale_x, scale_y);
-
-    int start_y = static_cast<int>(BASE_START_Y * scale);
-    int start_x = SCREEN_WIDTH - static_cast<int>((BASE_NOTIF_WIDTH + BASE_START_X_OFFSET) * scale);
-    int spacing = static_cast<int>(BASE_SPACING * scale);
-    int padding_x = static_cast<int>(BASE_PADDING_X * scale);
-    int padding_y = static_cast<int>(BASE_PADDING_Y * scale);
-    int notif_width = static_cast<int>(BASE_NOTIF_WIDTH * scale);
-    int corner_radius = static_cast<int>(BASE_CORNER_RADIUS * scale);
-    int icon_size = static_cast<int>(BASE_ICON_SIZE * scale);
-    int max_text_width = static_cast<int>(MAX_TEXT_WIDTH * scale);
-
-    const CFont& font = H::Fonts->Get(EFonts::OTHER);
-
+    static auto last_frame_time = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
-    static auto last_time = now;
-    float delta_time = std::chrono::duration_cast<std::chrono::duration<float>>(now - last_time).count();
-    last_time = now;
+    float delta_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_frame_time).count() / 1000.0f;
+    last_frame_time = now;
 
-    static auto last_ping_check = now - std::chrono::seconds(6);
-    if (now - last_ping_check > std::chrono::seconds(5)) {
-        last_ping_check = now;
-        auto* netchan = I::EngineClient->GetNetChannelInfo();
-        if (netchan) {
-            float latency = netchan->GetLatency(FLOW_OUTGOING) + netchan->GetLatency(FLOW_INCOMING);
-            int ping = static_cast<int>(latency * 1000.f);
+    int SCREEN_WIDTH = 0;
+    int SCREEN_HEIGHT = 0;
+    I::EngineClient->GetScreenSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-            if (ping >= 100) {
-                bool has_ping_notif = false;
-                for (const auto& n : notifications) {
-                    if (n.message.find("High ping:") == 0) {
-                        has_ping_notif = true;
-                        break;
-                    }
-                }
+    float scale = std::min(static_cast<float>(SCREEN_WIDTH) / BASE_WIDTH, static_cast<float>(SCREEN_HEIGHT) / BASE_HEIGHT);
 
-                if (!has_ping_notif) {
-                    add_notification(std::format("High ping: {} ms", ping), 3000);
-                }
-            }
-        }
-    }
+    int start_x = SCREEN_WIDTH - BASE_NOTIF_WIDTH * scale - BASE_START_X_OFFSET * scale;
+    int start_y = BASE_START_Y * scale;
+    int spacing = BASE_SPACING * scale;
+    int padding_x = BASE_PADDING_X * scale;
+    int padding_y = BASE_PADDING_Y * scale;
+    int notif_width = BASE_NOTIF_WIDTH * scale;
+    int icon_size = BASE_ICON_SIZE * scale;
+    int max_text_width = MAX_TEXT_WIDTH * scale;
+    int corner_radius = BASE_CORNER_RADIUS * scale;
 
-    if (notifications.size() > MAX_NOTIFICATIONS) {
-        size_t excess = notifications.size() - MAX_NOTIFICATIONS;
-        for (size_t i = 0; i < excess && i < notifications.size(); ++i) {
-            auto& notif = notifications[i];
-            notif.fade_out_speed = FADE_SPEED * 2.0f;
-            long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - notif.timestamp).count();
-            if (elapsed < notif.duration_ms) {
-                notif.timestamp = now - std::chrono::milliseconds(notif.duration_ms + 1);
-            }
-        }
-    }
+    HFont font = H::Fonts->Get(EFonts::ESP_SMALL).m_dwFont;
 
-    std::deque<Notification> updated_notifications;
+    std::deque<Notification_t> updated_notifications;
     int current_target_y = start_y;
 
-    while (!notifications.empty()) {
-        auto notif = notifications.front();
-        notifications.pop_front();
+    for (auto notif : notifications) {
+        // Remoção suave
+        if (notif.opacity <= 0.0f && notif.duration_ms <= 0)
+            continue;
 
-        long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - notif.timestamp).count();
-        bool should_expire = elapsed >= notif.duration_ms;
-
-        notif.target_y = current_target_y;
-
-        if (notif.current_y == 0) {
-            notif.current_y = notif.target_y;
-            notif.slide_offset = SLIDE_IN_OFFSET * scale;
+        // Fade out se expirado
+        if (notif.duration_ms <= 0 && notif.opacity > 0.0f) {
+            notif.opacity -= delta_time * 1.0f;
+            if (notif.opacity < 0.0f) notif.opacity = 0.0f;
+        }
+        else {
+            notif.duration_ms -= static_cast<int>(delta_time * 1000.0f);
         }
 
-        if (should_expire) {
-            notif.opacity = std::max(0.0f, notif.opacity - notif.fade_out_speed * delta_time);
-        }
-        else if (notif.opacity < 1.0f) {
-            notif.opacity = std::min(1.0f, notif.opacity + FADE_SPEED * delta_time);
+        // Fade in inicial
+        if (notif.opacity < 1.0f) {
+            notif.opacity += delta_time * 2.0f;
+            if (notif.opacity > 1.0f) notif.opacity = 1.0f;
         }
 
+        // Slide in suave
         if (notif.slide_offset > 0.0f) {
-            notif.slide_offset = std::max(0.0f, notif.slide_offset - (SLIDE_IN_OFFSET * 3.5f * delta_time));
+            notif.slide_offset -= delta_time * SLIDE_IN_OFFSET * 2.0f;
+            if (notif.slide_offset < 0.0f) notif.slide_offset = 0.0f;
         }
+
+        // Posicionamento dinâmico com easing
+        float distance = static_cast<float>(notif.target_y - notif.current_y);
+        float velocity = distance * MOVE_SPEED;
+        notif.current_y += static_cast<int>(velocity);
+
+        // Altura dinâmica baseada no texto
+        auto lines = WrapText(notif.message, font, max_text_width);
+        int line_height = H::Fonts->GetFontHeight(EFonts::ESP_SMALL);
+        int box_height = (line_height * lines.size()) + padding_y * 2;
+
+        // Evitar sobreposição
+        if (notif.current_y + box_height > current_target_y) {
+            notif.target_y = current_target_y;
+        }
+        else {
+            notif.target_y = notif.current_y;
+        }
+
+        current_target_y = notif.target_y + box_height + spacing;
 
         if (notif.opacity > 0.0f) {
-            float movement = (static_cast<float>(notif.target_y) - static_cast<float>(notif.current_y)) * MOVE_SPEED;
-            notif.current_y += static_cast<int>(movement);
-
-            auto lines = WrapText(notif.message, font, max_text_width);
-            int line_height = get_string_size(font, "A").height;
-            int box_height = (line_height * lines.size()) + padding_y * 2 + spacing;
-
-            current_target_y += box_height;
-
-            updated_notifications.push_back(std::move(notif));
+            updated_notifications.push_back(notif);
         }
     }
 
-    notifications.clear();
-    notifications = std::move(updated_notifications);
+    notifications = updated_notifications;
 
     for (const auto& notif : notifications) {
         int alpha = static_cast<int>(notif.opacity * MAX_ALPHA);
@@ -295,7 +270,7 @@ void NotificationSystem::run() {
         int draw_y = notif.current_y;
 
         auto lines = WrapText(notif.message, font, max_text_width);
-        int line_height = get_string_size(font, "A").height;
+        int line_height = H::Fonts->GetFontHeight(EFonts::ESP_SMALL);
         int box_height = (line_height * lines.size()) + padding_y * 2;
 
         IconType icon_type = DetectIconType(notif.message);

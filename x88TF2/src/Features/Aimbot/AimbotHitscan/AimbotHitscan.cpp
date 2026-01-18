@@ -10,6 +10,275 @@ const char* HitboxNames[HITBOX_MAX] = {
     "Right Thigh", "Left Thigh", "Right Calf", "Left Calf", "Right Foot", "Left Foot",
     "Right Hand", "Left Hand", "Right Upper Arm", "Right Forearm", "Left Upper Arm", "Left Forearm"
 };
+
+// ============================================================================
+// TARGET ACQUISITION
+// ============================================================================
+
+bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, HitscanTarget_t& outTarget)
+{
+    m_vecTargets.clear();
+
+    const Vec3 vLocalPos = pLocal->GetShootPos();
+    const Vec3 vLocalAngles = I::EngineClient->GetViewAngles();
+
+    // Get active hitboxes from config
+    std::vector<int> activeHitboxes = GetActiveHitboxes();
+    if (activeHitboxes.empty())
+        return false;
+
+    // Scan players
+    for (auto pEntity : H::Entities->GetGroup(EEntGroup::PLAYERS_ENEMIES))
+    {
+        auto pPlayer = pEntity->As<C_TFPlayer>();
+        if (!pPlayer || !ValidateTarget(pPlayer, pLocal, pWeapon))
+            continue;
+
+        HitscanTarget_t target;
+        target.Entity = pPlayer;
+
+        // Try each hitbox group
+        for (int group = 0; group <= 4; group++)
+        {
+            std::vector<int> groupHitboxes;
+            for (int hitbox : activeHitboxes)
+            {
+                if (GetHitboxGroup(hitbox) == group)
+                    groupHitboxes.push_back(hitbox);
+            }
+
+            if (groupHitboxes.empty())
+                continue;
+
+            if (ScanHitboxGroup(pLocal, pPlayer, target, vLocalAngles, groupHitboxes, group))
+            {
+                m_vecTargets.push_back(target);
+                break;
+            }
+        }
+    }
+
+    // Scan buildings if enabled
+    if (CFG::Aimbot_Hitbox_Buildings)
+    {
+        for (auto pEntity : H::Entities->GetGroup(EEntGroup::BUILDINGS_ENEMIES))
+        {
+            HitscanTarget_t target;
+            target.Entity = pEntity;
+            if (ScanBuilding(pLocal, target, vLocalAngles))
+            {
+                m_vecTargets.push_back(target);
+            }
+        }
+    }
+
+    if (m_vecTargets.empty())
+        return false;
+
+    // Sort by priority (using existing config)
+    F::AimbotCommon->Sort(m_vecTargets, CFG::Aimbot_Hitscan_Sort);
+
+    outTarget = m_vecTargets.front();
+    return true;
+}
+
+bool CAimbotHitscan::ValidateTarget(C_TFPlayer* pEntity, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
+{
+    if (!pEntity || pEntity == pLocal)
+        return false;
+
+    if (pEntity->deadflag() || pEntity->IsDormant())
+        return false;
+
+    // Team check
+    if (CFG::Aimbot_TeamCheck && pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
+        return false;
+
+    // Invulnerability check
+    if (CFG::Aimbot_Ignore_Invulnerable)
+    {
+        if (pEntity->InCond(TF_COND_INVULNERABLE) ||
+            pEntity->InCond(TF_COND_INVULNERABLE_WEARINGOFF))
+            return false;
+    }
+
+    // Cloaked spy check
+    if (CFG::Aimbot_Ignore_Invisible && pEntity->InCond(TF_COND_STEALTHED))
+        return false;
+
+    // Taunting check
+    if (CFG::Aimbot_Ignore_Taunting && pEntity->InCond(TF_COND_TAUNTING))
+        return false;
+
+    // Friends check
+    if (CFG::Aimbot_Ignore_Friends)
+    {
+        // Implement friend check if you have a friends system
+    }
+
+    return true;
+}
+
+// ============================================================================
+// AIMING
+// ============================================================================
+
+bool CAimbotHitscan::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
+{
+    // Always aim if auto-shoot is on
+    if (CFG::Aimbot_AutoShoot)
+        return true;
+
+    // Check aim key using input system (default to hold mode since no keymode combo)
+    bool bKeyActive = (CFG::Aimbot_Key == 0) || H::Input->IsDown(CFG::Aimbot_Key);
+    if (!bKeyActive)
+        return false;
+
+    // Check if attack button is pressed (for manual shooting while aiming)
+    return (pCmd->buttons & IN_ATTACK) != 0;
+}
+
+void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vTargetAngles)
+{
+    Vec3 vAimAngles = vTargetAngles;
+
+    // Apply smoothing
+    if (CFG::Aimbot_Hitscan_Smoothing > 0.0f)
+    {
+        vAimAngles = CalculateSmoothAngles(pCmd->viewangles, vTargetAngles, CFG::Aimbot_Hitscan_Smoothing);
+    }
+
+    // Clamp angles
+    Math::ClampAngles(vAimAngles);
+
+    // Apply based on mode
+    switch (CFG::Aimbot_Hitscan_Mode)
+    {
+    case 0: // Aimlock
+        pCmd->viewangles = vAimAngles;
+        I::EngineClient->SetViewAngles(pCmd->viewangles);
+        break;
+
+    case 1: // Silent
+        pCmd->viewangles = vAimAngles;
+        G::bPSilentAngles = true;
+        break;
+    }
+}
+
+Vec3 CAimbotHitscan::CalculateSmoothAngles(const Vec3& vCurrentAngles, const Vec3& vTargetAngles, float smoothing)
+{
+    Vec3 vDelta = vTargetAngles - vCurrentAngles;
+    Math::ClampAngles(vDelta);
+
+    float factor = 1.0f / (smoothing + 1.0f);
+
+    return vCurrentAngles + (vDelta * factor);
+}
+
+// ============================================================================
+// HITCHANCE VERIFICATION
+// ============================================================================
+
+bool CAimbotHitscan::VerifyHitchance(C_TFPlayer* pLocal, const CUserCmd* pCmd, const HitscanTarget_t& target)
+{
+    // If hitchance config doesn't exist, skip verification
+    // You can add this to CFG.h: CFGVAR(Aimbot_Hitchance, 0.0f);
+    // For now, just return true
+    return true;
+
+    /* Uncomment when you add Aimbot_Hitchance to CFG.h
+    if (CFG::Aimbot_Hitchance <= 0.0f)
+        return true;
+
+    auto pWeapon = H::Entities->GetWeapon();
+    if (!pWeapon)
+        return false;
+
+    // Weapons that don't need hitchance verification
+    int weaponID = pWeapon->GetWeaponID();
+    if (weaponID == TF_WEAPON_SNIPERRIFLE ||
+        weaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC ||
+        weaponID == TF_WEAPON_SNIPERRIFLE_DECAP)
+        return true;
+
+    // Perform trace tests
+    const int numTests = 256;
+    int hits = 0;
+
+    Vec3 vForward, vRight, vUp;
+    Math::AngleVectors(target.AngleTo, &vForward, &vRight, &vUp);
+
+    for (int i = 0; i < numTests; i++)
+    {
+        // Get weapon spread
+        Vec3 vSpread;
+        pWeapon->GetSpreadAngles(vSpread);
+
+        // Apply spread
+        float x = SDKUtils::RandomFloat(-0.5f, 0.5f) + SDKUtils::RandomFloat(-0.5f, 0.5f);
+        float y = SDKUtils::RandomFloat(-0.5f, 0.5f) + SDKUtils::RandomFloat(-0.5f, 0.5f);
+
+        Vec3 vDir = vForward + (vRight * x * vSpread.x) + (vUp * y * vSpread.y);
+        vDir.Normalize();
+
+        Vec3 vStart = pLocal->GetShootPos();
+        Vec3 vEnd = vStart + (vDir * 8192.0f);
+
+        // Trace using AimUtils
+        CGameTrace trace;
+        CTraceFilterHitscan filter;
+        filter.m_pIgnore = pLocal;
+        H::AimUtils->Trace(vStart, vEnd, MASK_SHOT, &filter, &trace);
+
+        if (trace.m_pEnt && trace.m_pEnt == target.Entity)
+            hits++;
+    }
+
+    float hitchance = (static_cast<float>(hits) / numTests) * 100.0f;
+    return hitchance >= CFG::Aimbot_Hitchance;
+    */
+}
+
+// ============================================================================
+// BUILDING SCANNING
+// ============================================================================
+
+bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
+{
+    if (!target.Entity)
+        return false;
+
+    // Buildings don't use hitboxes, aim at center
+    Vec3 vBuildingPos = target.Entity->GetAbsOrigin();
+
+    // Add height offset for better aim
+    vBuildingPos.z += 30.0f;
+
+    Vec3 vLocalPos = pLocal->GetShootPos();
+
+    Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vBuildingPos);
+    float fov = Math::CalcFov(vLocalAngles, vAngleTo);
+
+    if (fov > CFG::Aimbot_FOV)
+        return false;
+
+    // Visibility check
+    if (CFG::Aimbot_VisibleCheck)
+    {
+        if (!H::AimUtils->VisPos(pLocal, target.Entity, vLocalPos, vBuildingPos))
+            return false;
+    }
+
+    target.Position = vBuildingPos;
+    target.AngleTo = vAngleTo;
+    target.FOVTo = fov;
+    target.DistanceTo = vLocalPos.DistTo(vBuildingPos);
+    target.AimedHitbox = -1;
+    target.SimulationTime = target.Entity->m_flSimulationTime();
+
+    return true;
+}
 // ============================================================================
 // HITBOX CONFIGURATION SYSTEM
 // ============================================================================
@@ -200,199 +469,8 @@ bool CAimbotHitscan::ScanHitboxGroup(C_TFPlayer* pLocal, C_TFPlayer* pTarget, Hi
     if (!pTarget->SetupBones(boneMatrix, 128, 0x100, I::GlobalVars->curtime))
         return false;
     const Vec3 vLocalPos = pLocal->GetShootPos();
-    std::vector<ScanPoint_t> validPoints;
-    // Scan all hitboxes in this group
-    for (int hitboxId : hitboxes)
-    {
-        const auto pBox = pSet->pHitbox(hitboxId);
-        if (!pBox)
-            continue;
-
-        // ✅ VALIDAÇÃO CRÍTICA - Evita acesso fora dos limites
-        if (pBox->bone < 0 || pBox->bone >= 128)
-        {
-            continue;  // Skip este hitbox se o bone for inválido
-        }
-
-        std::vector<Vec3> points = GenerateMultipoints(pBox, boneMatrix[pBox->bone]);
-        Vec3 vBoxCenter;
-        Math::VectorTransform((pBox->bbmin + pBox->bbmax) * 0.5f, boneMatrix[pBox->bone], vBoxCenter);
-        // Test each point
-        for (const Vec3& vPoint : points)
-        {
-            int nHitHitbox = -1;
-            if (!H::AimUtils->TraceEntityBullet(pTarget, vLocalPos, vPoint, &nHitHitbox))
-                continue;
-            // Verify we hit the correct hitbox
-            if (nHitHitbox != hitboxId)
-                continue;
-            // Calculate quality metrics
-            const Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vPoint);
-            const float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
-            const float flDistToCenter = vPoint.DistTo(vBoxCenter);
-            const float flDistToLocal = vPoint.DistTo(vLocalPos);
-            // Quality score (lower is better)
-            float quality = flFOVTo + (flDistToCenter * 0.1f);
-            validPoints.push_back({
-                vPoint,
-                flFOVTo,
-                flDistToCenter,
-                hitboxId,
-                quality
-                });
-        }
-    }
-    if (validPoints.empty())
-        return false;
-    // Sort by hitbox sort method
-    if (CFG::Aimbot_Hitbox_Sort == 0) // Auto
-    {
-        // Use quality score
-        std::sort(validPoints.begin(), validPoints.end(),
-            [](const ScanPoint_t& a, const ScanPoint_t& b) {
-                return a.quality < b.quality;
-            });
-    }
-    else if (CFG::Aimbot_Hitbox_Sort == 1) // Damage
-    {
-        // Prioritize head, then body, then pelvis
-        std::sort(validPoints.begin(), validPoints.end(),
-            [this](const ScanPoint_t& a, const ScanPoint_t& b) {
-                int priorityA = (a.Hitbox == HITBOX_HEAD) ? 3 : ((a.Hitbox >= HITBOX_NECK && a.Hitbox <= HITBOX_UPPER_CHEST) ? 2 : 1);
-                int priorityB = (b.Hitbox == HITBOX_HEAD) ? 3 : ((b.Hitbox >= HITBOX_NECK && b.Hitbox <= HITBOX_UPPER_CHEST) ? 2 : 1);
-                if (priorityA != priorityB)
-                    return priorityA > priorityB;
-                return a.quality < b.quality; // Tie-breaker
-            });
-    }
-    // Pegar o melhor ponto
-    const auto& best = validPoints.front();
-    target.Position = best.Position;
-    target.AimedHitbox = best.Hitbox;
-    target.FOVTo = best.FOVTo;
-    target.HitboxGroup = group;
-    target.WasMultiPointed = (validPoints.size() > 1);
-    target.Accuracy = 1.0f - (best.FOVTo / CFG::Aimbot_FOV); // Exemplo
-    target.Damage = 0.0f; // TODO: Calcular dano se possível
-    target.AngleTo = Math::CalcAngle(vLocalPos, target.Position);
-    return true;
-}
-bool CAimbotHitscan::ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles)
-{
-    // Implementação para buildings, se necessário (originalmente vazia?)
-    return false; // Placeholder
-}
-// ============================================================================
-// TARGET SELECTION
-// ============================================================================
-bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, HitscanTarget_t& outTarget)
-{
-    m_vecTargets.clear();
-    // Loop por entidades
-    for (int i = 1; i <= I::EngineClient->GetMaxClients(); i++) {
-        auto pClientEntity = I::ClientEntityList->GetClientEntity(i);
-        if (!pClientEntity) continue;
-        auto pEntity = pClientEntity->As<C_TFPlayer>();
-        if (!pEntity || pEntity == pLocal || !ValidateTarget(pEntity, pLocal, pWeapon)) continue;
-        HitscanTarget_t tempTarget;
-        tempTarget.Entity = pEntity;
-        tempTarget.Position = pEntity->GetAbsOrigin(); // Default
-        // Scan groups, etc. (implemente o loop por groups e chame ScanHitboxGroup)
-        // Exemplo simplificado
-        std::vector<int> hitboxes = GetActiveHitboxes();
-        if (ScanHitboxGroup(pLocal, pEntity, tempTarget, I::EngineClient->GetViewAngles(), hitboxes, 0)) {
-            m_vecTargets.push_back(tempTarget);
-        }
-    }
-    if (m_vecTargets.empty()) return false;
-    // Sort targets por FOV ou distance
-    std::sort(m_vecTargets.begin(), m_vecTargets.end(), [](const HitscanTarget_t& a, const HitscanTarget_t& b) {
-        return a.FOVTo < b.FOVTo; // Exemplo: closest FOV
-        });
-    outTarget = m_vecTargets.front();
-    return true;
-}
-bool CAimbotHitscan::ValidateTarget(C_TFPlayer* pEntity, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
-{
-    // Implemente validações: vivo, inimigo, visível, etc.
-    if (pEntity->deadflag() || pEntity->m_iTeamNum() == pLocal->m_iTeamNum() && CFG::Aimbot_TeamCheck) return false;
-    // Adicione mais (ignore cloaked, etc.)
-    return true;
-}
-// ============================================================================
-// AIMING
-// ============================================================================
-bool CAimbotHitscan::ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
-{
-    if (CFG::Aimbot_Key != 0)
-    {
-        if (!(GetAsyncKeyState(CFG::Aimbot_Key) & 0x8000))
-            return false;
-    }
-    return true;
-}
-Vec3 CAimbotHitscan::CalculateSmoothAngles(const Vec3& vCurrentAngles, const Vec3& vTargetAngles, float smoothing)
-{
-    // Calculate angle delta
-    Vec3 vDelta = vTargetAngles - vCurrentAngles;
-    vDelta.x = Math::NormalizeAngle(vDelta.x);
-    vDelta.y = Math::NormalizeAngle(vDelta.y);
-    vDelta.z = 0.0f;
-    // No smoothing = instant lock
-    if (smoothing <= 0.0f)
-        return vTargetAngles;
-    // Apply smoothing
-    Vec3 vSmoothed = vDelta / smoothing;
-    // Clamp to prevent jittering
-    const float fMaxChange = 30.0f;
-    vSmoothed.x = std::clamp(vSmoothed.x, -fMaxChange, fMaxChange);
-    vSmoothed.y = std::clamp(vSmoothed.y, -fMaxChange, fMaxChange);
-    Vec3 vResult = vCurrentAngles + vSmoothed;
-    Math::ClampAngles(vResult);
-    return vResult;
-}
-void CAimbotHitscan::Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vTargetAngles)
-{
-    const Vec3 vOldAngles = pCmd->viewangles;
-    float fSmoothing = CFG::Aimbot_Hitscan_Smoothing;
-    // Silent aim uses minimal smoothing
-    if (CFG::Aimbot_Hitscan_Mode == 1)
-        fSmoothing = 0.0f;
-    // Calculate new angles with smoothing
-    Vec3 vNewAngles = CalculateSmoothAngles(vOldAngles, vTargetAngles, fSmoothing);
-    // Apply to cmd
-    pCmd->viewangles = vNewAngles;
-    Math::ClampAngles(pCmd->viewangles);
-    // Silent aim specific handling
-    if (CFG::Aimbot_Hitscan_Mode == 1)
-    {
-        // Fix movement for silent aim
-        float forward = pCmd->forwardmove;
-        float side = pCmd->sidemove;
-        float yaw_rad = DEG2RAD(pCmd->viewangles.y - vOldAngles.y);
-        float cos_yaw = cos(yaw_rad);
-        float sin_yaw = sin(yaw_rad);
-        pCmd->forwardmove = cos_yaw * forward - sin_yaw * side;
-        pCmd->sidemove = sin_yaw * forward + cos_yaw * side;
-        // Set view angles back for perfect silent aim
-        Vec3 vOldAnglesCopy = vOldAngles; // Create non-const copy
-        I::EngineClient->SetViewAngles(vOldAnglesCopy);
-        G::bSilentAngles = true;
-    }
-}
-// ============================================================================
-// SHOOTING
-// ============================================================================
-bool CAimbotHitscan::VerifyHitchance(C_TFPlayer* pLocal, const CUserCmd* pCmd, const HitscanTarget_t& target)
-{
-    if (!CFG::Aimbot_SmoothAutoShoot)
-        return true;
-    if (target.Entity->GetClassId() != ETFClassIds::CTFPlayer)
-        return true;
-    auto pPlayer = target.Entity->As<C_TFPlayer>();
-    // Calculate where we're actually aiming
     Vec3 vForward;
-    Math::AngleVectors(pCmd->viewangles, &vForward);
+    Math::AngleVectors(vLocalAngles, &vForward);
     const Vec3 vTraceStart = pLocal->GetShootPos();
     const Vec3 vTraceEnd = vTraceStart + (vForward * 8192.0f);
     // Set lag record if needed
@@ -400,7 +478,7 @@ bool CAimbotHitscan::VerifyHitchance(C_TFPlayer* pLocal, const CUserCmd* pCmd, c
         F::LagRecordMatrixHelper->Set(target.LagRecord);
     // Verify we'll hit
     int nHitHitbox = -1;
-    bool bHits = H::AimUtils->TraceEntityBullet(pPlayer, vTraceStart, vTraceEnd, &nHitHitbox);
+    bool bHits = H::AimUtils->TraceEntityBullet(pTarget, vTraceStart, vTraceEnd, &nHitHitbox);
     // For headshot weapons, verify we hit the head
     if (target.AimedHitbox == HITBOX_HEAD && nHitHitbox != HITBOX_HEAD)
         bHits = false;
@@ -473,7 +551,7 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
 {
     m_bActive = false;
     m_LastTarget = {};
-    if (!CFG::Aimbot_Enable)
+    if (!CFG::Aimbot_Active)  // Alterado de Aimbot_Enable para Aimbot_Active para compatibilidade com o menu
         return;
     // Don't run during shifts
     if (Shifting::bShifting && !Shifting::bShiftingWarp)
@@ -569,16 +647,17 @@ void CAimbotHitscan::DrawDebug()
     Color_t white{ 255, 255, 255, 255 };
     Color_t red{ 255, 0, 0, 255 };
     Color_t green{ 0, 255, 0, 255 };
-    H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, m_bActive ? green : red,
-        POS_DEFAULT, "Aimbot: %s", m_bActive ? "ACTIVE" : "Inactive");
+    HFont font = H::Fonts->Get(EFonts::ESP).m_dwFont;
+    H::Draw->TextF(x, y, font, m_bActive ? green : red,
+        ALIGN_DEFAULT, "Aimbot: %s", m_bActive ? "ACTIVE" : "Inactive");
     y += 15;
     if (!m_bActive)
         return;
-    H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white,
-        POS_DEFAULT, "Mode: %s", CFG::Aimbot_Hitscan_Mode == 1 ? "Silent" : "Aimlock");
+    H::Draw->TextF(x, y, font, white,
+        ALIGN_DEFAULT, "Mode: %s", CFG::Aimbot_Hitscan_Mode == 1 ? "Silent" : "Aimlock");
     y += 15;
-    H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white,
-        POS_DEFAULT, "Smoothing: %.1f", CFG::Aimbot_Hitscan_Smoothing);
+    H::Draw->TextF(x, y, font, white,
+        ALIGN_DEFAULT, "Smoothing: %.1f", CFG::Aimbot_Hitscan_Smoothing);
     y += 15;
     if (m_LastTarget.Entity)
     {
@@ -588,28 +667,28 @@ void CAimbotHitscan::DrawDebug()
             player_info_t info{};
             if (I::EngineClient->GetPlayerInfo(pPlayer->entindex(), &info))
             {
-                H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white,
-                    POS_DEFAULT, "Target: %s", info.name);
+                H::Draw->TextF(x, y, font, white,
+                    ALIGN_DEFAULT, "Target: %s", info.name);
                 y += 15;
             }
         }
         else
         {
-            H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white,
-                POS_DEFAULT, "Target: Building");
+            H::Draw->Text(x, y, font, white,
+                ALIGN_DEFAULT, "Target: Building");
             y += 15;
         }
         if (m_LastTarget.AimedHitbox >= 0 && m_LastTarget.AimedHitbox < HITBOX_MAX)
         {
-            H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white,
-                POS_DEFAULT, "Hitbox: %s", HitboxNames[m_LastTarget.AimedHitbox]);
+            H::Draw->TextF(x, y, font, white,
+                ALIGN_DEFAULT, "Hitbox: %s", HitboxNames[m_LastTarget.AimedHitbox]);
             y += 15;
         }
-        H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white,
-            POS_DEFAULT, "FOV: %.2f", m_LastTarget.FOVTo);
+        H::Draw->TextF(x, y, font, white,
+            ALIGN_DEFAULT, "FOV: %.2f", m_LastTarget.FOVTo);
         y += 15;
-        H::Draw->String(H::Fonts->Get(EFonts::ESP), x, y, white,
-            POS_DEFAULT, "Multipoint: %s", m_LastTarget.WasMultiPointed ? "Yes" : "No");
+        H::Draw->TextF(x, y, font, white,
+            ALIGN_DEFAULT, "Multipoint: %s", m_LastTarget.WasMultiPointed ? "Yes" : "No");
         y += 15;
         // Draw crosshair on target
         Vec3 screen;
@@ -617,7 +696,7 @@ void CAimbotHitscan::DrawDebug()
         {
             H::Draw->Line(screen.x - 10, screen.y, screen.x + 10, screen.y, red);
             H::Draw->Line(screen.x, screen.y - 10, screen.x, screen.y + 10, red);
-            H::Draw->OutlinedCircle(screen.x, screen.y, 5, 16, red);
+            H::Draw->Circle(screen.x, screen.y, 5, 16, red);
         }
     }
 }

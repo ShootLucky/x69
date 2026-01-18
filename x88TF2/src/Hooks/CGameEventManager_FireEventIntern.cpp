@@ -142,7 +142,7 @@ void LogMessage(const std::string& msg, Color_t col, const std::string& chat_col
         I::CVar->ConsoleColorPrintf(col, "%s\n", msg.c_str());
     }
     if (to_screen) {
-        g_notification_system->add_notification(msg, 5000);
+        gNotify.add_notification(msg, 5000);
     }
 }
 

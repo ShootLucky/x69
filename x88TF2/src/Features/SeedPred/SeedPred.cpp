@@ -275,31 +275,31 @@ void CSeedPred::Paint()
 		int x{ 2 };
 		int y{ 2 };
 
-		H::Draw->String
+		H::Draw->Text
 		(
-			H::Fonts->Get(EFonts::ESP_SMALL),
 			x, y,
-			{ 200, 200, 200, 255 }, POS_DEFAULT,
+			H::Fonts->Get(EFonts::ESP_SMALL).m_dwFont,
+			{ 200, 200, 200, 255 }, ALIGN_DEFAULT,
 			std::format("{}h {}m {}s (step {:.0f})", time.hours().count(), time.minutes().count(), time.seconds().count(), CalcMantissaStep(m_ServerTime)).c_str()
 		);
 
 		y += 10;
 
-		H::Draw->String
+		H::Draw->Text
 		(
-			H::Fonts->Get(EFonts::ESP_SMALL),
 			x, y,
-			!m_Synced ? Color_t{ 250, 130, 49, 255 } : Color_t{ 32, 191, 107, 255 }, POS_DEFAULT,
+			H::Fonts->Get(EFonts::ESP_SMALL).m_dwFont,
+			!m_Synced ? Color_t{ 250, 130, 49, 255 } : Color_t{ 32, 191, 107, 255 }, ALIGN_DEFAULT,
 			!m_Synced ? "syncing.." : std::format("synced ({})", m_SyncOffset).c_str()
 		);
 
 		y += 10;
 
-		H::Draw->String
+		H::Draw->Text
 		(
-			H::Fonts->Get(EFonts::ESP_SMALL),
 			x, y,
-			{ 200, 200, 200, 255 }, POS_DEFAULT,
+			H::Fonts->Get(EFonts::ESP_SMALL).m_dwFont,
+			{ 200, 200, 200, 255 }, ALIGN_DEFAULT,
 			std::format("seed: {}", GetSeed()).c_str()
 		);
 	}

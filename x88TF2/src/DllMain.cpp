@@ -33,6 +33,7 @@ void InitImGui(LPDIRECT3DDEVICE9 pDevice)
 
     gui::set_theme();
     gui::menu_font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\verdanab.ttf", 13.f);
+    gui::indicator_font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\Tahoma.ttf", 12.f);
 
     // Initialize config list
     config_list = Config::RefreshConfigFiles();
@@ -100,6 +101,10 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
         ImGui_ImplDX9_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
+
+        // HUD sempre roda
+        indicators::Run();
+
         if (GetAsyncKeyState(VK_INSERT) & 1)
         {
             show_menu = !show_menu;
@@ -137,8 +142,8 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
 
                 draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 1), ImVec2(p.x + s.x - 1, p.y + 3), accent_color);
                 draw_list->AddRectFilled(ImVec2(p.x + 60, p.y + 60), ImVec2(p.x + s.x - 1, p.y + 62), IM_COL32(40, 40, 40, 255));
-                draw_list->AddText(ImVec2(p.x + 6, p.y + 21), IM_COL32(5, 5, 5, 255), "X69 TF2");
-                draw_list->AddText(ImVec2(p.x + 5, p.y + 20), accent_color, "X69 TF2");
+                draw_list->AddText(ImVec2(p.x + 6, p.y + 21), IM_COL32(5, 5, 5, 255), "X69.TECHNOLOGY");
+                draw_list->AddText(ImVec2(p.x + 5, p.y + 20), accent_color, "X69.TECHNOLOGY");
                 draw_list->AddText(ImVec2(p.x + 6, p.y + 33), IM_COL32(5, 5, 5, 255), "DEVELOPED BY");
                 draw_list->AddText(ImVec2(p.x + 5, p.y + 32), IM_COL32(255, 255, 255, 100), "DEVELOPED BY");
                 float dev_width = ImGui::CalcTextSize("DEVELOPED BY").x;
@@ -201,46 +206,45 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             ImGui::EndGroup();
                             gui::slider("FOV", &CFG::Aimbot_FOV, 0.f, 180.f);
                             gui::slider("Smoothing", &CFG::Aimbot_Hitscan_Smoothing, 0.f, 20.f);
-                            gui::checkbox("Visible Check", CFG::Aimbot_VisibleCheck);
-                            gui::checkbox("Team Check", CFG::Aimbot_TeamCheck);
+                            gui::checkbox("Auto Shoot", CFG::Aimbot_AutoShoot);
+                            gui::checkbox("Active Lag Records", CFG::Aimbot_ActiveLagRecords);
                             gui::combo("Aim Type", &CFG::Aimbot_Hitscan_Mode, std::vector<std::string>{ "Aimlock", "Silent" });
                             gui::combo("Sort", &CFG::Aimbot_Hitscan_Sort, std::vector<std::string>{ "Distance", "FOV", "Health" });
-                            gui::checkbox("Auto Shoot", CFG::Aimbot_AutoShoot);
-                            gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
-                            gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
                         }
                         gui::end_group_scrollable();
 
                         ImGui::SameLine(390);
                         if (gui::begin_group("ACCURACY", ImVec2(380, 250), 5.0f, 5.0f))
                         {
-                            gui::checkbox("Target Lag Records", CFG::Aimbot_TargetLagRecords);
-                            gui::checkbox("Target Stickies", CFG::Aimbot_TargetStickies);
-                            gui::checkbox("Smooth Auto Shoot", CFG::Aimbot_SmoothAutoShoot);
                             gui::checkbox("Wait For Headshot", CFG::Aimbot_WaitForHeadshot);
                             gui::checkbox("Wait For Charge", CFG::Aimbot_WaitForCharge);
                             gui::checkbox("Minigun Tapfire", CFG::Aimbot_MinigunTapfire);
-                            gui::checkbox("Active Lag Records", CFG::Aimbot_ActiveLagRecords);
                             gui::checkbox("Auto Scope", CFG::Aimbot_AutoScope);
                         }
                         gui::end_group();
 
-                        if (gui::begin_group("HITBOXES", ImVec2(380, 250), 5.0f, 5.0f))
+                        if (gui::begin_group_scrollable("TARGET", ImVec2(380, 250), 5.0f, 5.0f))
                         {
+                            gui::checkbox("Target Lag Records", CFG::Aimbot_TargetLagRecords);
+                            gui::checkbox("Target Stickies", CFG::Aimbot_TargetStickies);
+                            gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
+                            gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
                             std::vector<gui::MultiComboItem> items = {
-                                gui::MultiComboItem("Head", &CFG::Aimbot_Hitbox_Head),
-                                gui::MultiComboItem("Body", &CFG::Aimbot_Hitbox_Body),
-                                gui::MultiComboItem("Pelvis", &CFG::Aimbot_Hitbox_Pelvis),
-                                gui::MultiComboItem("Arms", &CFG::Aimbot_Hitbox_Arms),
-                                gui::MultiComboItem("Legs", &CFG::Aimbot_Hitbox_Legs)
+                                        gui::MultiComboItem("Head", &CFG::Aimbot_Hitbox_Head),
+                                        gui::MultiComboItem("Body", &CFG::Aimbot_Hitbox_Body),
+                                        gui::MultiComboItem("Pelvis", &CFG::Aimbot_Hitbox_Pelvis),
+                                        gui::MultiComboItem("Arms", &CFG::Aimbot_Hitbox_Arms),
+                                        gui::MultiComboItem("Legs", &CFG::Aimbot_Hitbox_Legs)
                             };
                             gui::multi_combo("Hitbox Types", items);
                             gui::combo("Hitbox Sort", &CFG::Aimbot_Hitbox_Sort, std::vector<std::string>{ "Auto", "Damage", "Accuracy" });
                             gui::checkbox("Ignore Invisible", CFG::Aimbot_Ignore_Invisible);
                             gui::checkbox("Ignore Taunting", CFG::Aimbot_Ignore_Taunting);
                             gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
+                            gui::checkbox("Visible Check", CFG::Aimbot_VisibleCheck);
+                            gui::checkbox("Team Check", CFG::Aimbot_TeamCheck);
                         }
-                        gui::end_group();
+                        gui::end_group_scrollable();
 
                         ImGui::SameLine(390);
                         if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 5.0f, 5.0f))
@@ -257,15 +261,29 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     // VISUALS TAB
                     if (active_tab == 2)
                     {
-                        if (gui::begin_group_scrollable("ESP PLAYERS", ImVec2(380, 250), 5.0f, 5.0f))
+                        if (gui::begin_group_scrollable("PLAYERS ESP", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             gui::checkbox("ESP Master", CFG::ESP_Enable);
                             gui::checkbox("Team Check", CFG::ESP_Team);
                             gui::checkbox("Box", CFG::ESP_Box);
                             gui::combo("Box Style", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"});
                             gui::checkbox("Name", CFG::ESP_Name);
+                            ImGui::BeginGroup();
                             gui::checkbox("Health", CFG::ESP_Health);
+                            ImGui::SameLine(340.0f);
+                            gui::color_picker("##health_color", &CFG::ESP_HealthBarColor, false);
+                            ImGui::EndGroup();
                             gui::combo("Health Type", &CFG::ESP_HealthType, std::vector<std::string>{"Health bar", "Health number", "Number + bar"});
+                            gui::combo("Health Position", &CFG::ESP_HealthBarPosition, std::vector<std::string>{"Left", "Right", "Top", "Bottom"});
+                            ImGui::BeginGroup();
+                            gui::checkbox("Health Bar Gradient", CFG::ESP_HealthBarGradient);
+                            ImGui::SameLine(310.0f);
+                            gui::color_picker("##health_low", &CFG::ESP_HealthBarGradientLow, false);
+                            ImGui::SameLine(0.0f, 4.0f);
+                            gui::color_picker("##health_mid", &CFG::ESP_HealthBarGradientMid, false);
+                            ImGui::SameLine(0.0f, 4.0f);
+                            gui::color_picker("##health_high", &CFG::ESP_HealthBarGradientHigh, false);
+                            ImGui::EndGroup();
                             gui::checkbox("Show Local Player", CFG::ESP_LocalPlayer);
                             gui::checkbox("Hide Cloaked Players", CFG::ESP_HideCloaked);
                             gui::checkbox("Player Conditions", CFG::ESP_Conds);
@@ -273,14 +291,13 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Buffs", CFG::ESP_Buffs);
                             gui::checkbox("Debuffs", CFG::ESP_Debuffs);
                             gui::checkbox("Latency (Ping)", CFG::ESP_Ping);
-                            gui::checkbox("KDR Player", CFG::ESP_KRDPlayer);
                             gui::checkbox("Distance Enemy", CFG::ESP_DistanceEnemy);
                             gui::combo("Distance Position", &CFG::ESP_DistancePosition, std::vector<std::string>{"Side", "Bottom"});
                         }
                         gui::end_group_scrollable();
 
                         ImGui::SameLine(390);
-                        if (gui::begin_group("ESP PICKUPS", ImVec2(380, 250), 5.0f, 5.0f))
+                        if (gui::begin_group_scrollable("WORLD ESP", ImVec2(380, 250), 5.0f, 5.0f))
                         {
                             gui::checkbox("ESP Build", CFG::ESP_Build);
                             gui::checkbox("ESP Build Only Enemy", CFG::ESP_BuildOnlyEnemy);
@@ -290,11 +307,6 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Flag ESP", CFG::ESP_CaptureFlag);
                             gui::checkbox("Box Capture", CFG::ESP_BoxCapture);
                             gui::checkbox("Name Capture", CFG::ESP_NameCapture);
-                        }
-                        gui::end_group();
-
-                        if (gui::begin_group("ESP LINES", ImVec2(380, 250), 5.0f, 5.0f))
-                        {
                             gui::checkbox("Offscreen Indicators", CFG::ESP_Offscreen);
                             gui::slider("Offscreen Radius", &CFG::ESP_Offscreen_Radius, 10.f, 500.f);
                             gui::slider("Offscreen Max Distance", &CFG::ESP_Offscreen_MaxDist, 0.f, 2000.f);
@@ -302,16 +314,41 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             gui::checkbox("Offscreen Filled", CFG::ESP_Offscreen_Filled);
                             gui::checkbox("ESP Sniper Lines", CFG::ESP_SniperLines);
                             gui::checkbox("Lag Compensation", CFG::ESP_LagCompensation);
+                            gui::checkbox("UberCharge Status", CFG::ESP_Uber);
+                            gui::checkbox("UberCharge Bar", CFG::ESP_UberBar);
+                            gui::checkbox("Aimbot FOV", CFG::Aimbot_DrawFOV);
+                        }
+                        gui::end_group_scrollable();
+
+                        if (gui::begin_group("INDICATORS", ImVec2(380, 250), 5.0f, 5.0f))
+                        {
+                            std::vector<gui::MultiComboItem> items = {
+                                gui::MultiComboItem("Spectator List", &CFG::Visual_Spectatorlist),
+                                gui::MultiComboItem("Info Painel", &CFG::Indicators_Enable),
+                                gui::MultiComboItem("KeyBind", &CFG::Indicators_Keybinds_Enable),
+                                gui::MultiComboItem("Watermark", &CFG::Indicators_Watermark_Enable),
+                            };
+                            gui::multi_combo("Indicators", items);
+
+                            // Lista de opções do Watermark
+                            if (CFG::Indicators_Watermark_Enable)
+                            {
+                                ImGui::Dummy(ImVec2(0, 10)); // espaço
+
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Watermark Info:");
+
+                                gui::checkbox("Steam Name", CFG::Watermark_ShowName);
+                                gui::checkbox("FPS", CFG::Watermark_ShowFPS);
+                                gui::checkbox("Time", CFG::Watermark_ShowTime);
+                                gui::checkbox("Ping", CFG::Watermark_ShowPing);
+                            }
                         }
                         gui::end_group();
 
                         ImGui::SameLine(390);
                         if (gui::begin_group("ESP MEDIC", ImVec2(380, 250), 5.0f, 5.0f))
                         {
-                            gui::checkbox("UberCharge Status", CFG::ESP_Uber);
-                            gui::checkbox("UberCharge Bar", CFG::ESP_UberBar);
-                            gui::checkbox("Aimbot FOV", CFG::Aimbot_DrawFOV);
-                            gui::slider("Field of View", &CFG::Aimbot_FOV, 0.f, 180.f);
+
                         }
                         gui::end_group();
                     }
@@ -618,9 +655,19 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                     theme_color.b != old_theme_color.b ||
                                     theme_color.a != old_theme_color.a)
                                 {
-                                    gui::set_theme(modify_theme ?
-                                        ImVec4(theme_color.r / 255.0f, theme_color.g / 255.0f, theme_color.b / 255.0f, 1.0f) :
-                                        ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f));
+                                    // CORREÇÃO: Usar if/else explícito
+                                    if (modify_theme)
+                                    {
+                                        gui::set_theme(ImVec4(theme_color.r / 255.0f,
+                                            theme_color.g / 255.0f,
+                                            theme_color.b / 255.0f, 1.0f));
+                                    }
+                                    else
+                                    {
+                                        // Quando desmarcar, voltar para o tema padrão
+                                        gui::set_theme(ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f));
+                                    }
+
                                     old_modify_theme = modify_theme;
                                     old_theme_color = theme_color;
                                     CFG::Menu_ModifyTheme = modify_theme;
@@ -636,7 +683,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 static bool slide_walk = false;
                                 static int autostrafe_mode = 0;
 
-                                gui::checkbox("Auto hop", auto_hop);
+                                gui::checkbox("Auto Bhop", CFG::Misc_AutoJump);
                                 gui::checkbox("Air duck", air_duck);
                                 gui::checkbox("Slide walk", slide_walk);
 
@@ -729,6 +776,10 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                             {
                                 if (!config_list.empty() && selected_config >= 0 && selected_config < config_list.size())
                                 {
+                                    // Atualizar CFG antes de salvar
+                                    CFG::Menu_ModifyTheme = modify_theme;
+                                    CFG::Menu_ThemeColor = theme_color;
+
                                     Config::SaveConfig(config_list[selected_config]);
                                 }
                             }
@@ -738,6 +789,24 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 if (!config_list.empty() && selected_config >= 0 && selected_config < config_list.size())
                                 {
                                     Config::LoadConfig(config_list[selected_config]);
+
+                                    // Sincronizar variáveis locais
+                                    modify_theme = CFG::Menu_ModifyTheme;
+                                    theme_color = CFG::Menu_ThemeColor;
+                                    old_modify_theme = modify_theme;
+                                    old_theme_color = theme_color;
+
+                                    // Aplicar tema
+                                    if (modify_theme)
+                                    {
+                                        gui::set_theme(ImVec4(theme_color.r / 255.0f,
+                                            theme_color.g / 255.0f,
+                                            theme_color.b / 255.0f, 1.0f));
+                                    }
+                                    else
+                                    {
+                                        gui::set_theme(ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f));
+                                    }
                                 }
                             }
 

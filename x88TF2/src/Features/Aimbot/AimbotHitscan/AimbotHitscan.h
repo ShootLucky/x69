@@ -1,6 +1,8 @@
-#pragma once
+﻿#pragma once
 #include "../AimbotCommon/AimbotCommon.h"
 #include "../src/Features/LagRecords/Backtrack.h"
+
+#include <vector>
 
 // Hitbox type flags for multi-selection
 enum EHitboxType
@@ -32,38 +34,32 @@ private:
         float FOVTo;
         float DistanceToCenter;
         int Hitbox;
-        float quality; // lowercase to match usage in .cpp
+        float quality;
     };
 
-    // Target management
+    // Internos
     std::vector<HitscanTarget_t> m_vecTargets = {};
     HitscanTarget_t m_LastTarget{};
     bool m_bActive = false;
     bool m_bLastShotMissed = false;
 
-    // Core scanning functions
     bool ScanHitboxGroup(C_TFPlayer* pLocal, C_TFPlayer* pTarget, HitscanTarget_t& target,
         const Vec3& vLocalAngles, const std::vector<int>& hitboxes, int group);
-    bool ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles);
 
-    // Multipoint generation
+    bool ScanBuilding(C_TFPlayer* pLocal, HitscanTarget_t& target, const Vec3& vLocalAngles);
     std::vector<Vec3> GenerateMultipoints(const mstudiobbox_t* pBox, const matrix3x4_t& boneMatrix);
 
-    // Target selection
     bool GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, HitscanTarget_t& outTarget);
     bool ValidateTarget(C_TFPlayer* pEntity, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
 
-    // Aiming
     bool ShouldAim(const CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
     void Aim(CUserCmd* pCmd, C_TFPlayer* pLocal, const Vec3& vTargetAngles);
     Vec3 CalculateSmoothAngles(const Vec3& vCurrentAngles, const Vec3& vTargetAngles, float smoothing);
 
-    // Shooting
     bool ShouldFire(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, const HitscanTarget_t& target);
     void HandleFire(CUserCmd* pCmd, C_TFWeaponBase* pWeapon);
     bool VerifyHitchance(C_TFPlayer* pLocal, const CUserCmd* pCmd, const HitscanTarget_t& target);
 
-    // Utilities
     std::vector<int> GetActiveHitboxes();
     int GetHitboxGroup(int hitbox);
     float CalculateHitboxPriority(int hitbox, C_TFWeaponBase* pWeapon, float distance);
@@ -71,7 +67,10 @@ private:
 
 public:
     void Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon);
+
+    // ✅ AGORA É PÚBLICO
     bool IsFiring(CUserCmd* pCmd, C_TFWeaponBase* pWeapon);
+
     void DrawDebug();
 };
 
