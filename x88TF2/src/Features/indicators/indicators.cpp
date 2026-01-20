@@ -22,15 +22,16 @@ namespace indicators {
         float animTime;
         bool removing;
         float removeTime;
+        int team;
 
-        Spectator_t(const std::string& n, int m, float r)
-            : name(n), mode(m), respawnTime(r), animTime(0.f), removing(false), removeTime(0.f) {
+        Spectator_t(const std::string& n, int m, float r, int t)
+            : name(n), mode(m), respawnTime(r), animTime(0.f), removing(false), removeTime(0.f), team(t) {
         }
     };
 
     static std::vector<Spectator_t> g_spectators;
-    static constexpr float SPEC_ANIM_DURATION = 0.5f;
-    static constexpr float SPEC_FADE_DURATION = 0.35f;
+    static constexpr float SPEC_ANIM_DURATION = 0.3f;
+    static constexpr float SPEC_FADE_DURATION = 0.25f;
 
     // Variáveis de drag separadas para cada painel
     static Vector2D drag_indicators{}, last_indicators{}, cur_indicators{};
@@ -54,11 +55,8 @@ static void get_mouse(Vector2D& last, Vector2D& cur) {
     cur = Vector2D(H::Input->GetMouseX(), H::Input->GetMouseY());
 }
 
-// Helper para drag com salvamento automático - SÓ FUNCIONA COM MENU ABERTO
 static bool DragWindow(float& cfg_x, float& cfg_y, float width, float height, Vector2D& drag, Vector2D& last, Vector2D& cur) {
-    // CRÍTICO: Só permite drag se o menu estiver aberto
     if (!show_menu) {
-        // Se o menu fechou enquanto estava arrastando, salvar posição
         static bool was_dragging[4] = { false, false, false, false };
         static int drag_index = 0;
 
@@ -81,17 +79,16 @@ static bool DragWindow(float& cfg_x, float& cfg_y, float width, float height, Ve
 
     if (cur.x > x && cur.y > y &&
         cur.x < x + width &&
-        cur.y < y + 20 && // área do header
-        H::Input->IsDown(VK_LBUTTON)) {
+        cur.y < y + 20 &&
+        H::Input->KeyDown(VK_LBUTTON)) {
 
         drag.x += cur.x - last.x;
         drag.y += cur.y - last.y;
         isDragging = true;
     }
 
-    // Se soltou o mouse, salva a posição final
     static bool was_dragging = false;
-    if (was_dragging && !H::Input->IsDown(VK_LBUTTON)) {
+    if (was_dragging && !H::Input->KeyDown(VK_LBUTTON)) {
         cfg_x += drag.x;
         cfg_y += drag.y;
         drag.x = 0.f;
@@ -104,7 +101,6 @@ static bool DragWindow(float& cfg_x, float& cfg_y, float width, float height, Ve
 
 namespace indicators {
 
-    // Funções helper para spectators
     static int GetModePriority(int mode) {
         if (mode == OBS_MODE_IN_EYE) return 0;
         if (mode == OBS_MODE_CHASE) return 1;
@@ -151,15 +147,22 @@ namespace indicators {
                 continue;
 
             float respawnTime = 0.f;
-            if (pPlayer->m_iTeamNum() == pLocal->m_iTeamNum() && !pPlayer->IsAlive()) {
+            int team = pPlayer->m_iTeamNum();
+
+            // CORREÇÃO: Calcular tempo de respawn corretamente
+            if (team == pLocal->m_iTeamNum() && !pPlayer->IsAlive()) {
                 if (auto* pr = GetTFPlayerResource()) {
                     float nextRespawn = pr->GetNextRespawnTime(pPlayer->entindex());
-                    float remain = nextRespawn - now;
-                    if (remain > 0.f) respawnTime = remain;
+                    if (nextRespawn > 0.f) {
+                        float remain = nextRespawn - now;
+                        if (remain > 0.f) {
+                            respawnTime = remain;
+                        }
+                    }
                 }
             }
 
-            present.emplace_back(info.name, mode, respawnTime);
+            present.emplace_back(info.name, mode, respawnTime, team);
         }
 
         // Se local está espectando alguém, mostrar outros espectadores desse alvo
@@ -182,29 +185,46 @@ namespace indicators {
                 if (!I::EngineClient->GetPlayerInfo(pPlayer->entindex(), &info))
                     continue;
 
-                float respawnTime = 0.f;
-                if (pPlayer->m_iTeamNum() == pLocal->m_iTeamNum() && !pPlayer->IsAlive()) {
-                    if (auto* pr = GetTFPlayerResource()) {
-                        float nextRespawn = pr->GetNextRespawnTime(pPlayer->entindex());
-                        float remain = nextRespawn - now;
-                        if (remain > 0.f) respawnTime = remain;
+                // Verificar se já está na lista
+                bool already_added = false;
+                for (const auto& p : present) {
+                    if (p.name == info.name) {
+                        already_added = true;
+                        break;
                     }
                 }
 
-                present.emplace_back(info.name, mode, respawnTime);
+                if (already_added)
+                    continue;
+
+                float respawnTime = 0.f;
+                int team = pPlayer->m_iTeamNum();
+
+                // CORREÇÃO: Calcular tempo de respawn corretamente
+                if (team == pLocal->m_iTeamNum() && !pPlayer->IsAlive()) {
+                    if (auto* pr = GetTFPlayerResource()) {
+                        float nextRespawn = pr->GetNextRespawnTime(pPlayer->entindex());
+                        if (nextRespawn > 0.f) {
+                            float remain = nextRespawn - now;
+                            if (remain > 0.f) {
+                                respawnTime = remain;
+                            }
+                        }
+                    }
+                }
+
+                present.emplace_back(info.name, mode, respawnTime, team);
             }
         }
 
-        // Merge com lista anterior
+        // Merge com lista anterior - CORREÇÃO: animação suave
         std::vector<Spectator_t> merged;
 
         for (auto& p : present) {
             bool found = false;
             for (auto& old : g_spectators) {
-                if (old.name == p.name) {
-                    p.animTime = old.removing ? now : old.animTime;
-                    p.removing = false;
-                    p.removeTime = 0.f;
+                if (old.name == p.name && !old.removing) {
+                    p.animTime = old.animTime;
                     found = true;
                     break;
                 }
@@ -224,11 +244,9 @@ namespace indicators {
                     break;
                 }
             }
-            if (!stillPresent) {
-                if (!old.removing) {
-                    old.removing = true;
-                    old.removeTime = now;
-                }
+            if (!stillPresent && !old.removing) {
+                old.removing = true;
+                old.removeTime = now;
                 merged.push_back(old);
             }
         }
@@ -248,7 +266,6 @@ namespace indicators {
     }
 
     void indicator() {
-        // Verificar se está habilitado
         if (!CFG::Indicators_Enable)
             return;
 
@@ -262,19 +279,20 @@ namespace indicators {
         bool alive = local->IsAlive();
         float velocity = alive ? local->m_vecVelocity().Length2D() : 0.f;
 
-        // Usar posição da config com drag próprio
         DragWindow(CFG::Indicators_Pos_X, CFG::Indicators_Pos_Y, 210, 20, drag_indicators, last_indicators, cur_indicators);
 
         float x = CFG::Indicators_Pos_X + drag_indicators.x;
         float y = CFG::Indicators_Pos_Y + drag_indicators.y;
 
-        // Calculate height
-        static bool enabled = true;
+        // Contar indicadores ativos
         int amount = 0;
-        if (enabled) {
-            amount = 5;
-        }
-        int height = (5 + amount) * 11 + 12;
+        if (CFG::Indicators_Show_FakeLatency && CFG::Misc_FakeLatency_Enable) amount++;
+        if (CFG::Indicators_Show_RealLatency) amount++;
+        if (CFG::Indicators_Show_ScoreboardLatency) amount++;
+        if (CFG::Indicators_Show_Inaccuracy) amount++;
+        if (CFG::Indicators_Show_Velocity) amount++;
+
+        int height = 18 + (amount * 12) + 2;
 
         // Background
         dl->AddRectFilled(ImVec2(x, y), ImVec2(x + 210, y + height), IM_COL32(35, 35, 35, 150));
@@ -282,8 +300,8 @@ namespace indicators {
         // Header
         dl->AddRectFilled(ImVec2(x, y + 1), ImVec2(x + 210, y + 18), IM_COL32(20, 20, 20, 255));
 
-        // Accent line
-        Color_t accent = CFG::Menu_ModifyTheme ? CFG::Menu_ThemeColor : Color_t(255, 0, 0, 255);
+        // Accent line - CORREÇÃO: usar cor do tema
+        Color_t accent = CFG::Menu_ModifyTheme ? CFG::Menu_ThemeColor : Color_t(0, 122, 187, 255);
         dl->AddRectFilled(ImVec2(x, y + 1), ImVec2(x + 210, y + 2), IM_COL32(accent.r, accent.g, accent.b, accent.a));
 
         // Title
@@ -300,93 +318,139 @@ namespace indicators {
         // Border
         dl->AddRect(ImVec2(x, y), ImVec2(x + 210, y + height), IM_COL32(15, 15, 15, 255));
 
-        auto add_indicator = [&](int idx, const char* name, float progress) {
-            float oy = y + 19 + idx * 14;
+        auto add_indicator = [&](int idx, const char* name, float progress, float value = 0.f, bool show_number = false) {
+            float oy = y + 19 + idx * 12;
 
             std::string indicator_name = name;
             std::transform(indicator_name.begin(), indicator_name.end(), indicator_name.begin(), ::toupper);
 
             // Text
-            dl->AddText(gui::indicator_font, 12.0f, ImVec2(x + 7, oy), IM_COL32(255, 255, 255, 255), indicator_name.c_str());
+            dl->AddText(gui::indicator_font, 12.0f, ImVec2(x + 7, oy - 1), IM_COL32(255, 255, 255, 255), indicator_name.c_str());
 
-            // Bar background
-            dl->AddRectFilled(ImVec2(x + 200 - 116 - 10, oy + 2), ImVec2(x + 200 - 116 - 10 + 130, oy + 10),
-                IM_COL32(20, 20, 20, 100));
+            // Verificar modo de exibição
+            if (CFG::Indicators_Display_Mode == 0) {
+                // Modo 0: Apenas barras
+                dl->AddRectFilled(ImVec2(x + 200 - 116 - 10, oy + 1), ImVec2(x + 200 - 116 - 10 + 130, oy + 9),
+                    IM_COL32(20, 20, 20, 100));
 
-            // Bar gradient fill
-            float bar_width = progress * 130;
-            ImVec2 bar_start(x + 200 - 116 - 10, oy + 2);
-            ImVec2 bar_end(x + 200 - 116 - 10 + bar_width, oy + 10);
+                float bar_width = progress * 130;
+                ImVec2 bar_start(x + 200 - 116 - 10, oy + 1);
+                ImVec2 bar_end(x + 200 - 116 - 10 + bar_width, oy + 9);
 
-            ImU32 col_start = IM_COL32(35, 35, 35, 150);
-            ImU32 col_end = IM_COL32(accent.r, accent.g, accent.b, accent.a);
+                ImU32 col_start = IM_COL32(35, 35, 35, 150);
+                ImU32 col_end = IM_COL32(accent.r, accent.g, accent.b, accent.a);
 
-            dl->AddRectFilledMultiColor(bar_start, bar_end, col_start, col_end, col_end, col_start);
+                dl->AddRectFilledMultiColor(bar_start, bar_end, col_start, col_end, col_end, col_start);
+            }
+            else if (CFG::Indicators_Display_Mode == 1) {
+                // Modo 1: Apenas números
+                if (show_number) {
+                    char buf[32];
+                    snprintf(buf, sizeof(buf), "%.0f", value);
+                    ImVec2 num_size = ImGui::CalcTextSize(buf);
+                    dl->AddText(gui::indicator_font, 12.0f, ImVec2(x + 200 - num_size.x - 5, oy - 1),
+                        IM_COL32(accent.r, accent.g, accent.b, 255), buf);
+                }
+            }
+            else if (CFG::Indicators_Display_Mode == 2) {
+                // Modo 2: Barras + Números
+                dl->AddRectFilled(ImVec2(x + 200 - 116 - 10, oy + 1), ImVec2(x + 200 - 116 - 10 + 130, oy + 9),
+                    IM_COL32(20, 20, 20, 100));
+
+                float bar_width = progress * 130;
+                ImVec2 bar_start(x + 200 - 116 - 10, oy + 1);
+                ImVec2 bar_end(x + 200 - 116 - 10 + bar_width, oy + 9);
+
+                ImU32 col_start = IM_COL32(35, 35, 35, 150);
+                ImU32 col_end = IM_COL32(accent.r, accent.g, accent.b, accent.a);
+
+                dl->AddRectFilledMultiColor(bar_start, bar_end, col_start, col_end, col_end, col_start);
+
+                // Número acima da barra
+                if (show_number) {
+                    char buf[32];
+                    snprintf(buf, sizeof(buf), "%.0f", value);
+                    ImVec2 num_size = ImGui::CalcTextSize(buf);
+                    dl->AddText(gui::indicator_font, 10.0f, ImVec2(x + 200 - num_size.x - 5, oy - 10),
+                        IM_COL32(255, 255, 255, 200), buf);
+                }
+            }
             };
 
-        // Fake Yaw (LBY)
-        {
-            static float value = 0.f;
-            float change = 0.5f;
-            float new_value = clampf(change, 0.f, 1.f);
-            value = lerp(ind_speed, value, new_value);
+        int current_idx = 0;
 
-            add_indicator(0, "fake yaw", value);
+        // Fake Latency - CORREÇÃO: só mostrar quando realmente ativado
+        if (CFG::Indicators_Show_FakeLatency && CFG::Misc_FakeLatency_Enable) {
+            static float value = 0.f;
+            float fake_latency = CFG::Misc_FakeLatencyfloat_Enable;
+            float new_value = clampf(fake_latency / 200.f, 0.f, 1.f);
+            value = lerp(ind_speed, value, new_value);
+            add_indicator(current_idx++, "fake latency", value, fake_latency, true);
         }
 
-        // Fakelag
-        {
+        // Real Latency
+        if (CFG::Indicators_Show_RealLatency) {
             static float value = 0.f;
+            float real_latency = SDKUtils::GetLatency() * 1000.f;
+            float new_value = clampf(real_latency / 200.f, 0.f, 1.f);
+            value = lerp(ind_speed, value, new_value);
+            add_indicator(current_idx++, "real latency", value, real_latency, true);
+        }
 
-            if (CFG::AntiAim_FakeLag_Enable) {
-                float new_value = 1.f;
-                value = lerp(ind_speed, value, new_value);
+        // Scoreboard Latency
+        if (CFG::Indicators_Show_ScoreboardLatency) {
+            static float value = 0.f;
+            float sb_latency = 0.f;
+
+            if (I::EngineClient->IsInGame() && local) {
+                player_info_t info{};
+                if (I::EngineClient->GetPlayerInfo(local->entindex(), &info)) {
+                    if (auto* pr = GetTFPlayerResource()) {
+                        sb_latency = pr->GetPing(local->entindex());
+                    }
+                }
             }
-            else {
-                value = lerp(ind_speed, value, 0.f);
+
+            float new_value = clampf(sb_latency / 200.f, 0.f, 1.f);
+            value = lerp(ind_speed, value, new_value);
+            add_indicator(current_idx++, "scoreboard", value, sb_latency, true);
+        }
+
+        // Inaccuracy - CORREÇÃO: fazer funcionar
+        if (CFG::Indicators_Show_Inaccuracy) {
+            static float value = 0.f;
+            float inaccuracy = 0.f;
+
+            if (alive && local->m_hActiveWeapon().Get()) {
+                auto weapon = local->m_hActiveWeapon().Get()->As<C_TFWeaponBase>();
+                if (weapon) {
+                    // Calcular spread baseado no tempo desde último tiro e movimento
+                    float spread = weapon->GetWeaponSpread();
+                    inaccuracy = spread * 100.f;
+                }
             }
 
-            add_indicator(1, "fakelag", value);
-        }
-
-        // Exploit (Doubletap)
-        {
-            static float value = 0.f;
-            int shift_amm = 0;
-            float new_value = clampf((float)shift_amm / 14.f, 0.f, 1.f);
+            float new_value = clampf(inaccuracy, 0.f, 1.f);
             value = lerp(ind_speed, value, new_value);
-
-            add_indicator(2, "exploit", value);
-        }
-
-        // Inaccuracy
-        {
-            static float value = 0.f;
-            float new_value = 0.f;
-            value = lerp(ind_speed, value, new_value);
-
-            add_indicator(3, "inaccuracy", value);
+            add_indicator(current_idx++, "inaccuracy", value, inaccuracy * 100.f, true);
         }
 
         // Velocity
-        {
+        if (CFG::Indicators_Show_Velocity) {
             static float value = 0.f;
-            float new_value = clampf(velocity / 300.f, 0.f, 1.f);
+            float new_value = clampf(velocity / 520.f, 0.f, 1.f);
             value = lerp(ind_speed, value, new_value);
-
-            add_indicator(4, "velocity", value);
+            add_indicator(current_idx++, "velocity", value, velocity, true);
         }
     }
 
     void keybind() {
-        // Verificar se está habilitado
         if (!CFG::Indicators_Keybinds_Enable)
             return;
 
         ImDrawList* dl = ImGui::GetBackgroundDrawList();
         if (!dl) return;
 
-        // Usar posição da config com drag próprio
         DragWindow(CFG::Keybinds_Pos_X, CFG::Keybinds_Pos_Y, 210, 20, drag_keybinds, last_keybinds, cur_keybinds);
 
         float x = CFG::Keybinds_Pos_X + drag_keybinds.x;
@@ -416,8 +480,8 @@ namespace indicators {
         // Header
         dl->AddRectFilled(ImVec2(x, y + 1), ImVec2(x + 210, y + 18), IM_COL32(20, 20, 20, 255));
 
-        // Accent line
-        Color_t accent = CFG::Menu_ModifyTheme ? CFG::Menu_ThemeColor : Color_t(255, 0, 0, 255);
+        // Accent line - CORREÇÃO: usar cor do tema
+        Color_t accent = CFG::Menu_ModifyTheme ? CFG::Menu_ThemeColor : Color_t(0, 122, 187, 255);
         dl->AddRectFilled(ImVec2(x, y + 1), ImVec2(x + 210, y + 2), IM_COL32(accent.r, accent.g, accent.b, accent.a));
 
         // Title
@@ -455,14 +519,12 @@ namespace indicators {
 
     void watermark()
     {
-        // Verificar se está habilitado
         if (!CFG::Indicators_Watermark_Enable)
             return;
 
         ImDrawList* dl = ImGui::GetBackgroundDrawList();
         if (!dl) return;
 
-        // Player name
         player_info_t info{};
         std::string name = "UNKNOWN";
 
@@ -500,7 +562,7 @@ namespace indicators {
         sprintf_s(time_buf, "%02d:%02d:%02d", st.wHour, st.wMinute, st.wSecond);
 
         // Build text
-        std::string text = "X69.TECHNOLOGY";
+        std::string text = "PHANTOM.CLUB";
 
         if (CFG::Watermark_ShowName)
             text += " | " + name;
@@ -529,7 +591,6 @@ namespace indicators {
         float width = textSize.x + paddingX * 2.f;
         float height = textSize.y + paddingY * 2.f;
 
-        // Drag com variáveis próprias
         DragWindow(CFG::Watermark_Pos_X, CFG::Watermark_Pos_Y, width, height, drag_watermark, last_watermark, cur_watermark);
 
         float x = CFG::Watermark_Pos_X + drag_watermark.x;
@@ -542,8 +603,8 @@ namespace indicators {
             IM_COL32(35, 35, 35, 180)
         );
 
-        // Accent line
-        Color_t accent = CFG::Menu_ModifyTheme ? CFG::Menu_ThemeColor : Color_t(255, 0, 0, 255);
+        // Accent line - CORREÇÃO: usar cor do tema
+        Color_t accent = CFG::Menu_ModifyTheme ? CFG::Menu_ThemeColor : Color_t(0, 122, 187, 255);
         dl->AddRectFilled(
             ImVec2(x, y),
             ImVec2(x + width, y + 2),
@@ -568,14 +629,12 @@ namespace indicators {
     }
 
     void spectator_list() {
-        // Verificar se está habilitado
         if (!CFG::Visual_Spectatorlist)
             return;
 
         ImDrawList* dl = ImGui::GetBackgroundDrawList();
         if (!dl) return;
 
-        // Atualizar lista
         UpdateSpectators();
 
         float now = static_cast<float>(Plat_FloatTime());
@@ -591,7 +650,6 @@ namespace indicators {
         int itemCount = static_cast<int>(g_spectators.size());
         int height = itemCount > 0 ? 18 + (itemCount * 14) + 1 : 18;
 
-        // Drag com variáveis próprias
         DragWindow(CFG::Spectators_Pos_X, CFG::Spectators_Pos_Y, 210, height, drag_spectators, last_spectators, cur_spectators);
 
         float x = CFG::Spectators_Pos_X + drag_spectators.x;
@@ -603,12 +661,12 @@ namespace indicators {
         // Header
         dl->AddRectFilled(ImVec2(x, y + 1), ImVec2(x + 210, y + 18), IM_COL32(20, 20, 20, 255));
 
-        // Accent line
-        Color_t accent = CFG::Menu_ModifyTheme ? CFG::Menu_ThemeColor : Color_t(255, 0, 0, 255);
+        // Accent line - CORREÇÃO: usar cor do tema
+        Color_t accent = CFG::Menu_ModifyTheme ? CFG::Menu_ThemeColor : Color_t(0, 122, 187, 255);
         dl->AddRectFilled(ImVec2(x, y + 1), ImVec2(x + 210, y + 2), IM_COL32(accent.r, accent.g, accent.b, accent.a));
 
         // Title
-        std::string title = "spectators";
+        std::string title = "Spectators";
         std::transform(title.begin(), title.end(), title.begin(), ::toupper);
 
         ImGui::PushFont(gui::indicator_font);
@@ -626,22 +684,25 @@ namespace indicators {
             const auto& spec = g_spectators[i];
             float itemY = y + 19 + i * 14;
 
-            // Calcular alpha
+            // CORREÇÃO: Calcular alpha baseado no tempo de existência (fade in) e remoção (fade out)
             unsigned char alpha = 255;
+
             if (spec.removing) {
                 float elapsed = now - spec.removeTime;
-                float t = std::max(0.f, std::min(1.f, 1.f - (elapsed / SPEC_FADE_DURATION)));
+                float t = 1.0f - (elapsed / SPEC_FADE_DURATION);
+                t = std::max(0.f, std::min(1.f, t));
                 alpha = static_cast<unsigned char>(255.f * t);
             }
-            else if (spec.animTime > 0.f) {
+            else {
                 float elapsed = now - spec.animTime;
                 if (elapsed < SPEC_ANIM_DURATION) {
-                    float t = std::max(0.f, std::min(1.f, elapsed / SPEC_ANIM_DURATION));
+                    float t = elapsed / SPEC_ANIM_DURATION;
+                    t = std::max(0.f, std::min(1.f, t));
                     alpha = static_cast<unsigned char>(255.f * t);
                 }
             }
 
-            // Texto
+            // CORREÇÃO: Mostrar tempo de respawn para teammates
             char text[256];
             if (spec.respawnTime > 0.f) {
                 snprintf(text, sizeof(text), "[%s] %s (%.1fs)",

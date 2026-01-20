@@ -1,4 +1,4 @@
-#include "Aimbot.h"
+﻿#include "Aimbot.h"
 #include "AimbotHitscan/AimbotHitscan.h"
 #include "AimbotProjectile/AimbotProjectile.h"
 #include "AimbotMelee/AimbotMelee.h"
@@ -10,7 +10,7 @@ void CAimbot::Run(CUserCmd* pCmd)
     G::flAimbotFOV = 0.0f;
     G::nTargetIndexEarly = -1;
 
-    if (!CFG::Aimbot_Enable || I::EngineVGui->IsGameUIVisible() || I::MatSystemSurface->IsCursorVisible() || SDKUtils::BInEndOfMatch())
+    if (!CFG::Aimbot_Active || I::EngineVGui->IsGameUIVisible() || I::MatSystemSurface->IsCursorVisible() || SDKUtils::BInEndOfMatch())
         return;
 
     if (Shifting::bRecharging)

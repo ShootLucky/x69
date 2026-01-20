@@ -1,12 +1,13 @@
-// cfg.h
+// Fixed cfg.h - Atualizado com novas variáveis de indicators
+
 #pragma once
 #include "Utils/Config/Config.h"
 namespace CFG
 {
 #pragma region Aimbot
 	CFGVAR(Aimbot_Enable, false);
-	CFGVAR(Aimbot_Key, 0);
-	CFGVAR(Aimbot_KeyMode, 0);
+	CFGVAR(Aimbot_Key, -1);
+	CFGVAR(Aimbot_KeyMode, 1);
 	CFGVAR(Aimbot_Melee_KeyMode, 0);
 	CFGVAR(Aimbot_Projectile_KeyMode, 0);
 	CFGVAR(Aimbot_FOV, 45.f);
@@ -20,7 +21,6 @@ namespace CFG
 	CFGVAR(Aimbot_Hitbox_Body, false);
 	CFGVAR(Aimbot_Hitbox_Buildings, false);
 	CFGVAR(Aimbot_Projectile_Enable, false);
-	CFGVAR(Aimbot_Projectile_Key, 0); //Aimbot_Hitscan_Multipoint_Scale
 	CFGVAR(Aimbot_Hitscan_Multipoint_Scale, 0.f);
 	CFGVAR(Aimbot_Projectile_FOV, 45.f);
 	CFGVAR(Aimbot_Projectile_Smoothing, 5.f);
@@ -32,7 +32,6 @@ namespace CFG
 	CFGVAR(Aimbot_ActiveLagRecords, false);
 	CFGVAR(Aimbot_AutoShoot, false);
 	CFGVAR(Aimbot_TargetStickies, false);
-	CFGVAR(Aimbot_SmoothAutoShoot, false);
 	CFGVAR(Aimbot_WaitForHeadshot, false);
 	CFGVAR(Aimbot_AutoScope, false);
 	CFGVAR(Aimbot_MinigunTapfire, false);
@@ -50,12 +49,12 @@ namespace CFG
 	CFGVAR(Aimbot_BaimAfterShots, 0);
 	CFGVAR(Aimbot_BaimAfterHealth, 0.18f);
 	CFGVAR(Aimbot_Hitbox_Sort, 0);
-	CFGVAR(Aimbot_Projectile_NoSpread, false);//Aimbot_Projectile_AimPosition Aimbot_Projectile_BBoxMultipoint Aimbot_Hitscan_AlwaysActive
-	CFGVAR(Aimbot_Projectile_AutoDoubleDonk, false); //Misc_Accuracy_Improvements
+	CFGVAR(Aimbot_Projectile_NoSpread, false);
+	CFGVAR(Aimbot_Projectile_AutoDoubleDonk, false);
 	CFGVAR(Aimbot_Projectile_AimPosition, 0);
 	CFGVAR(Aimbot_Projectile_GroundStrafePrediction, false);
 	CFGVAR(Aimbot_Projectile_AdvancedAirStrafe, false);
-	CFGVAR(Aimbot_Projectile_RocketSplashPoint, false);
+	CFGVAR(Aimbot_Projectile_RocketSplash, false);
 	CFGVAR(Aimbot_Projectile_Sort, 0);
 	CFGVAR(Aimbot_Projectile_PredictionMethod, 0);
 	CFGVAR(Aimbot_Projectile_MaxSimulationTime, 1.5f);
@@ -96,19 +95,18 @@ namespace CFG
 #pragma endregion
 #pragma region ESP
 	CFGVAR(ESP_Enable, false);
-	CFGVAR(ESP_Box, false);//ESP_BoxType
+	CFGVAR(ESP_Box, false);
 	CFGVAR(ESP_BoxType, 0);
 	CFGVAR(ESP_Name, false);
 	CFGVAR(ESP_Health, false);
 	CFGVAR(ESP_HealthType, 0);
-	CFGVAR(ESP_HealthBarPosition, 0); // 0=Left, 1=Right, 2=Top, 3=Bottom
-	CFGVAR(ESP_HealthBarGradient, true); // Ativar/Desativar gradiente
-	CFGVAR(ESP_HealthBarColor, Color_t(0, 255, 0, 255)); // Cor única (verde padrão)
-	CFGVAR(ESP_HealthBarGradientLow, Color_t(255, 0, 0, 255)); // Gradiente: Baixa vida (vermelho)
-	CFGVAR(ESP_HealthBarGradientMid, Color_t(255, 255, 0, 255)); // Gradiente: Média vida (amarelo)
-	CFGVAR(ESP_HealthBarGradientHigh, Color_t(0, 255, 0, 255)); // Gradiente: Alta vida (verde)
+	CFGVAR(ESP_HealthBarPosition, 0);
+	CFGVAR(ESP_HealthBarGradient, true);
+	CFGVAR(ESP_HealthBarColor, Color_t(0, 255, 0, 255));
+	CFGVAR(ESP_HealthBarGradientLow, Color_t(255, 0, 0, 255));
+	CFGVAR(ESP_HealthBarGradientMid, Color_t(255, 255, 0, 255));
+	CFGVAR(ESP_HealthBarGradientHigh, Color_t(0, 255, 0, 255));
 	CFGVAR(ESP_Team, false);
-	// Novas opções para Skeleton ESP e Chams Box
 	CFGVAR(ESP_Skeleton, false);
 	CFGVAR(ESP_CaptureFlag, false);
 	CFGVAR(ESP_Build, false);
@@ -130,9 +128,8 @@ namespace CFG
 	CFGVAR(ESP_SkeletonLocalPlayer, false);
 	CFGVAR(ESP_SkeletonTeam, false);
 	CFGVAR(ESP_SkeletonCaptureFlag, false);
-	// Bullet Tracer options
 	CFGVAR(BulletTracer, false);
-	CFGVAR(BulletTracer_Type, 0); // 0=line, 1=line+box, 2=box
+	CFGVAR(BulletTracer_Type, 0);
 	CFGVAR(BulletTracer_Width, 1.0f);
 	CFGVAR(BulletTracer_Speed, 0.0f);
 	CFGVAR(BulletTracer_Length, 3.0f);
@@ -263,7 +260,7 @@ namespace CFG
 	CFGVAR(Outlines_Players_Show_Teammate_Medics, false);
 #pragma endregion
 #pragma region Misc
-	CFGVAR(Misc_AutoJump, false); //Misc_SetupBones_Optimization //Misc_Edge_Jump_Key Misc_AntiAFK_Enable
+	CFGVAR(Misc_AutoJump, false);
 	CFGVAR(Misc_AntiAFK_Enable, false);
 	CFGVAR(Misc_Edge_Jump_Key, false);
 	CFGVAR(Misc_SetupBones_Optimization, false);
@@ -290,6 +287,7 @@ namespace CFG
 	CFGVAR(Misc_ThirdPerson_KeyMode, 0);
 	CFGVAR(Misc_ThirdPerson_SideOffset, 0.f);
 	CFGVAR(Misc_Clean_Screenshot, false);
+	CFGVAR(Exploits_SeedPred__Active, false);
 	CFGVAR(Exploits_SeedPred_Active, false);
 	CFGVAR(Exploits_SeedPred_DrawIndicator, false);
 #pragma endregion
@@ -385,6 +383,24 @@ namespace CFG
 	CFGVAR(Outlines_Color_LocalProjectiles, Color_t(255, 255, 255, 255));
 	CFGVAR(Outlines_Color_TeammateProjectiles, Color_t(0, 255, 0, 255));
 	CFGVAR(Outlines_Color_EnemyProjectiles, Color_t(255, 0, 0, 255));
+	CFGVAR(ESP_BoxColor, Color_t(255, 255, 255, 255));
+	CFGVAR(ESP_NameColor, Color_t(255, 255, 255, 255));
+	CFGVAR(ESP_TracerColor, Color_t(255, 255, 255, 255));
+	CFGVAR(ESP_PingColor, Color_t(255, 255, 255, 255));
+	CFGVAR(ESP_DistanceColor, Color_t(255, 255, 255, 255));
+	CFGVAR(ESP_BuildColor, Color_t(255, 100, 100, 255));
+	CFGVAR(ESP_PickupsColor, Color_t(100, 255, 100, 255));
+	CFGVAR(ESP_PickupsBoxColor, Color_t(150, 150, 255, 255));
+	CFGVAR(ESP_PickupsNameColor, Color_t(255, 255, 255, 255));
+	CFGVAR(ESP_BoxCaptureColor, Color_t(255, 200, 0, 255));
+	CFGVAR(ESP_NameCaptureColor, Color_t(255, 255, 100, 255));
+	CFGVAR(ESP_OffscreenColor, Color_t(255, 50, 50, 255));
+	CFGVAR(ESP_OffscreenFilledColor, Color_t(255, 100, 100, 180));
+	CFGVAR(ESP_SniperLinesColor, Color_t(255, 0, 0, 200));
+	CFGVAR(ESP_UberStatusColor, Color_t(0, 255, 255, 255));
+	CFGVAR(ESP_UberBarColor, Color_t(0, 200, 255, 255));
+	CFGVAR(Aimbot_FOVColor, Color_t(255, 255, 255, 100));
+#pragma endregion
 #pragma region Indicators
 	// Main Indicators Panel
 	CFGVAR(Indicators_Enable, false);
@@ -401,13 +417,17 @@ namespace CFG
 	CFGVAR(Watermark_ShowTime, false);
 	CFGVAR(Watermark_ShowPing, false);
 
-	// AntiAim settings (se não existirem já)
-	CFGVAR(AntiAim_FakeLag_Enable, false);
-	CFGVAR(AntiAim_FakeLag_Limit, 24);
+	// Indicators individual toggles
+	CFGVAR(Indicators_Show_FakeLatency, true);
+	CFGVAR(Indicators_Show_RealLatency, true);
+	CFGVAR(Indicators_Show_ScoreboardLatency, true);
+	CFGVAR(Indicators_Show_Inaccuracy, true);
+	CFGVAR(Indicators_Show_Velocity, true);
 
-	// Exploits settings (se não existirem já)
-	CFGVAR(Exploits_DoubleTap_Style, 0);  // 0=active, 1=hold, 2=toggled, 3=force off
+	// Indicators display options
+	CFGVAR(Indicators_Display_Mode, 0); // 0=Bars only, 1=Numbers only, 2=Bars+Numbers
 
+	// Positions
 	CFGVAR(Indicators_Pos_X, 10.f);
 	CFGVAR(Indicators_Pos_Y, 530.f);
 	CFGVAR(Keybinds_Pos_X, 10.f);
@@ -416,7 +436,6 @@ namespace CFG
 	CFGVAR(Watermark_Pos_Y, 10.f);
 	CFGVAR(Spectators_Pos_X, 10.f);
 	CFGVAR(Spectators_Pos_Y, 718.f);
-#pragma endregion
 #pragma endregion
 	CFGVAR(CurrentSection, 0);
 	CFGVAR(Menu_ThemeColor, Color_t(0, 122, 187, 255));

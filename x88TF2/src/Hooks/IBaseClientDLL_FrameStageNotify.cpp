@@ -98,7 +98,7 @@ MAKE_HOOK(IBaseClientDLL_FrameStageNotify, Memory::GetVFunc(I::BaseClientDLL, 35
 	case FRAME_RENDER_START:
 	{
 		H::Input->Update();
-		gESP.Rain();
+
 		F::Misc->ViewModelOffsets();
 
 		//fake taunt stuff

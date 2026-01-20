@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "TF2/IMatSystemSurface.h"
 #include "TF2/cdll_int.h"

@@ -2,7 +2,7 @@
 #include "../Features/Menu/Menu.h"
 #include "../App/App.h" // ajuste o caminho se necessário
 #include "../Features/ESP/ESP.h"
-#include "../src/Features/Aimbot/AimbotHitscan/AimbotHitscan.h" // Added include for AimbotHitscan
+// Added include for AimbotHitscan
 #include "../Features/SeedPred/SeedPred.h"
 #include "../src/Features/Menu/notification_system/notifs.h"
 MAKE_HOOK(IEngineVGuiInternal_Paint, Memory::GetVFunc(I::EngineVGui, 14), void, __fastcall,
@@ -15,7 +15,6 @@ MAKE_HOOK(IEngineVGuiInternal_Paint, Memory::GetVFunc(I::EngineVGui, 14), void, 
 		I::MatSystemSurface->StartDrawing();
 		{
 			gESP.Run();
-			F::AimbotHitscan->DrawDebug();
 		//	menu::render();
 			F::SeedPred->Paint();
 			App->Draw(); // ✅ CORRETO

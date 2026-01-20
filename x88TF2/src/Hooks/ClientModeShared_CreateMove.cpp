@@ -1,6 +1,8 @@
+﻿// ClientModeShared_CreateMove.cpp - VERSÃO CORRIGIDA
 #include "../SDK/SDK.h"
 #include "../Features/Misc/Misc.h"
 #include "../Features/Aimbot/Aimbot.h"
+#include "../Features/Aimbot/AimbotHitscan/AimbotHitscan.h"  // ✅ ADICIONAR INCLUDE
 #include "../Features/EnginePrediction/EnginePrediction.h"
 #include "../Features/SeedPred/SeedPred.h"
 
@@ -25,7 +27,6 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	);
 
 	{
-
 	}
 
 	if (Shifting::bRecharging)
@@ -34,7 +35,6 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 		{
 			pCmd->buttons &= ~IN_JUMP;
 		}
-
 		return CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 	}
 
@@ -44,40 +44,38 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	float flOldSide = pCmd->sidemove;
 	float flOldForward = pCmd->forwardmove;
 
-	if (auto pLocal = H::Entities->GetLocal())
+	// ✅ CORREÇÃO: Obter local player e weapon ANTES de usar
+	C_TFPlayer* pLocal = H::Entities->GetLocal();
+	C_TFWeaponBase* pWeapon = H::Entities->GetWeapon();
+
+	if (pLocal && pWeapon)
 	{
-		if (auto pWeapon = H::Entities->GetWeapon())
-		{
-			//TODO?: do we really need to cache these?
-			G::bCanPrimaryAttack = pWeapon->CanPrimaryAttack(pLocal);
-			G::bCanSecondaryAttack = pWeapon->CanSecondaryAttack(pLocal);
-			G::bCanHeadshot = pWeapon->CanHeadShot(pLocal);
-		}
+		//TODO?: do we really need to cache these?
+		G::bCanPrimaryAttack = pWeapon->CanPrimaryAttack(pLocal);
+		G::bCanSecondaryAttack = pWeapon->CanSecondaryAttack(pLocal);
+		G::bCanHeadshot = pWeapon->CanHeadShot(pLocal);
 	}
 
 	//nTicksSinceCanFire
 	{
 		static bool bOldCanFire = G::bCanPrimaryAttack;
-
 		if (G::bCanPrimaryAttack != bOldCanFire)
 		{
 			G::nTicksSinceCanFire = 0;
 			bOldCanFire = G::bCanPrimaryAttack;
 		}
-
 		else
 		{
 			if (G::bCanPrimaryAttack)
 				G::nTicksSinceCanFire++;
-
-			else G::nTicksSinceCanFire = 0;
+			else
+				G::nTicksSinceCanFire = 0;
 		}
 	}
 
 	F::Misc->Bunnyhop(pCmd);
 	F::Misc->AutoStrafe(pCmd);
 	F::Misc->AutoRocketJump(pCmd);
-
 
 	F::EnginePrediction->Start(pCmd);
 	{
@@ -91,7 +89,20 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			}
 		}
 
-		F::Aimbot->Run(pCmd);
+		// ✅ CORREÇÃO PRINCIPAL: Chamar o aimbot hitscan corretamente
+		if (pLocal && pWeapon)
+		{
+			// Verificar se deve usar aimbot hitscan
+			if (CFG::Aimbot_Active && CFG::Aimbot_Hitscan_Active)
+			{
+				F::AimbotHitscan->Run(pCmd, pLocal, pWeapon);
+			}
+			else
+			{
+				// Fallback para o aimbot genérico (se existir)
+				F::Aimbot->Run(pCmd);
+			}
+		}
 	}
 	F::EnginePrediction->End();
 
@@ -100,13 +111,11 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	//nTicksTargetSame
 	{
 		static int nOldTargetIndex = G::nTargetIndexEarly;
-
 		if (G::nTargetIndexEarly != nOldTargetIndex)
 		{
 			G::nTicksTargetSame = 0;
 			nOldTargetIndex = G::nTargetIndexEarly;
 		}
-
 		else
 		{
 			G::nTicksTargetSame++;
@@ -119,13 +128,11 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	//pSilent
 	{
 		static bool bWasSet = false;
-
 		if (G::bPSilentAngles)
 		{
 			*pSendPacket = false;
 			bWasSet = true;
 		}
-
 		else
 		{
 			if (bWasSet)
