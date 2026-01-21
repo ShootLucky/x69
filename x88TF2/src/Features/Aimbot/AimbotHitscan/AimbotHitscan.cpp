@@ -23,6 +23,7 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
     const int nWeaponID = pWeapon->GetWeaponID();
     bool bSilentMode = (CFG::Aimbot_Hitscan_Mode == 1);
 
+    // Auto scope
     if (CFG::Aimbot_AutoScope)
     {
         if (nWeaponID == TF_WEAPON_SNIPERRIFLE ||
@@ -37,6 +38,7 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
         }
     }
 
+    // Wait for charge
     if (CFG::Aimbot_WaitForCharge)
     {
         if (nWeaponID == TF_WEAPON_SNIPERRIFLE ||
@@ -49,15 +51,14 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
         }
     }
 
-    if (CFG::Aimbot_MinigunTapfire && nWeaponID == TF_WEAPON_MINIGUN)
+    // Minigun tapfire delay APENAS quando tapfire ativado
+    if (CFG::Aimbot_MinigunTapfire && nWeaponID == TF_WEAPON_MINIGUN && m_iTapfireDelay > 0)
     {
-        if (m_iTapfireDelay > 0)
-        {
-            m_iTapfireDelay--;
-            return;
-        }
+        m_iTapfireDelay--;
+        return;
     }
 
+    // Silent aim cooldown
     if (bSilentMode && m_bWaitingForRelease)
     {
         if (pWeapon->m_flNextPrimaryAttack() > I::GlobalVars->curtime)
@@ -106,18 +107,17 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
 
         if (fSmooth <= 1.0f)
         {
-            // Smoothing = 1: Snap direto, sem interpolação
+            // Smoothing = 1: Snap direto
             pCmd->viewangles = target.vAngles;
             Math::ClampAngles(pCmd->viewangles);
         }
         else
         {
-            // Smoothing > 1: Interpolação suave
+            // Smoothing > 1: Interpolação
             Vec3 vCurrentAngles = pCmd->viewangles;
             Vec3 vDelta = target.vAngles - vCurrentAngles;
             Math::ClampAngles(vDelta);
 
-            // Aplicar smoothing
             vDelta.x /= fSmooth;
             vDelta.y /= fSmooth;
             vDelta.z = 0.0f;
@@ -130,92 +130,98 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
     G::nTargetIndex = target.pEntity->entindex();
     G::flAimbotFOV = target.fFOV;
 
-    if (CFG::Aimbot_AutoShoot && target.bCanShoot)
+    // AUTO SHOOT - Baseado no Amalgam
+    if (!CFG::Aimbot_AutoShoot || !target.bCanShoot)
+        return;
+
+    if (!G::bCanPrimaryAttack || !pWeapon->HasPrimaryAmmoForShot())
+        return;
+
+    if (nWeaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC)
+        return;
+
+    // MINIGUN - Lógica simplificada igual Amalgam
+    if (nWeaponID == TF_WEAPON_MINIGUN)
     {
-        if (!G::bCanPrimaryAttack || !pWeapon->HasPrimaryAmmoForShot())
+        // Verificar estado da minigun
+        auto pMinigun = pWeapon->As<C_TFMinigun>();
+        if (!pMinigun)
             return;
 
-        if (nWeaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC)
-            return;
+        int iWeaponState = pMinigun->m_iWeaponState();
 
-        // VERIFICAR SE A MIRA ESTÁ REALMENTE NO ALVO
-        Vec3 vCurrentViewAngles = pCmd->viewangles;
-        Vec3 vAngleDelta = target.vAngles - vCurrentViewAngles;
-        Math::ClampAngles(vAngleDelta);
-        float fAngleDifference = sqrtf((vAngleDelta.x * vAngleDelta.x) + (vAngleDelta.y * vAngleDelta.y));
-
-        // Threshold baseado no modo
-        float fAccuracyThreshold;
-        if (bSilentMode)
+        // Se não está girando/atirando, não fazer nada (evita bug de animação)
+        if (iWeaponState != AC_STATE_FIRING && iWeaponState != AC_STATE_SPINNING)
         {
-            // Silent aim: sempre preciso (aplicamos os ângulos corretos)
-            fAccuracyThreshold = 0.5f;
+            // Em silent aim, não aplicar ângulos até estar pronto
+            if (bSilentMode)
+                return;
+        }
+
+        // Tapfire em distância
+        if (CFG::Aimbot_MinigunTapfire && target.fDist > 1000.0f)
+        {
+            float flTimeSinceLastShot = (pLocal->m_nTickBase() * TICK_INTERVAL) - pWeapon->m_flLastFireTime();
+            if (flTimeSinceLastShot <= 1.25f)
+            {
+                pCmd->buttons &= ~IN_ATTACK;
+                return;
+            }
+
+            pCmd->buttons |= IN_ATTACK;
         }
         else
         {
-            // Aimlock: precisa estar próximo ao alvo
-            if (CFG::Aimbot_Hitscan_Smoothing <= 1.0f)
-                fAccuracyThreshold = 0.5f; // Snap direto, muito preciso
-            else if (CFG::Aimbot_Hitscan_Smoothing <= 5.0f)
-                fAccuracyThreshold = 1.5f; // Smooth baixo, preciso
-            else if (CFG::Aimbot_Hitscan_Smoothing <= 10.0f)
-                fAccuracyThreshold = 3.0f; // Smooth médio
-            else
-                fAccuracyThreshold = 5.0f; // Smooth alto, tolerante
-        }
-
-        // NÃO ATIRAR SE NÃO ESTIVER PRECISO
-        if (fAngleDifference > fAccuracyThreshold)
-            return;
-
-        int iCurrentTick = I::GlobalVars->tickcount;
-
-        if (nWeaponID == TF_WEAPON_MINIGUN)
-        {
-            if (CFG::Aimbot_MinigunTapfire)
-            {
-                const float TAPFIRE_DISTANCE = 1000.0f;
-
-                if (target.fDist > TAPFIRE_DISTANCE)
-                {
-                    if ((iCurrentTick - m_iLastShotTick) < 2)
-                        return;
-
-                    pCmd->buttons |= IN_ATTACK;
-                    m_iLastShotTick = iCurrentTick;
-                    m_iTapfireDelay = 3;
-                }
-                else
-                {
-                    pCmd->buttons |= IN_ATTACK;
-                }
-            }
-            else
-            {
-                pCmd->buttons |= IN_ATTACK;
-            }
-            return;
-        }
-
-        if (bSilentMode)
-        {
-            if (m_bWaitingForRelease)
-                return;
-
-            if (pWeapon->m_flNextPrimaryAttack() > I::GlobalVars->curtime)
-                return;
-
-            if (pLocal->m_flNextAttack() > I::GlobalVars->curtime)
-                return;
-
+            // SEMPRE HOLD - sem tapfire ou perto
             pCmd->buttons |= IN_ATTACK;
-            m_iLastShotTick = iCurrentTick;
-            m_bWaitingForRelease = true;
         }
+        return;
+    }
+
+    // Verificar precisão APENAS para não-minigun
+    Vec3 vAngleDelta = target.vAngles - pCmd->viewangles;
+    Math::ClampAngles(vAngleDelta);
+    float fAngleDifference = sqrtf((vAngleDelta.x * vAngleDelta.x) + (vAngleDelta.y * vAngleDelta.y));
+
+    bool bIsScoped = (nWeaponID == TF_WEAPON_SNIPERRIFLE ||
+        nWeaponID == TF_WEAPON_SNIPERRIFLE_DECAP) && pLocal->IsZoomed();
+
+    float fThreshold;
+    if (bSilentMode)
+    {
+        fThreshold = bIsScoped ? 0.1f : 0.5f;
+    }
+    else
+    {
+        if (bIsScoped)
+            fThreshold = CFG::Aimbot_Hitscan_Smoothing <= 5.0f ? 0.5f : 1.0f;
         else
-        {
-            pCmd->buttons |= IN_ATTACK;
-        }
+            fThreshold = CFG::Aimbot_Hitscan_Smoothing <= 1.0f ? 0.5f :
+            CFG::Aimbot_Hitscan_Smoothing <= 5.0f ? 1.5f :
+            CFG::Aimbot_Hitscan_Smoothing <= 10.0f ? 3.0f : 5.0f;
+    }
+
+    if (fAngleDifference > fThreshold)
+        return;
+
+    // Atirar
+    if (bSilentMode)
+    {
+        if (m_bWaitingForRelease)
+            return;
+
+        if (pWeapon->m_flNextPrimaryAttack() > I::GlobalVars->curtime)
+            return;
+
+        if (pLocal->m_flNextAttack() > I::GlobalVars->curtime)
+            return;
+
+        pCmd->buttons |= IN_ATTACK;
+        m_bWaitingForRelease = true;
+    }
+    else
+    {
+        pCmd->buttons |= IN_ATTACK;
     }
 }
 
@@ -238,7 +244,6 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Targ
     if (activeHitboxes.empty())
         return false;
 
-    // Encontrar todos os alvos válidos dentro do FOV
     std::vector<Target_t> validTargets;
 
     for (int i = 1; i <= I::EngineClient->GetMaxClients(); i++)
@@ -253,7 +258,6 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Targ
         Target_t t;
         if (ScanTargetHitboxes(pLocal, pEntity, vLocalPos, vLocalAngles, activeHitboxes, t))
         {
-            // RESPEITAR FOV - só adicionar se dentro do FOV
             if (t.fFOV <= CFG::Aimbot_FOV)
             {
                 t.bCanShoot = !CFG::Aimbot_WaitForHeadshot || t.nHitbox == 0;
@@ -265,7 +269,6 @@ bool CAimbotHitscan::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, Targ
     if (validTargets.empty())
         return false;
 
-    // Ordenar targets
     std::sort(validTargets.begin(), validTargets.end(), [](const Target_t& a, const Target_t& b) {
         switch (CFG::Aimbot_Hitscan_Sort)
         {
@@ -293,7 +296,13 @@ bool CAimbotHitscan::ScanTargetHitboxes(C_TFPlayer* pLocal, C_TFPlayer* pTarget,
         vPredictionOffset = pTarget->m_vecVelocity() * (flLatency + flLerp);
     }
 
-    // MULTIPOINT AUTOMÁTICO
+    C_TFWeaponBase* pWeapon = H::Entities->GetWeapon();
+    int nWeaponID = pWeapon ? pWeapon->GetWeaponID() : 0;
+    bool bIsSniper = (nWeaponID == TF_WEAPON_SNIPERRIFLE ||
+        nWeaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC ||
+        nWeaponID == TF_WEAPON_SNIPERRIFLE_DECAP);
+    bool bIsHeavy = (nWeaponID == TF_WEAPON_MINIGUN);
+
     std::vector<std::pair<int, Vec3>> hitboxPoints;
 
     for (int hitbox : hitboxes)
@@ -302,33 +311,108 @@ bool CAimbotHitscan::ScanTargetHitboxes(C_TFPlayer* pLocal, C_TFPlayer* pTarget,
         if (vHitboxPos.IsZero())
             continue;
 
-        // Ponto central
         hitboxPoints.push_back({ hitbox, vHitboxPos });
 
-        // Multipoint para head e body
-        if (hitbox == 0) // Head
+        if (hitbox == 0) // HEAD
         {
-            // Top, Left, Right da cabeça
-            Vec3 vTop = vHitboxPos; vTop.z += 2.0f;
-            Vec3 vLeft = vHitboxPos; vLeft.x -= 3.0f;
-            Vec3 vRight = vHitboxPos; vRight.x += 3.0f;
+            if (bIsSniper)
+            {
+                Vec3 vTop = vHitboxPos; vTop.z += 2.5f;
+                Vec3 vBottom = vHitboxPos; vBottom.z -= 2.0f;
+                Vec3 vLeft = vHitboxPos; vLeft.x -= 3.5f;
+                Vec3 vRight = vHitboxPos; vRight.x += 3.5f;
+                Vec3 vFront = vHitboxPos; vFront.y += 2.5f;
+                Vec3 vBack = vHitboxPos; vBack.y -= 2.5f;
 
-            hitboxPoints.push_back({ hitbox, vTop });
-            hitboxPoints.push_back({ hitbox, vLeft });
-            hitboxPoints.push_back({ hitbox, vRight });
+                hitboxPoints.push_back({ hitbox, vTop });
+                hitboxPoints.push_back({ hitbox, vBottom });
+                hitboxPoints.push_back({ hitbox, vLeft });
+                hitboxPoints.push_back({ hitbox, vRight });
+                hitboxPoints.push_back({ hitbox, vFront });
+                hitboxPoints.push_back({ hitbox, vBack });
+
+                Vec3 vTopLeft = vHitboxPos; vTopLeft.z += 2.0f; vTopLeft.x -= 2.5f;
+                Vec3 vTopRight = vHitboxPos; vTopRight.z += 2.0f; vTopRight.x += 2.5f;
+                hitboxPoints.push_back({ hitbox, vTopLeft });
+                hitboxPoints.push_back({ hitbox, vTopRight });
+            }
+            else if (bIsHeavy)
+            {
+                Vec3 vTop = vHitboxPos; vTop.z += 2.0f;
+                Vec3 vLeft = vHitboxPos; vLeft.x -= 3.0f;
+                Vec3 vRight = vHitboxPos; vRight.x += 3.0f;
+                Vec3 vFront = vHitboxPos; vFront.y += 2.0f;
+
+                hitboxPoints.push_back({ hitbox, vTop });
+                hitboxPoints.push_back({ hitbox, vLeft });
+                hitboxPoints.push_back({ hitbox, vRight });
+                hitboxPoints.push_back({ hitbox, vFront });
+            }
+            else
+            {
+                Vec3 vTop = vHitboxPos; vTop.z += 2.0f;
+                Vec3 vLeft = vHitboxPos; vLeft.x -= 3.0f;
+                Vec3 vRight = vHitboxPos; vRight.x += 3.0f;
+
+                hitboxPoints.push_back({ hitbox, vTop });
+                hitboxPoints.push_back({ hitbox, vLeft });
+                hitboxPoints.push_back({ hitbox, vRight });
+            }
         }
-        else if (hitbox >= 4 && hitbox <= 7) // Body
+        else if (hitbox >= 4 && hitbox <= 7) // BODY
         {
-            // Left, Right do corpo
-            Vec3 vLeft = vHitboxPos; vLeft.x -= 5.0f;
-            Vec3 vRight = vHitboxPos; vRight.x += 5.0f;
+            if (bIsHeavy)
+            {
+                Vec3 vLeft = vHitboxPos; vLeft.x -= 6.0f;
+                Vec3 vRight = vHitboxPos; vRight.x += 6.0f;
+                Vec3 vTop = vHitboxPos; vTop.z += 4.0f;
+                Vec3 vBottom = vHitboxPos; vBottom.z -= 4.0f;
+                Vec3 vFront = vHitboxPos; vFront.y += 4.0f;
+                Vec3 vBack = vHitboxPos; vBack.y -= 4.0f;
+
+                hitboxPoints.push_back({ hitbox, vLeft });
+                hitboxPoints.push_back({ hitbox, vRight });
+                hitboxPoints.push_back({ hitbox, vTop });
+                hitboxPoints.push_back({ hitbox, vBottom });
+                hitboxPoints.push_back({ hitbox, vFront });
+                hitboxPoints.push_back({ hitbox, vBack });
+
+                Vec3 vLeftTop = vHitboxPos; vLeftTop.x -= 4.0f; vLeftTop.z += 3.0f;
+                Vec3 vRightTop = vHitboxPos; vRightTop.x += 4.0f; vRightTop.z += 3.0f;
+                hitboxPoints.push_back({ hitbox, vLeftTop });
+                hitboxPoints.push_back({ hitbox, vRightTop });
+            }
+            else if (bIsSniper)
+            {
+                Vec3 vLeft = vHitboxPos; vLeft.x -= 5.0f;
+                Vec3 vRight = vHitboxPos; vRight.x += 5.0f;
+                Vec3 vTop = vHitboxPos; vTop.z += 3.0f;
+                Vec3 vBottom = vHitboxPos; vBottom.z -= 3.0f;
+
+                hitboxPoints.push_back({ hitbox, vLeft });
+                hitboxPoints.push_back({ hitbox, vRight });
+                hitboxPoints.push_back({ hitbox, vTop });
+                hitboxPoints.push_back({ hitbox, vBottom });
+            }
+            else
+            {
+                Vec3 vLeft = vHitboxPos; vLeft.x -= 5.0f;
+                Vec3 vRight = vHitboxPos; vRight.x += 5.0f;
+
+                hitboxPoints.push_back({ hitbox, vLeft });
+                hitboxPoints.push_back({ hitbox, vRight });
+            }
+        }
+        else if (hitbox == 3 && bIsHeavy) // PELVIS
+        {
+            Vec3 vLeft = vHitboxPos; vLeft.x -= 4.0f;
+            Vec3 vRight = vHitboxPos; vRight.x += 4.0f;
 
             hitboxPoints.push_back({ hitbox, vLeft });
             hitboxPoints.push_back({ hitbox, vRight });
         }
     }
 
-    // Testar todos os pontos
     float fBestScore = FLT_MAX;
     bool bFoundHitbox = false;
 
@@ -337,7 +421,6 @@ bool CAimbotHitscan::ScanTargetHitboxes(C_TFPlayer* pLocal, C_TFPlayer* pTarget,
         Vec3 vPredictedPos = vPoint + vPredictionOffset;
         float fFOV = CalculateFOV(vLocalAngles, vPredictedPos, vLocalPos);
 
-        // Quick FOV check
         if (fFOV > CFG::Aimbot_FOV)
             continue;
 
@@ -350,7 +433,6 @@ bool CAimbotHitscan::ScanTargetHitboxes(C_TFPlayer* pLocal, C_TFPlayer* pTarget,
         if (!H::AimUtils->TraceEntityBullet(pTarget, vLocalPos, vTraceEnd, &nHitHitbox))
             continue;
 
-        // Score: priorizar hitbox visível
         float fScore = CalculateHitboxScore(hitbox, fFOV, vLocalPos.DistTo(vPoint));
 
         if (fScore < fBestScore)
@@ -374,63 +456,22 @@ bool CAimbotHitscan::ScanTargetHitboxes(C_TFPlayer* pLocal, C_TFPlayer* pTarget,
 std::vector<int> CAimbotHitscan::GetActiveHitboxes()
 {
     std::vector<int> hitboxes;
-
-    // Ordem de prioridade: Head > Body > Pelvis > Arms > Legs
-    if (CFG::Aimbot_Hitbox_Head)
-        hitboxes.push_back(0);
-
-    if (CFG::Aimbot_Hitbox_Body)
-    {
-        hitboxes.push_back(7); // Upper chest (mais visível)
-        hitboxes.push_back(6); // Chest
-        hitboxes.push_back(5); // Thorax
-        hitboxes.push_back(4); // Body
-    }
-
-    if (CFG::Aimbot_Hitbox_Pelvis)
-        hitboxes.push_back(3);
-
-    if (CFG::Aimbot_Hitbox_Arms)
-    {
-        hitboxes.push_back(14);
-        hitboxes.push_back(15);
-        hitboxes.push_back(16);
-        hitboxes.push_back(17);
-        hitboxes.push_back(18);
-        hitboxes.push_back(19);
-    }
-
-    if (CFG::Aimbot_Hitbox_Legs)
-    {
-        hitboxes.push_back(8);
-        hitboxes.push_back(9);
-        hitboxes.push_back(10);
-        hitboxes.push_back(11);
-        hitboxes.push_back(12);
-        hitboxes.push_back(13);
-    }
-
+    if (CFG::Aimbot_Hitbox_Head) hitboxes.push_back(0);
+    if (CFG::Aimbot_Hitbox_Body) { hitboxes.push_back(7); hitboxes.push_back(6); hitboxes.push_back(5); hitboxes.push_back(4); }
+    if (CFG::Aimbot_Hitbox_Pelvis) hitboxes.push_back(3);
+    if (CFG::Aimbot_Hitbox_Arms) { hitboxes.push_back(14); hitboxes.push_back(15); hitboxes.push_back(16); hitboxes.push_back(17); hitboxes.push_back(18); hitboxes.push_back(19); }
+    if (CFG::Aimbot_Hitbox_Legs) { hitboxes.push_back(8); hitboxes.push_back(9); hitboxes.push_back(10); hitboxes.push_back(11); hitboxes.push_back(12); hitboxes.push_back(13); }
     return hitboxes;
 }
 
 float CAimbotHitscan::CalculateHitboxScore(int hitbox, float fov, float distance)
 {
     float fPriority = 1.0f;
-
-    // Prioridade baseada em hitbox
-    if (hitbox == 0)
-        fPriority = 100.0f; // Head - máxima prioridade
-    else if (hitbox >= 4 && hitbox <= 7)
-        fPriority = 50.0f; // Body - alta prioridade
-    else if (hitbox == 3)
-        fPriority = 30.0f; // Pelvis
-    else if (hitbox >= 14 && hitbox <= 19)
-        fPriority = 20.0f; // Arms
-    else
-        fPriority = 10.0f; // Legs
-
-    // Score: menor = melhor
-    // Prioriza: hitbox > FOV > distance
+    if (hitbox == 0) fPriority = 100.0f;
+    else if (hitbox >= 4 && hitbox <= 7) fPriority = 50.0f;
+    else if (hitbox == 3) fPriority = 30.0f;
+    else if (hitbox >= 14 && hitbox <= 19) fPriority = 20.0f;
+    else fPriority = 10.0f;
     return (fov * 2.0f) + (distance * 0.001f) - fPriority;
 }
 
@@ -473,5 +514,10 @@ float CAimbotHitscan::CalculateFOV(const Vec3& vLocalAngles, const Vec3& vTarget
     Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vTargetPos);
     Vec3 vDelta = vLocalAngles - vAngleTo;
     Math::ClampAngles(vDelta);
-    return sqrtf((vDelta.x * vDelta.x) + (vDelta.y * vDelta.y));
+
+    float fYawDelta = fabsf(vDelta.y);
+    float fPitchDelta = fabsf(vDelta.x);
+    float fMaxDelta = fmaxf(fYawDelta, fPitchDelta);
+
+    return sqrtf((vDelta.x * vDelta.x) + (vDelta.y * vDelta.y)) + (fMaxDelta * 0.5f);
 }

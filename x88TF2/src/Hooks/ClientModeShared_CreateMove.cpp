@@ -4,7 +4,8 @@
 #include "../Features/Aimbot/Aimbot.h"
 #include "../Features/Aimbot/AimbotHitscan/AimbotHitscan.h"  // ✅ ADICIONAR INCLUDE
 #include "../Features/EnginePrediction/EnginePrediction.h"
-#include "../Features/SeedPred/SeedPred.h"
+#include "../Features/Exploits/nospread/nospread.h"
+#include "../Features/Exploits/shifting/shifting.h"
 
 MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21), bool, __fastcall,
 	CClientModeShared* ecx, float flInputSampleTime, CUserCmd* pCmd)
@@ -12,6 +13,7 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	G::bSilentAngles = false;
 	G::bPSilentAngles = false;
 	G::bFiring = false;
+	G::CurrentUserCmd = pCmd;
 
 	if (!pCmd || !pCmd->command_number)
 	{
@@ -26,7 +28,11 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 		I::ClientState->lastoutgoingcommand + I::ClientState->chokedcommands
 	);
 
+
+	if (g_shifting->should_exit_create_move(pCmd))
 	{
+
+		return g_shifting->get_shift_silent_angles() ? false : CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 	}
 
 	if (Shifting::bRecharging)
@@ -35,43 +41,56 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 		{
 			pCmd->buttons &= ~IN_JUMP;
 		}
+
 		return CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 	}
 
 	bool* pSendPacket = reinterpret_cast<bool*>(uintptr_t(_AddressOfReturnAddress()) + 0x128);
 
-	Vec3 vOldAngles = pCmd->viewangles;
-	float flOldSide = pCmd->sidemove;
-	float flOldForward = pCmd->forwardmove;
+	// OPTIMIZATION: Cache angles and movement for later restoration
+	const Vec3 vOldAngles = pCmd->viewangles;
+	const float flOldSide = pCmd->sidemove;
+	const float flOldForward = pCmd->forwardmove;
 
-	// ✅ CORREÇÃO: Obter local player e weapon ANTES de usar
-	C_TFPlayer* pLocal = H::Entities->GetLocal();
-	C_TFWeaponBase* pWeapon = H::Entities->GetWeapon();
+	// OPTIMIZATION: Cache entity pointers once (used multiple times below)
+	auto pLocal = H::Entities->GetLocal();
+	auto pWeapon = H::Entities->GetWeapon();
 
+	// Cache weapon capabilities (used by multiple features)
 	if (pLocal && pWeapon)
 	{
-		//TODO?: do we really need to cache these?
 		G::bCanPrimaryAttack = pWeapon->CanPrimaryAttack(pLocal);
 		G::bCanSecondaryAttack = pWeapon->CanSecondaryAttack(pLocal);
 		G::bCanHeadshot = pWeapon->CanHeadShot(pLocal);
+	}
+	else
+	{
+		G::bCanPrimaryAttack = false;
+		G::bCanSecondaryAttack = false;
+		G::bCanHeadshot = false;
 	}
 
 	//nTicksSinceCanFire
 	{
 		static bool bOldCanFire = G::bCanPrimaryAttack;
+
 		if (G::bCanPrimaryAttack != bOldCanFire)
 		{
 			G::nTicksSinceCanFire = 0;
 			bOldCanFire = G::bCanPrimaryAttack;
 		}
+
 		else
 		{
 			if (G::bCanPrimaryAttack)
 				G::nTicksSinceCanFire++;
-			else
-				G::nTicksSinceCanFire = 0;
+
+			else G::nTicksSinceCanFire = 0;
 		}
 	}
+	// OPTIMIZATION: Early exit if no local player (rare but possible)
+	if (!pLocal)
+		return CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 
 	F::Misc->Bunnyhop(pCmd);
 	F::Misc->AutoStrafe(pCmd);
@@ -80,42 +99,28 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	F::EnginePrediction->Start(pCmd);
 	{
 		{
-			if (C_TFPlayer* const local{ H::Entities->GetLocal() })
+			if ((pLocal->m_fFlags() & FL_ONGROUND) && !(F::EnginePrediction->flags & FL_ONGROUND))
 			{
-				if ((local->m_fFlags() & FL_ONGROUND) && !(F::EnginePrediction->flags & FL_ONGROUND))
-				{
-					*pSendPacket = false;
-				}
+				*pSendPacket = false;
 			}
 		}
 
-		// ✅ CORREÇÃO PRINCIPAL: Chamar o aimbot hitscan corretamente
-		if (pLocal && pWeapon)
-		{
-			// Verificar se deve usar aimbot hitscan
-			if (CFG::Aimbot_Active && CFG::Aimbot_Hitscan_Active)
-			{
-				F::AimbotHitscan->Run(pCmd, pLocal, pWeapon);
-			}
-			else
-			{
-				// Fallback para o aimbot genérico (se existir)
-				F::Aimbot->Run(pCmd);
-			}
-		}
+		F::Aimbot->Run(pCmd);
 	}
 	F::EnginePrediction->End();
 
-	F::SeedPred->AdjustAngles(pCmd);
+	g_no_spread->AdjustAngles(pCmd);
 
 	//nTicksTargetSame
 	{
 		static int nOldTargetIndex = G::nTargetIndexEarly;
+
 		if (G::nTargetIndexEarly != nOldTargetIndex)
 		{
 			G::nTicksTargetSame = 0;
 			nOldTargetIndex = G::nTargetIndexEarly;
 		}
+
 		else
 		{
 			G::nTicksTargetSame++;
@@ -128,11 +133,13 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	//pSilent
 	{
 		static bool bWasSet = false;
+
 		if (G::bPSilentAngles)
 		{
 			*pSendPacket = false;
 			bWasSet = true;
 		}
+
 		else
 		{
 			if (bWasSet)
@@ -151,6 +158,8 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	{
 		*pSendPacket = true;
 	}
+
+	g_shifting->run(pCmd, pSendPacket);
 
 	G::nOldButtons = pCmd->buttons;
 	G::vUserCmdAngles = pCmd->viewangles;

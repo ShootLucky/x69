@@ -315,6 +315,7 @@ namespace Shifting
 	inline bool bShifting = false;
 	inline bool bRapidFireWantShift = false;
 	inline bool bShiftingWarp = false;
+	inline int delay_hitscan = 0;
 
 	inline void Reset()
 	{
@@ -323,6 +324,7 @@ namespace Shifting
 		bShifting = false;
 		bRapidFireWantShift = false;
 		bShiftingWarp = false;
+		delay_hitscan = 0;
 	}
 }
 

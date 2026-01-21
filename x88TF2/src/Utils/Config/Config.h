@@ -19,7 +19,7 @@ namespace Config
     inline std::vector<ConfigVarInitializer> vars{};
 
     // Config directory path
-    inline const std::string CONFIG_DIR = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\x69\\Configs";
+    inline const std::string CONFIG_DIR = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\phantom\\Configs";
 
     static std::string Obfuscate(const std::string& data) {
         std::string obfuscated = data;

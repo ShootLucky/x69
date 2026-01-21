@@ -1,10 +1,14 @@
 ﻿#include "includes.h"
 #include "App/App.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "icons.h"
+#include "stb_image.h"
 #ifdef _WIN64
 #define GWL_WNDPROC GWLP_WNDPROC
 #endif
 #include "../nemesis.h"
 
+static IDirect3DTexture9* icon_texture = nullptr;
 static int selected_weapon = 0;
 static std::vector<bool> hitbox_selected = { false, false, false, false, false };
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -23,6 +27,41 @@ static std::vector<std::string> config_list;
 static int selected_config = 0;
 static char new_config_name[128] = "";
 
+IDirect3DTexture9* LoadTextureFromMemory(LPDIRECT3DDEVICE9 device, const unsigned char* data, int data_size)
+{
+    int width, height, channels;
+    unsigned char* image_data = stbi_load_from_memory(data, data_size, &width, &height, &channels, 4);
+
+    if (!image_data)
+        return nullptr;
+
+    IDirect3DTexture9* texture = nullptr;
+    HRESULT hr = device->CreateTexture(width, height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &texture, nullptr);
+
+    if (FAILED(hr))
+    {
+        stbi_image_free(image_data);
+        return nullptr;
+    }
+
+    D3DLOCKED_RECT rect;
+    if (SUCCEEDED(texture->LockRect(0, &rect, nullptr, 0)))
+    {
+        for (int y = 0; y < height; y++)
+        {
+            memcpy(
+                (unsigned char*)rect.pBits + rect.Pitch * y,
+                image_data + (width * 4) * y,
+                width * 4
+            );
+        }
+        texture->UnlockRect(0);
+    }
+
+    stbi_image_free(image_data);
+    return texture;
+}
+
 void InitImGui(LPDIRECT3DDEVICE9 pDevice)
 {
     ImGui::CreateContext();
@@ -35,11 +74,14 @@ void InitImGui(LPDIRECT3DDEVICE9 pDevice)
     gui::menu_font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\verdanab.ttf", 13.f);
     gui::indicator_font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\Tahoma.ttf", 12.f);
 
+    // CARREGA OS ÍCONES AQUI
+    icon_texture = LoadTextureFromMemory(pDevice, qo0_icons, sizeof(qo0_icons));
+
     // Initialize config list
     config_list = Config::RefreshConfigFiles();
 
     // Load default config if it exists
-    std::string default_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\x69\\Configs\\default.cfg";
+    std::string default_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\phantom\\Configs\\default.cfg";
     if (std::filesystem::exists(default_path))
     {
         Config::LoadConfig("default");
@@ -125,7 +167,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                 draw_list->AddRectFilledMultiColor
                 (
                     p,
-                    ImVec2(p.x + s.x, p.y + 60),
+                    ImVec2(p.x + s.x, p.y + 0),
                     IM_COL32(24, 24, 24, 255),
                     IM_COL32(24, 24, 24, 255),
                     IM_COL32(16, 16, 16, 255),
@@ -139,11 +181,38 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                 static Color_t old_theme_color = theme_color;
 
                 ImU32 accent_color = modify_theme ? IM_COL32(theme_color.r, theme_color.g, theme_color.b, theme_color.a) : IM_COL32(0, 122, 187, 255);
-
                 draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 1), ImVec2(p.x + s.x - 1, p.y + 3), accent_color);
-                draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 60), ImVec2(p.x + s.x - 1, p.y + 62), IM_COL32(128, 128, 128, 255)); // Linha cinza modificada (cor cinza médio, largura total ajustada)
-                draw_list->AddText(ImVec2(p.x + 6, p.y + 21), IM_COL32(5, 5, 5, 255), "PHANTOM.CLUB");
-                draw_list->AddText(ImVec2(p.x + 5, p.y + 20), accent_color, "PHANTOM.CLUB");
+                draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 60), ImVec2(p.x + s.x - 1, p.y + 62), IM_COL32(128, 128, 128, 255));
+                if (icon_texture)
+                {
+                    // Desenha o ícone no lugar do P (tamanho pequeno para caber no header)
+                    ImVec2 icon_pos(p.x + -4, p.y + -2);
+                    ImVec2 icon_size(78, 68); // Ícone 48x48 pixels
+
+                    // Calcular a cor do tema para aplicar no ícone
+                    ImVec4 tint_color = modify_theme
+                        ? ImVec4(theme_color.r / 255.0f, theme_color.g / 255.0f, theme_color.b / 255.0f, 1.0f)
+                        : ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f);
+
+                    // Desenhar ícone com a cor do tema aplicada
+                    draw_list->AddImage(
+                        (void*)icon_texture,
+                        icon_pos,
+                        ImVec2(icon_pos.x + icon_size.x, icon_pos.y + icon_size.y),
+                        ImVec2(0, 0),  // uv0
+                        ImVec2(1, 1),  // uv1
+                        ImGui::ColorConvertFloat4ToU32(tint_color)  // Aplica a cor do tema
+                    );
+
+                    float icon_end = p.x + 5 + icon_size.x + 3; // 3px de espaçamento
+                    draw_list->AddText(ImVec2(icon_end + 1, p.y + 21), IM_COL32(5, 5, 5, 255), "HANTOM.CLUB");
+                    draw_list->AddText(ImVec2(icon_end, p.y + 20), accent_color, "HANTOM.CLUB");
+                }
+                else
+                {
+                    draw_list->AddText(ImVec2(p.x + 0, p.y + 21), IM_COL32(5, 5, 5, 255), "PHANTOM.CLUB");
+                    draw_list->AddText(ImVec2(p.x + 0, p.y + 20), accent_color, "PHANTOM.CLUB");
+                }
                 draw_list->AddText(ImVec2(p.x + 6, p.y + 33), IM_COL32(5, 5, 5, 255), "DEVELOPED BY");
                 draw_list->AddText(ImVec2(p.x + 5, p.y + 32), IM_COL32(255, 255, 255, 100), "DEVELOPED BY");
                 float dev_width = ImGui::CalcTextSize("DEVELOPED BY").x;
@@ -263,6 +332,52 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                         ImGui::SameLine(390);
                         if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 5.0f, 5.0f))
                         {
+                            ImGui::BeginGroup();
+                            gui::checkbox("Shifting", CFG::shifting_active);
+                            ImGui::SameLine(350.0f);
+                            static int shifting_key = CFG::shifting_key;
+                            static int shifting_bind_type = CFG::shifting_key_mode;
+                            if (shifting_key != CFG::shifting_key || shifting_bind_type != CFG::shifting_key_mode)
+                            {
+                                shifting_key = CFG::shifting_key;
+                                shifting_bind_type = CFG::shifting_key_mode;
+                            }
+                            gui::keybind("##ShiftingKey", &shifting_key, &shifting_bind_type);
+                            CFG::shifting_key = shifting_key;
+                            CFG::shifting_key_mode = shifting_bind_type;
+                            ImGui::EndGroup();
+                            gui::slider("Delay Ticks", &CFG::shifting_delay_ticks, 0.f, 20.f);
+                            gui::slider("Delay Hitscan", &CFG::shifting_delay_hitscan, 0.f, 10.f);
+                            ImGui::BeginGroup();
+                            gui::checkbox("Shifting Recharge", CFG::shifting_active);
+                            ImGui::SameLine(350.0f);
+                            static int recharge_key = CFG::shifting_recharge_key;
+                            static int recharge_bind_type = CFG::shifting_recharge_key_mode;
+                            if (recharge_key != CFG::shifting_recharge_key || recharge_bind_type != CFG::shifting_recharge_key_mode)
+                            {
+                                recharge_key = CFG::shifting_recharge_key;
+                                recharge_bind_type = CFG::shifting_recharge_key_mode;
+                            }
+                            gui::keybind("##RechargeKey", &recharge_key, &recharge_bind_type);
+                            CFG::shifting_recharge_key = recharge_key;
+                            CFG::shifting_recharge_key_mode = recharge_bind_type;
+                            ImGui::EndGroup();
+                            ImGui::BeginGroup();
+                            gui::checkbox("Shifting Warp", CFG::shifting_warp);
+                            ImGui::SameLine(350.0f);
+                            static int warp_key = CFG::shifting_warp_key;
+                            static int warp_bind_type = CFG::shifting_warp_key_mode;
+                            if (warp_key != CFG::shifting_warp_key || warp_bind_type != CFG::shifting_warp_key_mode)
+                            {
+                                warp_key = CFG::shifting_warp_key;
+                                warp_bind_type = CFG::shifting_warp_key_mode;
+                            }
+                            gui::keybind("##WarpKey", &warp_key, &warp_bind_type);
+                            CFG::shifting_warp_key = warp_key;
+                            CFG::shifting_warp_key_mode = warp_bind_type;
+                            ImGui::EndGroup();
+                            gui::checkbox("SeedPred", CFG::Exploits_SeedPred_Active);
+                            gui::checkbox("No Spread", CFG::Aimbot_Projectile_NoSpread);
                         }
                         gui::end_group();
                     }
@@ -903,6 +1018,7 @@ HWND GetProcessWindow()
 DWORD WINAPI MainThread(LPVOID lpReserved)
 {
     hmod = static_cast<HMODULE>(lpReserved);
+
     App->Start();
 
     bool attached = false;
@@ -936,6 +1052,20 @@ DWORD WINAPI MainThread(LPVOID lpReserved)
 
     if (init)
     {
+        ImGui_ImplDX9_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+    }
+
+    if (init)
+    {
+        // Libera a textura
+        if (icon_texture)
+        {
+            icon_texture->Release();
+            icon_texture = nullptr;
+        }
+
         ImGui_ImplDX9_Shutdown();
         ImGui_ImplWin32_Shutdown();
         ImGui::DestroyContext();

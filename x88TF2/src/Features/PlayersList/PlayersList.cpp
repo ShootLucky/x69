@@ -32,7 +32,7 @@ void CPlayersList::Parse()
         std::filesystem::path gamePath = std::filesystem::path(dllPath).parent_path();
 
         // Create path: [TF2_ROOT]\x69\players.txt
-        m_LogPath = gamePath / "x69" / "players.txt";
+        m_LogPath = gamePath / "phantom" / "players.txt";
 
         // Create directory if it doesn't exist
         auto dir = m_LogPath.parent_path();

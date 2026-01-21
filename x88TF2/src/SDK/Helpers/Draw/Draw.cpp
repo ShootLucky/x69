@@ -463,12 +463,12 @@ void CDraw::PopClipRect()
 // UTILIDADES
 // ============================================================================
 
-inline void CDraw::DrawPolyLine(const std::vector<Vec2>& points, Color_t color)
+void CDraw::DrawPolyLine(const std::vector<Vec2>& points, Color_t color)
 {
 	if (points.size() < 2)
 		return;
 
-	for (size_t i = 0; i < points.size() - 1; ++i)
+	for (size_t i = 0; i + 1 < points.size(); ++i)
 	{
 		Line(
 			static_cast<int>(points[i].x),

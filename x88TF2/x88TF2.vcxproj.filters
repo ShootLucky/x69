@@ -75,7 +75,7 @@
     <ClCompile Include="src\Hooks\IVModelRender_ForcedMaterialOverride.cpp" />
     <ClCompile Include="src\Features\Outlines\Outlines.cpp" />
     <ClCompile Include="src\Hooks\CViewRender_DrawViewModels.cpp" />
-    <ClCompile Include="src\Features\SeedPred\SeedPred.cpp" />
+    <ClCompile Include="src\Features\Exploits\nospread\nospread.cpp" />
     <ClCompile Include="src\Hooks\INetChannel_SendNetMsg.cpp" />
     <ClCompile Include="src\Hooks\CUserMessages_DispatchUserMessage.cpp" />
     <ClCompile Include="src\Hooks\FX_FireBullets.cpp" />
@@ -91,6 +91,9 @@
     <ClCompile Include="src\Features\indicators\indicators.cpp" />
     <ClCompile Include="src\Features\Menu\notification_system\notifs.cpp" />
     <ClCompile Include="src\Features\Menu\notification_system\icons_notify.cpp" />
+    <ClCompile Include="src\Hooks\CL_Move.cpp" />
+    <ClCompile Include="src\Features\Network\network_fix.cpp" />
+    <ClCompile Include="src\Features\Exploits\shifting\shifting.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -261,7 +264,7 @@
     <ClInclude Include="src\Features\Chams\Chams.h" />
     <ClInclude Include="src\Features\VisualUtils\VisualUtils.h" />
     <ClInclude Include="src\Features\Outlines\Outlines.h" />
-    <ClInclude Include="src\Features\SeedPred\SeedPred.h" />
+    <ClInclude Include="src\Features\Exploits\nospread\nospread.h" />
     <ClInclude Include="src\imgui\imconfig.h" />
     <ClInclude Include="src\imgui\imgui.h" />
     <ClInclude Include="src\imgui\imgui_impl_dx9.h" />
@@ -277,5 +280,9 @@
     <ClInclude Include="src\Features\indicators\indicators.h" />
     <ClInclude Include="src\Features\Menu\notification_system\notifs.h" />
     <ClInclude Include="src\Features\Menu\notification_system\icons_notify.h" />
+    <ClInclude Include="src\Features\Network\network_fix.h" />
+    <ClInclude Include="src\Features\Exploits\shifting\shifting.h" />
+    <ClInclude Include="src\icons.h" />
+    <ClInclude Include="include\stb_image.h" />
   </ItemGroup>
 </Project>

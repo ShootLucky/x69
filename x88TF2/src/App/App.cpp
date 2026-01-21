@@ -7,31 +7,45 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+#include <vector>
 #include "../src/Features/Aimbot/AimbotHitscan/AimbotHitscan.h"
+#include "../src/CFG.h" // Para CFG::Menu_ThemeColor
+
+// ============================================================================
+// FUNÇÕES DE EASING
+// ============================================================================
+float EaseInOutCubic(float t)
+{
+    return t < 0.5f ? 4.0f * t * t * t : 1.0f - powf(-2.0f * t + 2.0f, 3.0f) / 2.0f;
+}
+
+// ============================================================================
+// SUBTEXTOS
+// ============================================================================
 const char* ChooseRandomSubText()
 {
-    // 0 .. 9999 (precisão alta para frases raras)
     int r = rand() % 10000;
-    // COMUNS
-    if (r < 4500) return "god i wish i had x69";
+    if (r < 4500) return "premium gaming experience";
     else if (r < 6000) return "totally legit, trust me";
     else if (r < 7400) return "random crits are balanced";
-    else if (r < 8800) return "[medusa.solutions](http://medusa.solutions) best cheats";
-    // RARAS
+    else if (r < 8800) return "phantom.club best cheats";
     else if (r < 9300) return "skill issue detected";
     else if (r < 9600) return "vac was never enough";
-    else if (r < 9750) return "moneybot = fedoraware";
+    else if (r < 9750) return "advanced gaming tools";
     else if (r < 9850) return "spy backtrack go brr";
-    else if (r < 9900) return "lmaobox paste detected";
-    // RARÍSSIMAS
+    else if (r < 9900) return "next-gen gaming";
     else if (r < 9950) return "hvh mid on badlands";
-    else if (r < 9990) return "moneybot >> lmaobox >> paste";
-    else if (r < 9995) return "nullcore users fear this... x64";
-    else return "x69 internal // dev build";
+    else if (r < 9990) return "phantom >> everything";
+    else if (r < 9995) return "premium club access";
+    else return "phantom.club // dev build";
 }
+
+// ============================================================================
+// INICIALIZAÇÃO
+// ============================================================================
 void CApp::Start()
 {
-    srand(static_cast<unsigned int>(time(NULL))); // Seed rand
+    srand(static_cast<unsigned int>(time(NULL)));
     while (!Memory::FindSignature(
         "client.dll",
         "48 8B 0D ? ? ? ? 48 8B 10 48 8B 19 48 8B C8 FF 92"))
@@ -41,7 +55,7 @@ void CApp::Start()
             return;
         Sleep(500);
     }
-    U::Storage->Init("x69");
+    U::Storage->Init("phantom");
     U::SignatureManager->InitializeAllSignatures();
     U::InterfaceManager->InitializeAllInterfaces();
     H::Draw->UpdateScreenSize();
@@ -56,34 +70,19 @@ void CApp::Start()
         }
         else
         {
-            m_PlayerName = "I forgot your name";
+            m_PlayerName = "Unknown";
         }
     }
     else
     {
-        m_PlayerName = "I forgot your name";
+        m_PlayerName = "Unknown";
     }
-    if (m_PlayerName == "I forgot your name")
-    {
-        g_SubText = ChooseRandomSubText();
-        g_SubTextChosen = true;
-    }
+    g_SubText = ChooseRandomSubText();
+    g_SubTextChosen = true;
     U::HookManager->InitializeAllHooks();
     F::Players->Parse();
     Config::Load(U::Storage->GetConfigFolder() / "default.json");
-    I::EngineClient->ClientCmd_Unrestricted("toggleconsole; clear");
-    Sleep(25);
-    I::CVar->ConsoleColorPrintf(
-        Color_t(0, 150, 255, 255),
-        "[x69] This project was made purely for fun and learning.\n"
-        "[x69] Not meant for unfair advantage in public matches.\n"
-        "[x69] Use responsibly and only for harmless messing around.\n"
-        "[x69] Creator: ShootLucky | Contributor: Star.k\n"
-    );
     bBlackScreen = true;
-    fadingIn = true;
-    fadingOut = false;
-    blackAlpha = 0.0f;
     ulBlackStart = GetTickCount();
 }
 
@@ -91,11 +90,8 @@ void CApp::Loop()
 {
     while (true)
     {
-     //   alive = (GetAsyncKeyState(VK_END) & 0x8000 && SDKUtils::IsGameWindowInFocus()) || bUnload;
-
         if (!alive)
             break;
-
         static DWORD lastCheck = 0;
         if (GetTickCount() - lastCheck > 5000)
         {
@@ -109,20 +105,13 @@ void CApp::Loop()
                         m_PlayerName = info.name;
                     }
                 }
-                else
-                {
-                    m_PlayerName = "Why";
-                }
-            }
-            else
-            {
-                m_PlayerName = "Why";
             }
             lastCheck = GetTickCount();
         }
         Sleep(50);
     }
 }
+
 void CApp::Shutdown()
 {
     if (!bUnload)
@@ -130,289 +119,211 @@ void CApp::Shutdown()
         U::HookManager->FreeAllHooks();
         Sleep(250);
     }
-    I::EngineClient->ClientCmd_Unrestricted("clear");
-    Sleep(25);
-    I::EngineClient->ClientCmd_Unrestricted(
-        "play hl1/fvox/deactivated.wav");
-    I::CVar->ConsoleColorPrintf(
-        { 255, 70, 70, 255 },
-        "ok..... bye :('\n");
 }
+
+// ============================================================================
+// ANIMAÇÃO SPLASH SCREEN
+// ============================================================================
 void CApp::Draw()
 {
     if (!bBlackScreen)
         return;
-    int w, h;
-    I::EngineClient->GetScreenSize(w, h);
+
+    int w = H::Draw->GetScreenW();
+    int h = H::Draw->GetScreenH();
+
     DWORD current = GetTickCount();
-    float totalElapsed =
-        static_cast<float>(current - ulBlackStart) / 1000.0f;
-    const float phase1Duration = 1.0f;
-    const float phase2Duration = 1.0f;
-    const float phase3Duration = 0.7f;
-    const float phase4Duration = 0.5f;
-    const float pauseDuration = 2.0f;
-    const float circleDuration = 1.5f;
-    const float nameDuration = 1.0f;
-    const float nameDelay = 0.4f;
-    const float fadeDuration = 1.0f;
-    const float holdDuration = 2.0f; // Novo: mais tempo segurando o quadro final
-    const float textEnd =
-        phase1Duration +
-        phase2Duration +
-        phase3Duration +
-        phase4Duration;
-    const float pauseEnd = textEnd + pauseDuration;
-    const float circleStart = pauseEnd;
-    const float circleEnd = circleStart + circleDuration;
-    const float nameStart = circleStart + nameDelay;
-    const float nameEnd = nameStart + nameDuration;
-    const float fadeStart = nameEnd + holdDuration;
-    const float totalEnd = fadeStart + fadeDuration;
-    if (totalElapsed >= totalEnd)
+    float totalElapsed = static_cast<float>(current - ulBlackStart) / 1000.0f;
+
+    // Timings
+    const float flowDuration = 5.0f;
+    const float fadeOutDuration = 0.8f;
+    const float fadeStart = flowDuration;
+    const float totalEnd = fadeStart + fadeOutDuration;
+
+    if (GetAsyncKeyState(VK_ESCAPE) & 0x8000 || totalElapsed >= totalEnd)
     {
         bBlackScreen = false;
-        I::EngineClient->ClientCmd_Unrestricted(
-            "play hl1/fvox/activated.wav");
         return;
     }
-    // Check for ESC key to skip
-    if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
-    {
-        bBlackScreen = false;
-        I::EngineClient->ClientCmd_Unrestricted(
-            "play hl1/fvox/activated.wav");
-        return;
-    }
+
     int cx = w / 2;
     int cy = h / 2;
-    DWORD splashFont =
-        I::MatSystemSurface->CreateFont();
-    I::MatSystemSurface->SetFontGlyphSet(
-        splashFont,
-        "Roboto",
-        80,
-        600,
-        0,
-        0,
-        FONTFLAG_ANTIALIAS
-    );
-    // ================= WIPE =================
-    if (totalElapsed < phase1Duration)
-    {
-        float wipeWidth = static_cast<float>(w) * (totalElapsed / phase1Duration);
-        const float slant = 150.0f;
-        float topRightX = wipeWidth - slant;
-        topRightX = std::max(0.0f, topRightX);
-        float bottomRightX = wipeWidth + slant;
-        bottomRightX = std::min(static_cast<float>(w), bottomRightX);
-        I::MatSystemSurface->DrawSetColor(45, 46, 45, 255);
-        I::MatSystemSurface->DrawSetTexture(0);
-        Vertex_t v[4];
-        v[0].m_Position = { 0.0f, 0.0f };
-        v[1].m_Position = { topRightX, 0.0f };
-        v[2].m_Position = { bottomRightX, static_cast<float>(h) };
-        v[3].m_Position = { 0.0f, static_cast<float>(h) };
-        I::MatSystemSurface->DrawTexturedPolygon(4, v);
-        return;
-    }
-    // ================= BACKGROUND =================
-    int bgAlpha = 255;
-    Color_t bgColor = Color_t(45, 46, 45, bgAlpha); // Default dark gray
-    if (totalElapsed >= circleEnd)
-    {
-        bgColor = Color_t(0, 150, 255, bgAlpha);
-    }
+
+    // Overall alpha for fade out to transparent
+    int overallAlpha = 255;
     if (totalElapsed >= fadeStart)
     {
-        float p = std::min(1.0f, (totalElapsed - fadeStart) / fadeDuration);
-        bgAlpha = static_cast<int>(255 * (1.0f - p));
-        bgColor.a = bgAlpha;
+        float fadeT = (totalElapsed - fadeStart) / fadeOutDuration;
+        fadeT = EaseInOutCubic(fadeT);
+        overallAlpha = static_cast<int>(255 * (1.0f - fadeT));
     }
-    H::Draw->Rect(
-        0, 0, w, h,
-        bgColor
-    );
-    // ================= TEXT (ALINHAMENTO ORIGINAL) =================
-    int letsWidth, letsHeight;
-    int getWidth, getHeight;
-    int x69Width, x69Height;
-    I::MatSystemSurface->GetTextSize(
-        splashFont, L"Let's", letsWidth, letsHeight);
-    I::MatSystemSurface->GetTextSize(
-        splashFont, L"Get", getWidth, getHeight);
-    I::MatSystemSurface->GetTextSize(
-        splashFont, L"X69", x69Width, x69Height);
-    const int spacing = 0;
-    int totalHeight =
-        letsHeight + getHeight + x69Height;
-    int letsY =
-        cy - totalHeight / 2;
-    int getY =
-        letsY + letsHeight + spacing;
-    int x69Y =
-        getY + getHeight + spacing;
-    float letsCharWidth =
-        letsWidth / 5.0f;
-    int tPosInLets =
-        static_cast<int>(2 * letsCharWidth);
-    int letsX =
-        cx - letsWidth / 2;
-    int getX =
-        letsX + tPosInLets;
-    float getCharWidth =
-        getWidth / 3.0f;
-    int tPosInGet =
-        static_cast<int>(2 * getCharWidth);
-    int x69X =
-        getX + tPosInGet;
-    I::MatSystemSurface->DrawSetTextFont(splashFont);
-    // LET'S
-    if (totalElapsed >= phase1Duration && totalElapsed < circleStart)
-    {
-        float p =
-            std::min(1.0f,
-                (totalElapsed - phase1Duration) / phase2Duration);
-        int drawX =
-            static_cast<int>(
-                -letsWidth + (letsX + letsWidth) * p);
-        I::MatSystemSurface->DrawSetTextColor(255, 254, 246, 255);
-        I::MatSystemSurface->DrawSetTextPos(drawX, letsY);
-        I::MatSystemSurface->DrawPrintText(L"Let's", 5);
-    }
-    // GET
-    if (totalElapsed >= phase1Duration + phase2Duration && totalElapsed < circleStart)
-    {
-        float p =
-            std::min(1.0f,
-                (totalElapsed - phase1Duration - phase2Duration)
-                / phase3Duration);
-        int drawY =
-            static_cast<int>(h + (getY - h) * p);
-        I::MatSystemSurface->DrawSetTextColor(255, 254, 246, 255);
-        I::MatSystemSurface->DrawSetTextPos(getX, drawY);
-        I::MatSystemSurface->DrawPrintText(L"Get", 3);
-    }
-    // X69 (AZUL, MESMO ALINHAMENTO)
-    if (totalElapsed >=
-        phase1Duration + phase2Duration + phase3Duration && totalElapsed < circleStart)
-    {
-        float p =
-            std::min(1.0f,
-                (totalElapsed -
-                    phase1Duration -
-                    phase2Duration -
-                    phase3Duration)
-                / phase4Duration);
-        int drawX =
-            static_cast<int>(w + (x69X - w) * p);
-        I::MatSystemSurface->DrawSetTextColor(0, 150, 255, 255);
-        I::MatSystemSurface->DrawSetTextPos(drawX, x69Y);
-        I::MatSystemSurface->DrawPrintText(L"X69", 3);
-    }
-    // ================= CIRCLE =================
-    if (totalElapsed >= circleStart &&
-        totalElapsed < circleEnd)
-    {
-        float p =
-            (totalElapsed - circleStart) / circleDuration;
-        int maxRadius =
-            static_cast<int>(
-                sqrtf(static_cast<float>((w / 2) * (w / 2) + (h / 2) * (h / 2))));
-        int radius =
-            static_cast<int>(p * maxRadius);
-        I::MatSystemSurface->DrawSetColor(0, 150, 255, 255);
-        I::MatSystemSurface->DrawSetTexture(0);
-        const int seg = 64;
-        Vertex_t v[seg + 1];
-        for (int i = 0; i <= seg; ++i)
-        {
-            float a =
-                (static_cast<float>(i) / seg) * 6.2831853f;
-            v[i].m_Position.x = cx + cosf(a) * radius;
-            v[i].m_Position.y = cy + sinf(a) * radius;
-        }
-        I::MatSystemSurface->DrawTexturedPolygon(seg + 1, v);
-    }
-    // ================= NAME =================
-    if (totalElapsed >= nameStart)
-    {
-        std::wstring name(
-            m_PlayerName.begin(),
-            m_PlayerName.end());
-        float p;
-        if (m_PlayerName == "Why")
-        {
-            p = std::min(1.0f, (totalElapsed - nameStart) / circleDuration);
-        }
-        else
-        {
-            p = std::min(1.0f, (totalElapsed - nameStart) / nameDuration);
-        }
-        int tw, th;
-        I::MatSystemSurface->GetTextSize(
-            splashFont, name.c_str(), tw, th);
-        int nameAlpha = static_cast<int>(255 * p);
-        if (totalElapsed >= fadeStart)
-        {
-            float fade_p = std::min(1.0f, (totalElapsed - fadeStart) / fadeDuration);
-            nameAlpha = static_cast<int>(nameAlpha * (1 - fade_p));
-        }
-        I::MatSystemSurface->DrawSetTextColor(
-            255, 254, 246,
-            nameAlpha);
-        I::MatSystemSurface->DrawSetTextPos(
-            cx - tw / 2,
-            cy - th / 2);
-        I::MatSystemSurface->DrawPrintText(
-            name.c_str(),
-            name.length());
-        // ================= SUBTEXT (below "I forgot your name") =================
-        if (g_SubTextChosen && g_SubText)
-        {
-            DWORD subFont = I::MatSystemSurface->CreateFont();
-            I::MatSystemSurface->SetFontGlyphSet(
-                subFont,
-                "Roboto",
-                30,
-                500,
-                0,
-                0,
-                FONTFLAG_ANTIALIAS
-            );
-            std::wstring subText(g_SubText, g_SubText + strlen(g_SubText));
-            int sw, sh;
-            I::MatSystemSurface->GetTextSize(
-                subFont, subText.c_str(), sw, sh);
-            int subX = cx - sw / 2;
-            int subY = (cy - th / 2) + th + 10; // Abaixo do nome principal
-            I::MatSystemSurface->DrawSetTextFont(subFont);
-            I::MatSystemSurface->DrawSetTextColor(45, 46, 45, nameAlpha); // Mesmo alpha do nome
-            I::MatSystemSurface->DrawSetTextPos(subX, subY);
-            I::MatSystemSurface->DrawPrintText(
-                subText.c_str(),
-                subText.length());
-        }
-    }
-    // ================= SKIP MESSAGE =================
+
+    // Background preto
+    Color_t bgColor = Color_t(0, 0, 0, overallAlpha);
+    H::Draw->RectFilled(0, 0, w, h, bgColor);
+
+    // Fontes
+    DWORD mainFont = I::MatSystemSurface->CreateFont();
+    I::MatSystemSurface->SetFontGlyphSet(mainFont, "verdanab", 72, 700, 0, 0, FONTFLAG_ANTIALIAS);
+
+    DWORD subFont = I::MatSystemSurface->CreateFont();
+    I::MatSystemSurface->SetFontGlyphSet(subFont, "verdanab", 24, 400, 0, 0, FONTFLAG_ANTIALIAS);
+
     DWORD skipFont = I::MatSystemSurface->CreateFont();
-    I::MatSystemSurface->SetFontGlyphSet(
-        skipFont,
-        "Tahoma",
-        20,
-        400,
-        0,
-        0,
-        FONTFLAG_ANTIALIAS
-    );
-    std::wstring skipText = L"press ESCAPE to skip";
-    int skipWidth, skipHeight;
-    I::MatSystemSurface->GetTextSize(skipFont, skipText.c_str(), skipWidth, skipHeight);
-    int skipX = cx - skipWidth / 2;
-    int skipY = h - skipHeight - 20; // 20 pixels from bottom
-    float blinkAlpha = 128 + 127 * sinf(totalElapsed * 3.0f); // Blinking speed
-    I::MatSystemSurface->DrawSetTextFont(skipFont);
-    I::MatSystemSurface->DrawSetTextColor(255, 255, 255, static_cast<int>(blinkAlpha));
-    I::MatSystemSurface->DrawSetTextPos(skipX, skipY);
-    I::MatSystemSurface->DrawPrintText(skipText.c_str(), skipText.length());
+    I::MatSystemSurface->SetFontGlyphSet(skipFont, "verdanab", 16, 400, 0, 0, FONTFLAG_ANTIALIAS);
+
+    // Textos
+    std::wstring mainText = L"Phantom.club";
+    std::wstring subText(g_SubText, g_SubText + strlen(g_SubText));
+
+    int mainW, mainH, subW, subH;
+    I::MatSystemSurface->GetTextSize(mainFont, mainText.c_str(), mainW, mainH);
+    I::MatSystemSurface->GetTextSize(subFont, subText.c_str(), subW, subH);
+
+    int mainX = cx - mainW / 2;
+    int mainY = cy - mainH / 2 - 20;
+    int subX = cx - subW / 2;
+    int subY = mainY + mainH + 15;
+
+    // Progresso do preenchimento uniforme (água subindo em todas as letras ao mesmo tempo)
+    float flowProgress = totalElapsed / flowDuration;
+    if (flowProgress > 1.0f) flowProgress = 1.0f;
+    float fillProgress = EaseInOutCubic(flowProgress);
+
+    // Parâmetros para o efeito de neblina/smoke
+    const float amp = 0.05f;
+    const float transition_width = 0.15f;
+    const float waveFreq1 = 0.05f;
+    const float waveFreq2 = 0.08f;
+    const float waveSpeed1 = 3.0f;
+    const float waveSpeed2 = 4.5f;
+
+    // Cor do tema
+    Color_t themeColor = CFG::Menu_ThemeColor;
+
+    // ================= TEXTO PRINCIPAL =================
+    int currentX = mainX;
+    for (size_t i = 0; i < mainText.length(); i++)
+    {
+        wchar_t ch[2] = { mainText[i], 0 };
+        int charW, charH;
+        I::MatSystemSurface->GetTextSize(mainFont, ch, charW, charH);
+
+        // Texto base preto
+        H::Draw->Text(currentX, mainY, mainFont, Color_t(0, 0, 0, overallAlpha), ALIGN_DEFAULT, ch);
+
+        const int stripHeight = 2;
+        const int stripWidth = 2;
+
+        for (int x_strip = 0; x_strip < charW; x_strip += stripWidth)
+        {
+            int this_w = std::min(stripWidth, charW - x_strip);
+            float x = static_cast<float>(currentX + x_strip + this_w / 2);
+            float phase1 = waveSpeed1 * totalElapsed + 2.0f * PI * waveFreq1 * x;
+            float phase2 = waveSpeed2 * totalElapsed + 2.0f * PI * waveFreq2 * x;
+            float norm_wave = sinf(phase1) + 0.5f * sinf(phase2 + PI / 2.0f);
+            float local_fillProgress = fillProgress + amp * norm_wave;
+            local_fillProgress = std::clamp(local_fillProgress, 0.0f, 1.0f);
+
+            for (int strip = 0; strip < charH; strip += stripHeight)
+            {
+                int clipTop = mainY + charH - (strip + stripHeight);
+                int clipBottom = mainY + charH - strip;
+                if (clipTop < mainY) clipTop = mainY;
+
+                float y_from_bottom = static_cast<float>(strip + stripHeight / 2);
+                float relative_y = y_from_bottom / static_cast<float>(charH);
+
+                float norm_dist = (relative_y - (local_fillProgress - transition_width / 2.0f)) / transition_width;
+                norm_dist = std::clamp(norm_dist, 0.0f, 1.0f);
+                float alpha_mod = 1.0f - EaseInOutCubic(norm_dist);
+
+                if (alpha_mod < 0.01f) continue;
+
+                float t = static_cast<float>(strip) / static_cast<float>(charH);
+                t = EaseInOutCubic(t);
+
+                int r = static_cast<int>(themeColor.r * (0.5f + 0.5f * t));
+                int g = static_cast<int>(themeColor.g * (0.5f + 0.5f * t));
+                int b = static_cast<int>(themeColor.b * (0.5f + 0.5f * t));
+                int a = static_cast<int>(themeColor.a * alpha_mod * (overallAlpha / 255.0f));
+
+                H::Draw->PushClipRect(currentX + x_strip, clipTop, this_w, clipBottom - clipTop);
+                H::Draw->Text(currentX, mainY, mainFont, Color_t(r, g, b, a), ALIGN_DEFAULT, ch);
+                H::Draw->PopClipRect();
+            }
+        }
+
+        currentX += charW;
+    }
+
+    // ================= SUBTEXTO =================
+    currentX = subX;
+    for (size_t i = 0; i < subText.length(); i++)
+    {
+        wchar_t ch[2] = { subText[i], 0 };
+        int charW, charH;
+        I::MatSystemSurface->GetTextSize(subFont, ch, charW, charH);
+
+        // Texto base preto
+        H::Draw->Text(currentX, subY, subFont, Color_t(0, 0, 0, overallAlpha), ALIGN_DEFAULT, ch);
+
+        const int stripHeight = 2;
+        const int stripWidth = 2;
+
+        for (int x_strip = 0; x_strip < charW; x_strip += stripWidth)
+        {
+            int this_w = std::min(stripWidth, charW - x_strip);
+            float x = static_cast<float>(currentX + x_strip + this_w / 2);
+            float phase1 = waveSpeed1 * totalElapsed + 2.0f * PI * waveFreq1 * x;
+            float phase2 = waveSpeed2 * totalElapsed + 2.0f * PI * waveFreq2 * x;
+            float norm_wave = sinf(phase1) + 0.5f * sinf(phase2 + PI / 2.0f);
+            float local_fillProgress = fillProgress + amp * norm_wave;
+            local_fillProgress = std::clamp(local_fillProgress, 0.0f, 1.0f);
+
+            for (int strip = 0; strip < charH; strip += stripHeight)
+            {
+                int clipTop = subY + charH - (strip + stripHeight);
+                int clipBottom = subY + charH - strip;
+                if (clipTop < subY) clipTop = subY;
+
+                float y_from_bottom = static_cast<float>(strip + stripHeight / 2);
+                float relative_y = y_from_bottom / static_cast<float>(charH);
+
+                float norm_dist = (relative_y - (local_fillProgress - transition_width / 2.0f)) / transition_width;
+                norm_dist = std::clamp(norm_dist, 0.0f, 1.0f);
+                float alpha_mod = 1.0f - EaseInOutCubic(norm_dist);
+
+                if (alpha_mod < 0.01f) continue;
+
+                float t = static_cast<float>(strip) / static_cast<float>(charH);
+                t = EaseInOutCubic(t);
+
+                int r = static_cast<int>((themeColor.r * 0.5f + 90) * (0.5f + 0.5f * t));
+                int g = static_cast<int>((themeColor.g * 0.5f + 90) * (0.5f + 0.5f * t));
+                int b = static_cast<int>((themeColor.b * 0.5f + 90) * (0.5f + 0.5f * t));
+                int a = static_cast<int>(200 * alpha_mod * (overallAlpha / 255.0f));
+
+                H::Draw->PushClipRect(currentX + x_strip, clipTop, this_w, clipBottom - clipTop);
+                H::Draw->Text(currentX, subY, subFont, Color_t(r, g, b, a), ALIGN_DEFAULT, ch);
+                H::Draw->PopClipRect();
+            }
+        }
+
+        currentX += charW;
+    }
+
+    // Skip message
+    if (totalElapsed < fadeStart)
+    {
+        std::wstring skipText = L"press ESC to skip";
+        int skipW, skipH;
+        I::MatSystemSurface->GetTextSize(skipFont, skipText.c_str(), skipW, skipH);
+
+        float pulse = (sinf(totalElapsed * 3.0f) + 1.0f) / 2.0f;
+        int skipAlpha = static_cast<int>((80 + 80 * pulse) * (overallAlpha / 255.0f));
+
+        H::Draw->Text(cx - skipW / 2, h - skipH - 30, skipFont, Color_t(themeColor.r, themeColor.g, themeColor.b, skipAlpha), ALIGN_DEFAULT, skipText.c_str());
+    }
 }

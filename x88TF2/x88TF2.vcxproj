@@ -364,9 +364,11 @@
     <ClCompile Include="src\Features\Aimbot\AimbotMelee\AimbotMelee.cpp" />
     <ClCompile Include="src\Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
     <ClCompile Include="src\Features\Chams\Chams.cpp" />
+    <ClCompile Include="src\Features\Exploits\shifting\shifting.cpp" />
     <ClCompile Include="src\Features\indicators\indicators.cpp" />
     <ClCompile Include="src\Features\Menu\notification_system\icons_notify.cpp" />
     <ClCompile Include="src\Features\Menu\notification_system\notifs.cpp" />
+    <ClCompile Include="src\Features\Network\network_fix.cpp" />
     <ClCompile Include="src\Features\Outlines\Outlines.cpp" />
     <ClCompile Include="src\Features\PlayersList\PlayersList.cpp" />
     <ClCompile Include="src\Features\MovementSimulation\MovementSimulation.cpp" />
@@ -375,7 +377,7 @@
     <ClCompile Include="src\Features\LagRecords\Backtrack.cpp" />
     <ClCompile Include="src\Features\Misc\Misc.cpp" />
     <ClCompile Include="src\Features\ProjectileSim\ProjectileSim.cpp" />
-    <ClCompile Include="src\Features\SeedPred\SeedPred.cpp" />
+    <ClCompile Include="src\Features\Exploits\nospread\nospread.cpp" />
     <ClCompile Include="src\Features\VisualUtils\VisualUtils.cpp" />
     <ClCompile Include="src\Hooks\CBaseAnimating_SetupBones.cpp" />
     <ClCompile Include="src\Hooks\CBaseEntity_AddVar.cpp" />
@@ -388,6 +390,7 @@
     <ClCompile Include="src\Hooks\CHudTFCrosshair_ShouldDraw.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_CreateMove.cpp" />
     <ClCompile Include="src\Hooks\ClientModeShared_OverrideView.cpp" />
+    <ClCompile Include="src\Hooks\CL_Move.cpp" />
     <ClCompile Include="src\Hooks\CMaterial_Uncache.cpp" />
     <ClCompile Include="src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp" />
     <ClCompile Include="src\Hooks\CParticleSystemMgr_DrawRenderCache.cpp" />
@@ -450,10 +453,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\kiero.h" />
+    <ClInclude Include="include\stb_image.h" />
     <ClInclude Include="nemesis.h" />
+    <ClInclude Include="src\Features\Exploits\shifting\shifting.h" />
     <ClInclude Include="src\Features\indicators\indicators.h" />
     <ClInclude Include="src\Features\Menu\notification_system\icons_notify.h" />
     <ClInclude Include="src\Features\Menu\notification_system\notifs.h" />
+    <ClInclude Include="src\Features\Network\network_fix.h" />
+    <ClInclude Include="src\icons.h" />
     <ClInclude Include="src\includes.h" />
     <ClInclude Include="include\nlohmann\json_fwd.hpp" />
     <ClInclude Include="src\App\App.h" />
@@ -472,7 +479,7 @@
     <ClInclude Include="src\Features\LagRecords\Backtrack.h" />
     <ClInclude Include="src\Features\Misc\Misc.h" />
     <ClInclude Include="src\Features\ProjectileSim\ProjectileSim.h" />
-    <ClInclude Include="src\Features\SeedPred\SeedPred.h" />
+    <ClInclude Include="src\Features\Exploits\nospread\nospread.h" />
     <ClInclude Include="src\Features\VisualUtils\VisualUtils.h" />
     <ClInclude Include="src\Hooks\WINAPI_WndProc.h" />
     <ClInclude Include="src\imgui\imconfig.h" />

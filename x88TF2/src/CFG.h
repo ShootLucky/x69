@@ -1,5 +1,4 @@
-// Fixed cfg.h - Atualizado com novas vari�veis de indicators
-
+﻿// Fixed cfg.h - Atualizado com seed prediction para hitscan
 #pragma once
 #include "Utils/Config/Config.h"
 namespace CFG
@@ -35,8 +34,8 @@ namespace CFG
 	CFGVAR(Aimbot_WaitForHeadshot, false);
 	CFGVAR(Aimbot_AutoScope, false);
 	CFGVAR(Aimbot_MinigunTapfire, false);
-	CFGVAR(Aimbot_WaitForCharge, false)
-		CFGVAR(Aimbot_Target_Players, false);
+	CFGVAR(Aimbot_WaitForCharge, false);
+	CFGVAR(Aimbot_Target_Players, false);
 	CFGVAR(Aimbot_Target_Buildings, false);
 	CFGVAR(Aimbot_Ignore_Friends, false);
 	CFGVAR(Aimbot_Ignore_Invulnerable, false);
@@ -93,6 +92,7 @@ namespace CFG
 	CFGVAR(Aimbot_Hitscan_Target_LagRecords, false);
 	CFGVAR(Aimbot_Melee_Target_LagRecords, false);
 #pragma endregion
+
 #pragma region ESP
 	CFGVAR(ESP_Enable, false);
 	CFGVAR(ESP_Box, false);
@@ -176,6 +176,7 @@ namespace CFG
 	CFGVAR(ESP_LagCompensation, false);
 	CFGVAR(ESP_DistancePosition, 0);
 #pragma endregion
+
 #pragma region Materials
 	CFGVAR(Materials_Active, false);
 	CFGVAR(Materials_Buildings_Active, false);
@@ -232,6 +233,7 @@ namespace CFG
 	CFGVAR(Materials_Hands_HiddenMaterial, false);
 	CFGVAR(Materials_Weapons_HiddenMaterial, false);
 #pragma endregion
+
 #pragma region Outlines
 	CFGVAR(Outlines_Active, false);
 	CFGVAR(Outlines_Style, 0);
@@ -259,20 +261,22 @@ namespace CFG
 	CFGVAR(Outlines_Players_Ignore_Teammates, false);
 	CFGVAR(Outlines_Players_Show_Teammate_Medics, false);
 #pragma endregion
+
 #pragma region Misc
 	CFGVAR(Misc_AutoJump, false);
 	CFGVAR(Misc_AntiAFK_Enable, false);
 	CFGVAR(Misc_Edge_Jump_Key, false);
 	CFGVAR(Misc_SetupBones_Optimization, false);
 	CFGVAR(Misc_Accuracy_Improvements, false);
-	CFGVAR(Radio, false)
-		CFGVAR(Misc_AutoStrafer_Enable, false);
+	CFGVAR(Radio, false);
+	CFGVAR(Misc_AutoStrafer_Enable, false);
 	CFGVAR(Misc_AutoRocketJump_Enable, false);
 	CFGVAR(Misc_AutoRocketJump_Key, 0);
 	CFGVAR(Misc_AutoStrafer_Intensity, 45.f);
 	CFGVAR(Radio_LocalMusic, false);
 	CFGVAR(Misc_FakeLatencyfloat_Enable, 45.f);
 	CFGVAR(Misc_FakeLatency_Enable, false);
+	CFGVAR(ping_reducer, false);
 	CFGVAR(Radio_Pause, false);
 	CFGVAR(Radio_Next, false);
 	CFGVAR(Radio_Prev, false);
@@ -287,10 +291,31 @@ namespace CFG
 	CFGVAR(Misc_ThirdPerson_KeyMode, 0);
 	CFGVAR(Misc_ThirdPerson_SideOffset, 0.f);
 	CFGVAR(Misc_Clean_Screenshot, false);
-	CFGVAR(Exploits_SeedPred__Active, false);
+
+	// ===== SEED PREDICTION / NO SPREAD =====
 	CFGVAR(Exploits_SeedPred_Active, false);
 	CFGVAR(Exploits_SeedPred_DrawIndicator, false);
 #pragma endregion
+
+#pragma region Shifting
+	// ========== SHIFTING - SHIFT KEY (Controla o início do shift) ==========
+	CFGVAR(shifting_active, false);							// Ativa/desativa o feature de shifting
+	CFGVAR(shifting_key, -1);									// Tecla para iniciar o shift (default: sem tecla)
+	CFGVAR(shifting_key_mode, 1);								// Modo da tecla: 0=Always, 1=Hold, 2=Toggle, 3=HoldOff
+	CFGVAR(shifting_delay_ticks, 0.f);						// Delay em ticks antes de ativar
+	CFGVAR(shifting_delay_hitscan, 0.f);					// Delay específico para hitscan
+	CFGVAR(delay_hitscan, 0);									// Flag de delay para hitscan
+
+	// ========== SHIFTING - RECHARGE KEY (Tecla para recarregar os ticks - CUSTOMIZÁVEL!) ==========
+	CFGVAR(shifting_recharge_key, 'R');						// Tecla padrão: R (pode ser mudada!)
+	CFGVAR(shifting_recharge_key_mode, 1);					// Modo: 0=Always, 1=Hold, 2=Toggle, 3=HoldOff
+
+	// ========== SHIFTING - WARP KEY (Controla o warp - INDEPENDENTE!) ==========
+	CFGVAR(shifting_warp, false);								// Ativa/desativa o warp
+	CFGVAR(shifting_warp_key, -1);							// Tecla para ativar warp (pode ser DIFERENTE do shift!)
+	CFGVAR(shifting_warp_key_mode, 1);						// Modo da tecla warp: 0=Always, 1=Hold, 2=Toggle, 3=HoldOff
+#pragma endregion
+
 #pragma region Colors
 	CFGVAR(Color_TeamRed, Color_t(255, 0, 0, 255));
 	CFGVAR(Color_TeamBlue, Color_t(0, 0, 255, 255));
@@ -401,33 +426,21 @@ namespace CFG
 	CFGVAR(ESP_UberBarColor, Color_t(0, 200, 255, 255));
 	CFGVAR(Aimbot_FOVColor, Color_t(255, 255, 255, 100));
 #pragma endregion
+
 #pragma region Indicators
-	// Main Indicators Panel
 	CFGVAR(Indicators_Enable, false);
-
-	// Keybinds Panel
 	CFGVAR(Indicators_Keybinds_Enable, false);
-
-	// Watermark
 	CFGVAR(Indicators_Watermark_Enable, false);
-
-	// Watermark options
 	CFGVAR(Watermark_ShowName, false);
 	CFGVAR(Watermark_ShowFPS, false);
 	CFGVAR(Watermark_ShowTime, false);
 	CFGVAR(Watermark_ShowPing, false);
-
-	// Indicators individual toggles
 	CFGVAR(Indicators_Show_FakeLatency, true);
 	CFGVAR(Indicators_Show_RealLatency, true);
 	CFGVAR(Indicators_Show_ScoreboardLatency, true);
 	CFGVAR(Indicators_Show_Inaccuracy, true);
 	CFGVAR(Indicators_Show_Velocity, true);
-
-	// Indicators display options
-	CFGVAR(Indicators_Display_Mode, 0); // 0=Bars only, 1=Numbers only, 2=Bars+Numbers
-
-	// Positions
+	CFGVAR(Indicators_Display_Mode, 0);
 	CFGVAR(Indicators_Pos_X, 10.f);
 	CFGVAR(Indicators_Pos_Y, 530.f);
 	CFGVAR(Keybinds_Pos_X, 10.f);
@@ -437,6 +450,7 @@ namespace CFG
 	CFGVAR(Spectators_Pos_X, 10.f);
 	CFGVAR(Spectators_Pos_Y, 718.f);
 #pragma endregion
+
 	CFGVAR(CurrentSection, 0);
 	CFGVAR(Menu_ThemeColor, Color_t(0, 122, 187, 255));
 	CFGVAR(Menu_ModifyTheme, false);

@@ -9,13 +9,14 @@
 #include "../src/Features/PlayersList/PlayersList.h"
 #include "../src/Features/Menu/notification_system/notifs.h"
 #include "../src/Features/indicators/indicators.h"
-#include "../nemesis.h"
+#define STB_IMAGE_IMPLEMENTATION
 
 namespace gui
 {
     ImFont* menu_font = nullptr;
     ImFont* indicator_font = nullptr;
     ImFont* title_font = nullptr;
+    ImFont* icon_font = nullptr;
 
     // ===== VARIÁVEIS GLOBAIS PARA TEMA =====
     static ImVec4 g_current_accent_color = ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f);
@@ -704,8 +705,12 @@ namespace gui
                     }
 
                     ImU32 text_color = (item_hovered || is_selected) ?
-                        IM_COL32(0, 122, 187, 255) :
-                        IM_COL32(120, 120, 120, 255);
+                        IM_COL32(
+                            (int)(g_current_accent_color.x * 255),
+                            (int)(g_current_accent_color.y * 255),
+                            (int)(g_current_accent_color.z * 255),
+                            255
+                        ) : IM_COL32(120, 120, 120, 255);
 
                     ImVec2 item_text_pos = ImVec2(item_pos.x + 8.0f, item_pos.y + 4.0f);
                     draw->AddText(item_text_pos, text_color, items[i]);
@@ -876,8 +881,12 @@ namespace gui
                     }
 
                     ImU32 text_color = (item_hovered || is_selected) ?
-                        IM_COL32(0, 122, 187, 255) :
-                        IM_COL32(120, 120, 120, 255);
+                        IM_COL32(
+                            (int)(g_current_accent_color.x * 255),
+                            (int)(g_current_accent_color.y * 255),
+                            (int)(g_current_accent_color.z * 255),
+                            255
+                        ) : IM_COL32(120, 120, 120, 255);
 
                     ImVec2 item_text_pos = ImVec2(item_pos.x + 8.0f, item_pos.y + 4.0f);
                     draw->AddText(item_text_pos, text_color, items[i].name.c_str());
@@ -1139,7 +1148,13 @@ namespace gui
                     ImRect item_rect(item_pos, ImVec2(item_pos.x + 88.0f, item_pos.y + 15.0f));
                     bool item_hovered = ImGui::IsMouseHoveringRect(item_rect.Min, item_rect.Max);
                     bool item_selected = (*bind_type == static_cast<int>(i));
-                    ImU32 text_color = (item_hovered || item_selected) ? IM_COL32(0, 122, 187, 255) : IM_COL32(120, 120, 120, 255);
+                    ImU32 text_color = (item_hovered || item_selected) ?
+                        IM_COL32(
+                            (int)(g_current_accent_color.x * 255),
+                            (int)(g_current_accent_color.y * 255),
+                            (int)(g_current_accent_color.z * 255),
+                            255
+                        ) : IM_COL32(120, 120, 120, 255);
                     fg_draw->AddText(ImVec2(list_pos.x + 24.0f, list_pos.y + 4.0f + i * item_height), text_color, items[i].c_str());
                     if (item_hovered && ImGui::IsMouseClicked(0)) {
                         *bind_type = static_cast<int>(i);

@@ -104,7 +104,7 @@ public:
 
 	// Utilidades
 	inline void SetColor(Color_t color);
-	inline void DrawPolyLine(const std::vector<Vec2>& points, Color_t color);
+	void DrawPolyLine(const std::vector<Vec2>& points, Color_t color);
 };
 
 MAKE_SINGLETON_SCOPED(CDraw, Draw, H);

@@ -343,21 +343,33 @@ namespace indicators {
                 dl->AddRectFilledMultiColor(bar_start, bar_end, col_start, col_end, col_end, col_start);
             }
             else if (CFG::Indicators_Display_Mode == 1) {
-                // Modo 1: Apenas números
+                // Modo 1: Apenas números (alinhados à direita)
                 if (show_number) {
                     char buf[32];
                     snprintf(buf, sizeof(buf), "%.0f", value);
+
+                    ImGui::PushFont(gui::indicator_font);
                     ImVec2 num_size = ImGui::CalcTextSize(buf);
-                    dl->AddText(gui::indicator_font, 12.0f, ImVec2(x + 200 - num_size.x - 5, oy - 1),
+                    ImGui::PopFont();
+
+                    // Sombra
+                    dl->AddText(gui::indicator_font, 12.0f,
+                        ImVec2(x + 199 - num_size.x, oy),
+                        IM_COL32(0, 0, 0, 180), buf);
+
+                    // Número principal
+                    dl->AddText(gui::indicator_font, 12.0f,
+                        ImVec2(x + 198 - num_size.x, oy - 1),
                         IM_COL32(accent.r, accent.g, accent.b, 255), buf);
                 }
             }
             else if (CFG::Indicators_Display_Mode == 2) {
-                // Modo 2: Barras + Números
-                dl->AddRectFilled(ImVec2(x + 200 - 116 - 10, oy + 1), ImVec2(x + 200 - 116 - 10 + 130, oy + 9),
+                // Modo 2: Barras + Números (número fora da barra, à direita)
+                // Background da barra
+                dl->AddRectFilled(ImVec2(x + 200 - 116 - 10, oy + 1), ImVec2(x + 200 - 116 - 10 + 100, oy + 9),
                     IM_COL32(20, 20, 20, 100));
 
-                float bar_width = progress * 130;
+                float bar_width = progress * 100;
                 ImVec2 bar_start(x + 200 - 116 - 10, oy + 1);
                 ImVec2 bar_end(x + 200 - 116 - 10 + bar_width, oy + 9);
 
@@ -366,13 +378,27 @@ namespace indicators {
 
                 dl->AddRectFilledMultiColor(bar_start, bar_end, col_start, col_end, col_end, col_start);
 
-                // Número acima da barra
+                // Número fora da barra (à direita, alinhado)
                 if (show_number) {
                     char buf[32];
                     snprintf(buf, sizeof(buf), "%.0f", value);
+
+                    ImGui::PushFont(gui::indicator_font);
                     ImVec2 num_size = ImGui::CalcTextSize(buf);
-                    dl->AddText(gui::indicator_font, 10.0f, ImVec2(x + 200 - num_size.x - 5, oy - 10),
-                        IM_COL32(255, 255, 255, 200), buf);
+                    ImGui::PopFont();
+
+                    float text_x = x + 199 - num_size.x;
+                    float text_y = oy - 1;
+
+                    // Sombra preta
+                    dl->AddText(gui::indicator_font, 12.0f,
+                        ImVec2(text_x + 1, text_y + 1),
+                        IM_COL32(0, 0, 0, 180), buf);
+
+                    // Texto branco
+                    dl->AddText(gui::indicator_font, 12.0f,
+                        ImVec2(text_x, text_y),
+                        IM_COL32(255, 255, 255, 255), buf);
                 }
             }
             };
@@ -562,7 +588,7 @@ namespace indicators {
         sprintf_s(time_buf, "%02d:%02d:%02d", st.wHour, st.wMinute, st.wSecond);
 
         // Build text
-        std::string text = "PHANTOM.CLUB";
+        std::string text = "PHANTOM.CLUB BETA";
 
         if (CFG::Watermark_ShowName)
             text += " | " + name;

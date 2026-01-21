@@ -21,7 +21,7 @@ MAKE_HOOK(Q_snprintf, Signatures::Q_snprintf.Get(), int, __cdecl,
         return snprintf(
             buffer,
             size,
-            "[x69]\nfps:%4i   ping: %i ms",
+            "[phantom]\nfps:%4i   ping: %i ms",
             fps,
             ping
         );
