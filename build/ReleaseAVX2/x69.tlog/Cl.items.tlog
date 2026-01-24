@@ -1,93 +1,93 @@
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\include\kiero.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\kiero.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\App\App.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\App.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Aimbot\Aimbot.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Aimbot.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Aimbot\AimbotHitscan\AimbotHitscan.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\AimbotHitscan.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Aimbot\AimbotMelee\AimbotMelee.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\AimbotMelee.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\AimbotProjectile.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Chams\Chams.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Chams.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Exploits\shifting\shifting.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\shifting.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\indicators\indicators.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\indicators.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Menu\notification_system\icons_notify.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\icons_notify.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Menu\notification_system\notifs.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\notifs.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Network\network_fix.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\network_fix.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Outlines\Outlines.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Outlines.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\PlayersList\PlayersList.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\PlayersList.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\MovementSimulation\MovementSimulation.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\MovementSimulation.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\EnginePrediction\EnginePrediction.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\EnginePrediction.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\ESP\ESP.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\ESP.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\LagRecords\Backtrack.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Backtrack.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Misc\Misc.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Misc.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\ProjectileSim\ProjectileSim.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\ProjectileSim.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\Exploits\nospread\nospread.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\nospread.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Features\VisualUtils\VisualUtils.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\VisualUtils.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CBaseAnimating_SetupBones.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CBaseAnimating_SetupBones.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CBaseEntity_AddVar.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CBaseEntity_AddVar.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CBaseEntity_BaseInterpolatePart1.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CBaseEntity_BaseInterpolatePart1.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CBaseEntity_InterpolateServerEntities.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CBaseEntity_InterpolateServerEntities.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CBaseEntity_SetAbsVelocity.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CBaseEntity_SetAbsVelocity.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CBaseHudChatLine_InsertAndColorizeText.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CBaseHudChatLine_InsertAndColorizeText.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CBasePlayer_CalcPlayerView.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CBasePlayer_CalcPlayerView.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CGameEventManager_FireEventIntern.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CGameEventManager_FireEventIntern.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CHudTFCrosshair_ShouldDraw.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CHudTFCrosshair_ShouldDraw.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\ClientModeShared_CreateMove.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\ClientModeShared_CreateMove.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\ClientModeShared_OverrideView.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\ClientModeShared_OverrideView.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CL_Move.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CL_Move.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CMaterial_Uncache.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CMaterial_Uncache.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CMultiPlayerAnimState_ResetGestureSlot.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CParticleSystemMgr_DrawRenderCache.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CParticleSystemMgr_DrawRenderCache.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CPrediction_RunCommand.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CPrediction_RunCommand.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CRendering3dView_EnableWorldFog.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CRendering3dView_EnableWorldFog.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CTFPlayerShared_InCond.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CTFPlayerShared_InCond.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CTFPlayerShared_IsPlayerDominated.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CTFPlayerShared_IsPlayerDominated.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CTFPlayer_AvoidPlayers.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CTFPlayer_AvoidPlayers.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CTFPlayer_MaybeDrawRailgunBeam.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CTFPlayer_UpdateClientSideAnimation.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CTFPlayer_UpdateClientSideAnimation.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CTFViewModel_CalcViewModelView.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CTFViewModel_CalcViewModelView.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CTFWeaponBase_GetTracerType.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CTFWeaponBase_GetTracerType.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CUserMessages_DispatchUserMessage.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CUserMessages_DispatchUserMessage.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CViewRender_DrawViewModels.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CViewRender_DrawViewModels.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\FX_FireBullets.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\FX_FireBullets.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IBaseClientDLL_FrameStageNotify.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IBaseClientDLL_FrameStageNotify.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IBaseClientDLL_LevelInitPostEntity.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IBaseClientDLL_LevelInitPostEntity.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IBaseClientDLL_LevelShutdown.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IBaseClientDLL_LevelShutdown.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IEngineVGuiInternal_Paint.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IEngineVGuiInternal_Paint.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\CTFWeapon_ShouldDraw.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\CTFWeapon_ShouldDraw.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IInput_GetUserCmd.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IInput_GetUserCmd.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IMaterialSystem_FindTexture.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IMaterialSystem_FindTexture.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\INetChannel_SendNetMsg.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\INetChannel_SendNetMsg.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\ISurface_OnScreenSizeChanged.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\ISurface_OnScreenSizeChanged.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IVEngineClient013_ClientCmd.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IVEngineClient013_ClientCmd.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IVModelRender_DrawModelExecute.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IVModelRender_DrawModelExecute.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\IVModelRender_ForcedMaterialOverride.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\IVModelRender_ForcedMaterialOverride.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\netgraphstringchanger.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\netgraphstringchanger.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Hooks\WINAPI_WndProc.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\WINAPI_WndProc.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\imgui\imgui.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\imgui.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\imgui\imgui_demo.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\imgui_demo.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\imgui\imgui_draw.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\imgui_draw.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\imgui\imgui_impl_dx9.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\imgui_impl_dx9.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\imgui\imgui_impl_win32.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\imgui_impl_win32.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\imgui\imgui_widgets.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\imgui_widgets.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\TF2\bitbuf.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\bitbuf.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\TF2\c_tf_player.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\c_tf_player.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\TF2\netmessages.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\netmessages.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Utils\Storage\Storage.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Storage.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\Helpers\AimUtils\AimUtils.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\AimUtils.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\DllMain.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\DllMain.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\Helpers\Draw\Draw.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Draw.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\Helpers\Entities\Entities.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Entities.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\Helpers\Fonts\Fonts.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Fonts.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\Helpers\Input\Input.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Input.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\Impl\TraceFilters\TraceFilters.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\TraceFilters.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\TF2\keyvalues.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\keyvalues.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\TF2\MD5.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\MD5.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\SDK\TF2\NetVars\NetVars.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\NetVars.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Utils\Color\Color.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Color.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Utils\HookManager\HookManager.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\HookManager.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\include\MinHook\buffer.c;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\buffer.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\include\MinHook\hde\hde32.c;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\hde32.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\include\MinHook\hde\hde64.c;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\hde64.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\include\MinHook\hook.c;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\hook.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\include\MinHook\trampoline.c;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\trampoline.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Utils\InterfaceManager\InterfaceManager.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\InterfaceManager.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Utils\Memory\Memory.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\Memory.obj
-C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\x88TF2\src\Utils\SignatureManager\SignatureManager.cpp;C:\Users\userp\OneDrive\Desktop\x69 x nemesis\x69 x nemesis\build\ReleaseAVX2\SignatureManager.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\include\kiero.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\kiero.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\App\App.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\App.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Aimbot\Aimbot.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Aimbot.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Aimbot\AimbotHitscan\AimbotHitscan.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\AimbotHitscan.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Aimbot\AimbotMelee\AimbotMelee.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\AimbotMelee.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\AimbotProjectile.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Chams\Chams.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Chams.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Exploits\shifting\shifting.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\shifting.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\indicators\indicators.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\indicators.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Menu\notification_system\icons_notify.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\icons_notify.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Menu\notification_system\notifs.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\notifs.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Network\network_fix.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\network_fix.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Outlines\Outlines.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Outlines.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\PlayersList\PlayersList.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\PlayersList.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\MovementSimulation\MovementSimulation.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\MovementSimulation.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\EnginePrediction\EnginePrediction.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\EnginePrediction.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\ESP\ESP.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\ESP.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\LagRecords\Backtrack.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Backtrack.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Misc\Misc.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Misc.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\ProjectileSim\ProjectileSim.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\ProjectileSim.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\Exploits\nospread\nospread.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\nospread.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Features\VisualUtils\VisualUtils.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\VisualUtils.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CBaseAnimating_SetupBones.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CBaseAnimating_SetupBones.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CBaseEntity_AddVar.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CBaseEntity_AddVar.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CBaseEntity_BaseInterpolatePart1.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CBaseEntity_BaseInterpolatePart1.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CBaseEntity_InterpolateServerEntities.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CBaseEntity_InterpolateServerEntities.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CBaseEntity_SetAbsVelocity.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CBaseEntity_SetAbsVelocity.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CBaseHudChatLine_InsertAndColorizeText.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CBaseHudChatLine_InsertAndColorizeText.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CBasePlayer_CalcPlayerView.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CBasePlayer_CalcPlayerView.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CGameEventManager_FireEventIntern.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CGameEventManager_FireEventIntern.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CHudTFCrosshair_ShouldDraw.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CHudTFCrosshair_ShouldDraw.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\ClientModeShared_CreateMove.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\ClientModeShared_CreateMove.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\ClientModeShared_OverrideView.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\ClientModeShared_OverrideView.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CL_Move.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CL_Move.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CMaterial_Uncache.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CMaterial_Uncache.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CMultiPlayerAnimState_ResetGestureSlot.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CParticleSystemMgr_DrawRenderCache.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CParticleSystemMgr_DrawRenderCache.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CPrediction_RunCommand.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CPrediction_RunCommand.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CRendering3dView_EnableWorldFog.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CRendering3dView_EnableWorldFog.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CTFPlayerShared_InCond.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CTFPlayerShared_InCond.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CTFPlayerShared_IsPlayerDominated.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CTFPlayerShared_IsPlayerDominated.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CTFPlayer_AvoidPlayers.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CTFPlayer_AvoidPlayers.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CTFPlayer_MaybeDrawRailgunBeam.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CTFPlayer_MaybeDrawRailgunBeam.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CTFPlayer_UpdateClientSideAnimation.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CTFPlayer_UpdateClientSideAnimation.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CTFViewModel_CalcViewModelView.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CTFViewModel_CalcViewModelView.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CTFWeaponBase_GetTracerType.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CTFWeaponBase_GetTracerType.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CUserMessages_DispatchUserMessage.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CUserMessages_DispatchUserMessage.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CViewRender_DrawViewModels.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CViewRender_DrawViewModels.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\FX_FireBullets.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\FX_FireBullets.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IBaseClientDLL_FrameStageNotify.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IBaseClientDLL_FrameStageNotify.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IBaseClientDLL_LevelInitPostEntity.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IBaseClientDLL_LevelInitPostEntity.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IBaseClientDLL_LevelShutdown.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IBaseClientDLL_LevelShutdown.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IEngineVGuiInternal_Paint.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IEngineVGuiInternal_Paint.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\CTFWeapon_ShouldDraw.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\CTFWeapon_ShouldDraw.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IInput_GetUserCmd.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IInput_GetUserCmd.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IMaterialSystem_FindTexture.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IMaterialSystem_FindTexture.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\INetChannel_SendNetMsg.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\INetChannel_SendNetMsg.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\ISurface_OnScreenSizeChanged.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\ISurface_OnScreenSizeChanged.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IVEngineClient013_ClientCmd.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IVEngineClient013_ClientCmd.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IVModelRender_DrawModelExecute.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IVModelRender_DrawModelExecute.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\IVModelRender_ForcedMaterialOverride.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\IVModelRender_ForcedMaterialOverride.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\netgraphstringchanger.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\netgraphstringchanger.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Hooks\WINAPI_WndProc.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\WINAPI_WndProc.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\imgui\imgui.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\imgui.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\imgui\imgui_demo.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\imgui_demo.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\imgui\imgui_draw.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\imgui_draw.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\imgui\imgui_impl_dx9.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\imgui_impl_dx9.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\imgui\imgui_impl_win32.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\imgui_impl_win32.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\imgui\imgui_widgets.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\imgui_widgets.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\TF2\bitbuf.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\bitbuf.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\TF2\c_tf_player.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\c_tf_player.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\TF2\netmessages.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\netmessages.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Utils\Storage\Storage.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Storage.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\Helpers\AimUtils\AimUtils.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\AimUtils.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\DllMain.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\DllMain.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\Helpers\Draw\Draw.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Draw.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\Helpers\Entities\Entities.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Entities.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\Helpers\Fonts\Fonts.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Fonts.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\Helpers\Input\Input.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Input.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\Impl\TraceFilters\TraceFilters.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\TraceFilters.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\TF2\keyvalues.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\keyvalues.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\TF2\MD5.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\MD5.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\SDK\TF2\NetVars\NetVars.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\NetVars.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Utils\Color\Color.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Color.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Utils\HookManager\HookManager.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\HookManager.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\include\MinHook\buffer.c;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\buffer.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\include\MinHook\hde\hde32.c;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\hde32.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\include\MinHook\hde\hde64.c;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\hde64.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\include\MinHook\hook.c;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\hook.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\include\MinHook\trampoline.c;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\trampoline.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Utils\InterfaceManager\InterfaceManager.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\InterfaceManager.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Utils\Memory\Memory.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\Memory.obj
+C:\Users\userp\Downloads\x69-master\x69-master\x88TF2\src\Utils\SignatureManager\SignatureManager.cpp;C:\Users\userp\Downloads\x69-master\x69-master\build\ReleaseAVX2\SignatureManager.obj

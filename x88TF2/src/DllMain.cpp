@@ -131,20 +131,23 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
 {
     if (!alive)
         return oEndScene(pDevice);
+
     SaveState(pDevice);
+
     if (!init)
     {
         InitImGui(pDevice);
         init = true;
     }
+
     if (pDevice->CreateStateBlock(D3DSBT_ALL, &pStateBlock) == D3D_OK)
     {
         pStateBlock->Capture();
+
         ImGui_ImplDX9_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        // HUD sempre roda
         indicators::Run();
 
         if (GetAsyncKeyState(VK_INSERT) & 1)
@@ -173,27 +176,28 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     IM_COL32(16, 16, 16, 255),
                     IM_COL32(16, 16, 16, 255)
                 );
-
                 // CORREÇÃO AQUI: Usar Color_t em vez de gui::Color
                 static bool modify_theme = CFG::Menu_ModifyTheme;
                 static Color_t theme_color = CFG::Menu_ThemeColor;
                 static bool old_modify_theme = false;
                 static Color_t old_theme_color = theme_color;
-
                 ImU32 accent_color = modify_theme ? IM_COL32(theme_color.r, theme_color.g, theme_color.b, theme_color.a) : IM_COL32(0, 122, 187, 255);
+
+                // Linha colorida no topo
                 draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 1), ImVec2(p.x + s.x - 1, p.y + 3), accent_color);
-                draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 60), ImVec2(p.x + s.x - 1, p.y + 62), IM_COL32(128, 128, 128, 255));
+
+                // Linha cinza fina embaixo do header
+                draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + 59), ImVec2(p.x + s.x - 1, p.y + 60), IM_COL32(64, 64, 64, 255));
+
                 if (icon_texture)
                 {
                     // Desenha o ícone no lugar do P (tamanho pequeno para caber no header)
                     ImVec2 icon_pos(p.x + -4, p.y + -2);
                     ImVec2 icon_size(78, 68); // Ícone 48x48 pixels
-
                     // Calcular a cor do tema para aplicar no ícone
                     ImVec4 tint_color = modify_theme
                         ? ImVec4(theme_color.r / 255.0f, theme_color.g / 255.0f, theme_color.b / 255.0f, 1.0f)
                         : ImVec4(0.0f, 122.0f / 255.0f, 187.0f / 255.0f, 1.0f);
-
                     // Desenhar ícone com a cor do tema aplicada
                     draw_list->AddImage(
                         (void*)icon_texture,
@@ -204,20 +208,44 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                         ImGui::ColorConvertFloat4ToU32(tint_color)  // Aplica a cor do tema
                     );
 
-                    float icon_end = p.x + 5 + icon_size.x + 3; // 3px de espaçamento
-                    draw_list->AddText(ImVec2(icon_end + 1, p.y + 21), IM_COL32(5, 5, 5, 255), "HANTOM.CLUB");
-                    draw_list->AddText(ImVec2(icon_end, p.y + 20), accent_color, "HANTOM.CLUB");
+                    float icon_end = p.x + 60; // Posição ajustada após o ícone
+
+                    // Push font scale para aumentar o tamanho do texto em 1.5x
+                    ImGui::PushFont(ImGui::GetFont());
+                    ImGui::SetWindowFontScale(1.5f);
+
+                    // Sombra do texto HANTOM.CLUB
+                    draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                        ImVec2(icon_end + 1, p.y + 16), IM_COL32(5, 5, 5, 255), "HANTOM.CLUB");
+                    // Texto principal HANTOM.CLUB
+                    draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                        ImVec2(icon_end, p.y + 15), accent_color, "HANTOM.CLUB");
+
+                    ImGui::SetWindowFontScale(1.0f);
+                    ImGui::PopFont();
                 }
                 else
                 {
-                    draw_list->AddText(ImVec2(p.x + 0, p.y + 21), IM_COL32(5, 5, 5, 255), "PHANTOM.CLUB");
-                    draw_list->AddText(ImVec2(p.x + 0, p.y + 20), accent_color, "PHANTOM.CLUB");
+                    // Push font scale para aumentar o tamanho do texto em 1.5x
+                    ImGui::PushFont(ImGui::GetFont());
+                    ImGui::SetWindowFontScale(1.5f);
+
+                    // Sombra do texto PHANTOM.CLUB
+                    draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                        ImVec2(p.x + -24, p.y + 21), IM_COL32(5, 5, 5, 255), "PHANTOM.CLUB");
+                    // Texto principal PHANTOM.CLUB
+                    draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+                        ImVec2(p.x + -25, p.y + 20), accent_color, "PHANTOM.CLUB");
+
+                    ImGui::SetWindowFontScale(1.0f);
+                    ImGui::PopFont();
                 }
-                draw_list->AddText(ImVec2(p.x + 6, p.y + 33), IM_COL32(5, 5, 5, 255), "DEVELOPED BY");
-                draw_list->AddText(ImVec2(p.x + 5, p.y + 32), IM_COL32(255, 255, 255, 100), "DEVELOPED BY");
+
+                draw_list->AddText(ImVec2(p.x + 60, p.y + 33), IM_COL32(5, 5, 5, 255), "DEVELOPED BY");
+                draw_list->AddText(ImVec2(p.x + 61, p.y + 32), IM_COL32(255, 255, 255, 100), "DEVELOPED BY");
                 float dev_width = ImGui::CalcTextSize("DEVELOPED BY").x;
-                draw_list->AddText(ImVec2(p.x + 5 + dev_width + 5, p.y + 33), IM_COL32(5, 5, 5, 255), "SHOOT & VOID");
-                draw_list->AddText(ImVec2(p.x + 5 + dev_width + 4, p.y + 32), accent_color, "SHOOT & VOID");
+                draw_list->AddText(ImVec2(p.x + 60 + dev_width + 5, p.y + 33), IM_COL32(5, 5, 5, 255), "SHOOT & VOID");
+                draw_list->AddText(ImVec2(p.x + 61 + dev_width + 4, p.y + 32), accent_color, "SHOOT & VOID");
                 int grid_size = 5;
                 int header_height = 60;
                 int rows = (int)((s.y - header_height) / grid_size);
