@@ -246,23 +246,138 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                 float dev_width = ImGui::CalcTextSize("DEVELOPED BY").x;
                 draw_list->AddText(ImVec2(p.x + 60 + dev_width + 5, p.y + 33), IM_COL32(5, 5, 5, 255), "SHOOT & VOID");
                 draw_list->AddText(ImVec2(p.x + 61 + dev_width + 4, p.y + 32), accent_color, "SHOOT & VOID");
-                int grid_size = 5;
+                int grid_size = 6; // pixels por célula
                 int header_height = 60;
-                int rows = (int)((s.y - header_height) / grid_size);
-                int cols = (int)(s.x / grid_size);
-                for (int io = 0; io < cols; io++)
-                {
-                    for (int jo = 0; jo < rows; jo++)
-                    {
-                        float x = p.x + (io * grid_size);
-                        float y = p.y + header_height + (jo * grid_size);
-                        ImU32 color;
-                        if ((io + jo) % 2 == 0)
-                            color = IM_COL32(20, 20, 20, 255);
-                        else
-                            color = IM_COL32(25, 25, 25, 255);
-                        draw_list->AddRectFilled(ImVec2(x, y), ImVec2(x + grid_size, y + grid_size), color);
+                int cols = std::max(1, (int)(s.x / grid_size));
+                int rows = std::max(1, (int)((s.y - header_height) / grid_size));
+                draw_list->AddRectFilled(ImVec2(p.x + 1, p.y + header_height), ImVec2(p.x + s.x - 1, p.y + s.y - 1), IM_COL32(16, 16, 16, 255));
+                ImU32 lineColor = IM_COL32(26, 26, 26, 200);
+                for (int i = 0; i <= cols; ++i) {
+                    float x = p.x + i * grid_size + 0.5f;
+                    draw_list->AddLine(ImVec2(x, p.y + header_height), ImVec2(x, p.y + s.y), lineColor, 1.0f);
+                }
+                for (int j = 0; j <= rows; ++j) {
+                    float y = p.y + header_height + j * grid_size + 0.5f;
+                    draw_list->AddLine(ImVec2(p.x, y), ImVec2(p.x + s.x, y), lineColor, 1.0f);
+                }
+                struct Symbol {
+                    float x, y;      // posição em células (float)
+                    float vx, vy;    // direção normalizada
+                    float speedMul;  // multiplicador de velocidade
+                    char ch;         // caractere fixo
+                    float alpha;     // transparência
+                    float sizeMul;   // tamanho
+                };
+                static std::vector<Symbol> symbols;
+                static bool symbols_init = false;
+                static int last_cols = 0;
+                static int last_rows = 0;
+                const int MAX_SYMBOLS_CAP = 80; // teto para manter desempenho
+                int area = cols * rows;
+                int computedMax = std::clamp(area / 24, 6, MAX_SYMBOLS_CAP);
+                if (!symbols_init || last_cols != cols || last_rows != rows) {
+                    symbols_init = true;
+                    last_cols = cols;
+                    last_rows = rows;
+                    symbols.clear();
+                    symbols.reserve(computedMax);
+                    srand((unsigned)time(NULL));
+
+                    const char symbolSet[] = "$#&%*+-=~<>/\\|@?";
+                    for (int i = 0; i < computedMax; ++i) {
+                        Symbol sbol;
+                        sbol.x = (float)(rand() % cols);
+                        sbol.y = (float)(rand() % rows);
+                        float ang = (float)((rand() / (float)RAND_MAX) * (2.0f * 3.14159265f));
+                        sbol.vx = cosf(ang);
+                        sbol.vy = sinf(ang);
+                        sbol.speedMul = 0.6f + (rand() % 80) / 100.0f;   // 0.6 .. 1.39
+                        sbol.ch = symbolSet[rand() % (sizeof(symbolSet) - 1)];
+                        sbol.alpha = 0.55f + (rand() % 40) / 100.0f;     // 0.55 .. 0.94
+                        sbol.sizeMul = 0.85f + (rand() % 35) / 100.0f;   // 0.85 .. 1.19
+                        symbols.push_back(sbol);
                     }
+                }
+                ImGuiIO& io_local = ImGui::GetIO();
+                float dt = io_local.DeltaTime;
+                const float baseSpeed = 5.5f; // células por segundo (mais rápido)
+                const float directionChangeRatePerSec = 0.45f; // chance por segundo de alterar direção
+                const float minSeparation = 0.55f; // distância mínima (em células) para evitar sobreposição
+                const float separationStrength = 0.6f; // quanto empurrar ao colidir
+                const float velocityDamping = 0.08f; // reduz velocidade ao colidir para estabilidade
+                for (auto& sym : symbols) {
+                    // pequena variação suave na direção
+                    if ((rand() / (float)RAND_MAX) < (directionChangeRatePerSec * dt)) {
+                        float deltaAng = ((rand() / (float)RAND_MAX) - 0.5f) * (3.14159265f / 4.0f); // ±45°
+                        float ang = atan2f(sym.vy, sym.vx) + deltaAng;
+                        sym.vx = cosf(ang);
+                        sym.vy = sinf(ang);
+                    }
+                    sym.x += sym.vx * sym.speedMul * baseSpeed * dt;
+                    sym.y += sym.vy * sym.speedMul * baseSpeed * dt;
+                    if (sym.x < 0.0f) sym.x += cols;
+                    if (sym.x >= (float)cols) sym.x -= cols;
+                    if (sym.y < 0.0f) sym.y += rows;
+                    if (sym.y >= (float)rows) sym.y -= rows;
+                }
+                for (size_t i = 0; i < symbols.size(); ++i) {
+                    for (size_t j = i + 1; j < symbols.size(); ++j) {
+                        Symbol& a = symbols[i];
+                        Symbol& b = symbols[j];
+                        float dx = b.x - a.x;
+                        float dy = b.y - a.y;
+                        if (dx > cols * 0.5f) dx -= cols;
+                        if (dx < -cols * 0.5f) dx += cols;
+                        if (dy > rows * 0.5f) dy -= rows;
+                        if (dy < -rows * 0.5f) dy += rows;
+                        float distSq = dx * dx + dy * dy;
+                        float minDist = minSeparation;
+                        if (distSq < (minDist * minDist) && distSq > 0.0001f) {
+                            float dist = sqrtf(distSq);
+                            float overlap = (minDist - dist) * separationStrength;
+                            float nx = dx / dist;
+                            float ny = dy / dist;
+                            a.x -= nx * (overlap * 0.5f);
+                            a.y -= ny * (overlap * 0.5f);
+                            b.x += nx * (overlap * 0.5f);
+                            b.y += ny * (overlap * 0.5f);
+                            a.vx -= nx * velocityDamping;
+                            a.vy -= ny * velocityDamping;
+                            b.vx += nx * velocityDamping;
+                            b.vy += ny * velocityDamping;
+                            float la = sqrtf(a.vx * a.vx + a.vy * a.vy);
+                            if (la > 0.0001f) { a.vx /= la; a.vy /= la; }
+                            float lb = sqrtf(b.vx * b.vx + b.vy * b.vy);
+                            if (lb > 0.0001f) { b.vx /= lb; b.vy /= lb; }
+                        }
+                        else if (distSq <= 0.0001f) {
+                            float ang = (rand() / (float)RAND_MAX) * 2.0f * 3.14159265f;
+                            float nx = cosf(ang), ny = sinf(ang);
+                            a.x -= nx * 0.2f; a.y -= ny * 0.2f;
+                            b.x += nx * 0.2f; b.y += ny * 0.2f;
+                        }
+                    }
+                }
+                for (auto& sym : symbols) {
+                    while (sym.x < 0.0f) sym.x += cols;
+                    while (sym.x >= (float)cols) sym.x -= cols;
+                    while (sym.y < 0.0f) sym.y += rows;
+                    while (sym.y >= (float)rows) sym.y -= rows;
+                }
+                ImVec4 themeFloat;
+                themeFloat.x = ((modify_theme ? theme_color.r : 0) / 255.0f);
+                themeFloat.y = ((modify_theme ? theme_color.g : 122) / 255.0f);
+                themeFloat.z = ((modify_theme ? theme_color.b : 187) / 255.0f);
+                themeFloat.w = 1.0f;
+                ImFont* font = ImGui::GetFont();
+                float baseFontSize = ImGui::GetFontSize();
+                for (const auto& sym : symbols) {
+                    float cx = p.x + (sym.x * grid_size) + grid_size * 0.5f;
+                    float cy = p.y + header_height + (sym.y * grid_size) + grid_size * 0.5f;
+                    ImU32 symCol = ImGui::ColorConvertFloat4ToU32(ImVec4(themeFloat.x, themeFloat.y, themeFloat.z, sym.alpha));
+                    float fontSize = baseFontSize * sym.sizeMul;
+                    char buf[4] = { sym.ch, '\0', '\0', '\0' };
+                    draw_list->AddText(font, fontSize, ImVec2(cx - fontSize * 0.35f, cy - fontSize * 0.7f), symCol, buf);
                 }
                 draw_list->AddRect(p, ImVec2(p.x + s.x, p.y + s.y), IM_COL32(40, 40, 40, 255));
 
@@ -275,7 +390,17 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     ImGui::SameLine();
                     gui::TabButton("Anti-Aim", active_tab, 1);
                     ImGui::SameLine();
-                    gui::TabButton("Visuals", active_tab, 2);
+                    if (gui::TabButton("Visuals", active_tab, 2)) {
+                        // Clique esquerdo normal
+                    }
+                    // Detectar clique direito
+                    ImVec2 visuals_btn_min = ImGui::GetItemRectMin();
+                    ImVec2 visuals_btn_max = ImGui::GetItemRectMax();
+                    if (ImGui::IsMouseHoveringRect(visuals_btn_min, visuals_btn_max) &&
+                        ImGui::IsMouseClicked(1)) {
+                        gui::g_visuals_mode_state.context_open = true;
+                    }
+                    gui::visuals_mode_selector(&gui::g_visuals_mode_state.selected_mode);
                     ImGui::SameLine();
                     gui::TabButton("Players", active_tab, 3);
                     ImGui::SameLine();
@@ -418,122 +543,339 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     // VISUALS TAB
                     if (active_tab == 2)
                     {
-                        if (gui::begin_group_scrollable("PLAYERS ESP", ImVec2(380, 250), 5.0f, 5.0f))
-                        {
-                            gui::checkbox("ESP Master", CFG::ESP_Enable);
-                            gui::checkbox("Team Check", CFG::ESP_Team);
+                        int vis_mode = gui::g_visuals_mode_state.selected_mode;
 
-                            gui::checkbox_color("Box", CFG::ESP_Box, &CFG::ESP_BoxColor);
-                            gui::combo("Box Style", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"});
-
-                            gui::checkbox_color("Name", CFG::ESP_Name, &CFG::ESP_NameColor);
-
-                            gui::checkbox_color("Health", CFG::ESP_Health, &CFG::ESP_HealthBarColor);
-                            gui::combo("Health Type", &CFG::ESP_HealthType, std::vector<std::string>{"Health bar", "Health number", "Number + bar"});
-                            gui::combo("Health Position", &CFG::ESP_HealthBarPosition, std::vector<std::string>{"Left", "Right", "Top", "Bottom"});
-
-                            // Health Bar Gradient - mantém BeginGroup porque tem 3 color pickers na mesma linha
-                            ImGui::BeginGroup();
-                            gui::checkbox("Health Bar Gradient", CFG::ESP_HealthBarGradient);
-                            ImGui::SameLine(310.0f);
-                            gui::color_picker("##health_low", &CFG::ESP_HealthBarGradientLow, false);
-                            ImGui::SameLine(0.0f, 4.0f);
-                            gui::color_picker("##health_mid", &CFG::ESP_HealthBarGradientMid, false);
-                            ImGui::SameLine(0.0f, 4.0f);
-                            gui::color_picker("##health_high", &CFG::ESP_HealthBarGradientHigh, false);
-                            ImGui::EndGroup();
-
-                            gui::checkbox("Show Local Player", CFG::ESP_LocalPlayer);
-                            gui::checkbox("Hide Cloaked Players", CFG::ESP_HideCloaked);
-                            gui::checkbox("Player Conditions", CFG::ESP_Conds);
-
-                            gui::checkbox_color("Player Tracers", CFG::ESP_Tracer, &CFG::ESP_TracerColor);
-
-                            gui::checkbox("Buffs", CFG::ESP_Buffs);
-                            gui::checkbox("Debuffs", CFG::ESP_Debuffs);
-
-                            gui::checkbox_color("Latency (Ping)", CFG::ESP_Ping, &CFG::ESP_PingColor);
-
-                            gui::checkbox_color("Distance Enemy", CFG::ESP_DistanceEnemy, &CFG::ESP_DistanceColor);
-                            gui::combo("Distance Position", &CFG::ESP_DistancePosition, std::vector<std::string>{"Side", "Bottom"});
-                        }
-                        gui::end_group_scrollable();
-
-                        ImGui::SameLine(390);
-                        if (gui::begin_group_scrollable("WORLD ESP", ImVec2(380, 250), 5.0f, 5.0f))
-                        {
-                            gui::checkbox_color("ESP Build", CFG::ESP_Build, &CFG::ESP_BuildColor, false);
-                            gui::checkbox("ESP Build Only Enemy", CFG::ESP_BuildOnlyEnemy);
-                            gui::checkbox_color("World Pickups", CFG::ESP_Pickups, &CFG::ESP_PickupsColor, false);
-                            gui::checkbox_color("Pickups Box", CFG::ESP_PickupsBox, &CFG::ESP_PickupsBoxColor, false);
-                            gui::checkbox_color("Pickups Name", CFG::ESP_PickupsName, &CFG::ESP_PickupsNameColor, false);
-                            gui::checkbox("Flag ESP", CFG::ESP_CaptureFlag);
-                            gui::checkbox_color("Box Capture", CFG::ESP_BoxCapture, &CFG::ESP_BoxCaptureColor, false);
-                            gui::checkbox_color("Name Capture", CFG::ESP_NameCapture, &CFG::ESP_NameCaptureColor, false);
-                            gui::checkbox_color("Offscreen Indicators", CFG::ESP_Offscreen, &CFG::ESP_OffscreenColor, false);
-                            gui::slider("Offscreen Radius", &CFG::ESP_Offscreen_Radius, 10.f, 500.f);
-                            gui::slider("Offscreen Max Distance", &CFG::ESP_Offscreen_MaxDist, 0.f, 2000.f);
-                            gui::combo("Offscreen Style", &CFG::ESP_Offscreen_Style, std::vector<std::string>{"Triangle", "Circle", "Bar"});
-                            gui::checkbox_color("Offscreen Filled", CFG::ESP_Offscreen_Filled, &CFG::ESP_OffscreenFilledColor, false);
-                            gui::checkbox_color("ESP Sniper Lines", CFG::ESP_SniperLines, &CFG::ESP_SniperLinesColor, false);
-                            gui::checkbox_color("UberCharge Status", CFG::ESP_Uber, &CFG::ESP_UberStatusColor, false);
-                            gui::checkbox_color("UberCharge Bar", CFG::ESP_UberBar, &CFG::ESP_UberBarColor, false);
-                            gui::checkbox_color("Aimbot FOV", CFG::Aimbot_DrawFOV, &CFG::Aimbot_FOVColor, false);
-                        }
-                        gui::end_group_scrollable();
-
-                        if (gui::begin_group_scrollable("INDICATORS", ImVec2(380, 250), 5.0f, 5.0f))
-                        {
-                            std::vector<gui::MultiComboItem> items = {
-                                gui::MultiComboItem("Spectator List", &CFG::Visual_Spectatorlist),
-                                gui::MultiComboItem("Info Painel", &CFG::Indicators_Enable),
-                                gui::MultiComboItem("KeyBind", &CFG::Indicators_Keybinds_Enable),
-                                gui::MultiComboItem("Watermark", &CFG::Indicators_Watermark_Enable),
-                            };
-                            gui::multi_combo("Indicators", items);
-
-                            // ===== OPÇÕES DO INFO PAINEL =====
-                            if (CFG::Indicators_Enable)
+                        // ===== ESP MODE =====
+                        if (vis_mode == 0) {
+                            if (gui::begin_group_scrollable("PLAYERS ESP", ImVec2(380, 250), 5.0f, 5.0f))
                             {
-                                ImGui::Dummy(ImVec2(0, 10));
-                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Info Painel Options:");
+                                gui::checkbox("ESP Master", CFG::ESP_Enable);
+                                gui::checkbox("Team Check", CFG::ESP_Team);
 
-                                std::vector<gui::MultiComboItem> panel_items = {
-                                    gui::MultiComboItem("Fake Latency", &CFG::Indicators_Show_FakeLatency),
-                                    gui::MultiComboItem("Real Latency", &CFG::Indicators_Show_RealLatency),
-                                    gui::MultiComboItem("Scoreboard Latency", &CFG::Indicators_Show_ScoreboardLatency),
-                                    gui::MultiComboItem("Inaccuracy", &CFG::Indicators_Show_Inaccuracy),
-                                    gui::MultiComboItem("Velocity", &CFG::Indicators_Show_Velocity),
-                                };
-                                gui::multi_combo("Panel Items", panel_items);
+                                gui::checkbox_color("Box", CFG::ESP_Box, &CFG::ESP_BoxColor);
+                                gui::combo("Box Style", &CFG::ESP_BoxType, std::vector<std::string>{"2D", "3D", "Corner"});
 
-                                gui::combo("Display Mode", &CFG::Indicators_Display_Mode,
-                                    std::vector<std::string>{"Bars only", "Numbers only", "Bars + Numbers"});
+                                gui::checkbox_color("Name", CFG::ESP_Name, &CFG::ESP_NameColor);
+
+                                gui::checkbox_color("Health", CFG::ESP_Health, &CFG::ESP_HealthBarColor);
+                                gui::combo("Health Type", &CFG::ESP_HealthType, std::vector<std::string>{"Health bar", "Health number", "Number + bar"});
+                                gui::combo("Health Position", &CFG::ESP_HealthBarPosition, std::vector<std::string>{"Left", "Right", "Top", "Bottom"});
+
+                                // Health Bar Gradient - mantém BeginGroup porque tem 3 color pickers na mesma linha
+                                ImGui::BeginGroup();
+                                gui::checkbox("Health Bar Gradient", CFG::ESP_HealthBarGradient);
+                                ImGui::SameLine(310.0f);
+                                gui::color_picker("##health_low", &CFG::ESP_HealthBarGradientLow, false);
+                                ImGui::SameLine(0.0f, 4.0f);
+                                gui::color_picker("##health_mid", &CFG::ESP_HealthBarGradientMid, false);
+                                ImGui::SameLine(0.0f, 4.0f);
+                                gui::color_picker("##health_high", &CFG::ESP_HealthBarGradientHigh, false);
+                                ImGui::EndGroup();
+
+                                gui::checkbox("Show Local Player", CFG::ESP_LocalPlayer);
+                                gui::checkbox("Hide Cloaked Players", CFG::ESP_HideCloaked);
+                                gui::checkbox("Player Conditions", CFG::ESP_Conds);
+
+                                gui::checkbox_color("Player Tracers", CFG::ESP_Tracer, &CFG::ESP_TracerColor);
+
+                                gui::checkbox("Buffs", CFG::ESP_Buffs);
+                                gui::checkbox("Debuffs", CFG::ESP_Debuffs);
+
+                                gui::checkbox_color("Latency (Ping)", CFG::ESP_Ping, &CFG::ESP_PingColor);
+
+                                gui::checkbox_color("Distance Enemy", CFG::ESP_DistanceEnemy, &CFG::ESP_DistanceColor);
+                                gui::combo("Distance Position", &CFG::ESP_DistancePosition, std::vector<std::string>{"Side", "Bottom"});
                             }
+                            gui::end_group_scrollable();
 
-                            // ===== OPÇÕES DO WATERMARK =====
-                            if (CFG::Indicators_Watermark_Enable)
+                            ImGui::SameLine(390);
+                            if (gui::begin_group_scrollable("WORLD ESP", ImVec2(380, 250), 5.0f, 5.0f))
                             {
-                                ImGui::Dummy(ImVec2(0, 10));
-                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Watermark Options:");
-
-                                std::vector<gui::MultiComboItem> watermark_items = {
-                                    gui::MultiComboItem("Steam Name", &CFG::Watermark_ShowName),
-                                    gui::MultiComboItem("FPS", &CFG::Watermark_ShowFPS),
-                                    gui::MultiComboItem("Ping", &CFG::Watermark_ShowPing),
-                                    gui::MultiComboItem("Time", &CFG::Watermark_ShowTime),
-                                };
-                                gui::multi_combo("Watermark Info", watermark_items);
+                                gui::checkbox_color("ESP Build", CFG::ESP_Build, &CFG::ESP_BuildColor, false);
+                                gui::checkbox("ESP Build Only Enemy", CFG::ESP_BuildOnlyEnemy);
+                                gui::checkbox_color("World Pickups", CFG::ESP_Pickups, &CFG::ESP_PickupsColor, false);
+                                gui::checkbox_color("Pickups Box", CFG::ESP_PickupsBox, &CFG::ESP_PickupsBoxColor, false);
+                                gui::checkbox_color("Pickups Name", CFG::ESP_PickupsName, &CFG::ESP_PickupsNameColor, false);
+                                gui::checkbox("Flag ESP", CFG::ESP_CaptureFlag);
+                                gui::checkbox_color("Box Capture", CFG::ESP_BoxCapture, &CFG::ESP_BoxCaptureColor, false);
+                                gui::checkbox_color("Name Capture", CFG::ESP_NameCapture, &CFG::ESP_NameCaptureColor, false);
+                                gui::checkbox_color("Offscreen Indicators", CFG::ESP_Offscreen, &CFG::ESP_OffscreenColor, false);
+                                gui::slider("Offscreen Radius", &CFG::ESP_Offscreen_Radius, 10.f, 500.f);
+                                gui::slider("Offscreen Max Distance", &CFG::ESP_Offscreen_MaxDist, 0.f, 2000.f);
+                                gui::combo("Offscreen Style", &CFG::ESP_Offscreen_Style, std::vector<std::string>{"Triangle", "Circle", "Bar"});
+                                gui::checkbox_color("Offscreen Filled", CFG::ESP_Offscreen_Filled, &CFG::ESP_OffscreenFilledColor, false);
+                                gui::checkbox_color("ESP Sniper Lines", CFG::ESP_SniperLines, &CFG::ESP_SniperLinesColor, false);
+                                gui::checkbox_color("UberCharge Status", CFG::ESP_Uber, &CFG::ESP_UberStatusColor, false);
+                                gui::checkbox_color("UberCharge Bar", CFG::ESP_UberBar, &CFG::ESP_UberBarColor, false);
+                                gui::checkbox_color("Aimbot FOV", CFG::Aimbot_DrawFOV, &CFG::Aimbot_FOVColor, false);
                             }
-                        }
-                        gui::end_group_scrollable();
+                            gui::end_group_scrollable();
 
-                        ImGui::SameLine(390);
-                        if (gui::begin_group("ESP MEDIC", ImVec2(380, 250), 5.0f, 5.0f))
-                        {
+                            if (gui::begin_group_scrollable("INDICATORS", ImVec2(380, 250), 5.0f, 5.0f))
+                            {
+                                std::vector<gui::MultiComboItem> items = {
+                                    gui::MultiComboItem("Spectator List", &CFG::Visual_Spectatorlist),
+                                    gui::MultiComboItem("Info Painel", &CFG::Indicators_Enable),
+                                    gui::MultiComboItem("KeyBind", &CFG::Indicators_Keybinds_Enable),
+                                    gui::MultiComboItem("Watermark", &CFG::Indicators_Watermark_Enable),
+                                };
+                                gui::multi_combo("Indicators", items);
 
+                                // ===== OPÇÕES DO INFO PAINEL =====
+                                if (CFG::Indicators_Enable)
+                                {
+                                    ImGui::Dummy(ImVec2(0, 10));
+                                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Info Painel Options:");
+
+                                    std::vector<gui::MultiComboItem> panel_items = {
+                                        gui::MultiComboItem("Fake Latency", &CFG::Indicators_Show_FakeLatency),
+                                        gui::MultiComboItem("Real Latency", &CFG::Indicators_Show_RealLatency),
+                                        gui::MultiComboItem("Scoreboard Latency", &CFG::Indicators_Show_ScoreboardLatency),
+                                        gui::MultiComboItem("Inaccuracy", &CFG::Indicators_Show_Inaccuracy),
+                                        gui::MultiComboItem("Velocity", &CFG::Indicators_Show_Velocity),
+                                    };
+                                    gui::multi_combo("Panel Items", panel_items);
+
+                                    gui::combo("Display Mode", &CFG::Indicators_Display_Mode,
+                                        std::vector<std::string>{"Bars only", "Numbers only", "Bars + Numbers"});
+                                }
+
+                                // ===== OPÇÕES DO WATERMARK =====
+                                if (CFG::Indicators_Watermark_Enable)
+                                {
+                                    ImGui::Dummy(ImVec2(0, 10));
+                                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Watermark Options:");
+
+                                    std::vector<gui::MultiComboItem> watermark_items = {
+                                        gui::MultiComboItem("Steam Name", &CFG::Watermark_ShowName),
+                                        gui::MultiComboItem("FPS", &CFG::Watermark_ShowFPS),
+                                        gui::MultiComboItem("Ping", &CFG::Watermark_ShowPing),
+                                        gui::MultiComboItem("Time", &CFG::Watermark_ShowTime),
+                                    };
+                                    gui::multi_combo("Watermark Info", watermark_items);
+                                }
+                            }
+                            gui::end_group_scrollable();
+                            ImGui::SameLine(390);
+                            if (gui::begin_group_scrollable("SKELETON ESP", ImVec2(380, 250), 5.0f, 5.0f))
+                            {
+                                gui::checkbox_color("Skeleton", CFG::ESP_Skeleton, &CFG::Color_Skeleton);
+
+                                // Tornar On Shot, On Hit e Aim Points como multi combo
+                                std::vector<gui::MultiComboItem> skeleton_items = {
+                                    gui::MultiComboItem("On Shot", &CFG::ESP_Skeleton_OnShot),
+                                    gui::MultiComboItem("On Hit", &CFG::ESP_Skeleton_OnHit),
+                                    gui::MultiComboItem("Aim Points", &CFG::ESP_Skeleton_AimPoints)
+                                };
+                                gui::multi_combo("Skeleton Options", skeleton_items);
+                                if (CFG::ESP_Skeleton_OnShot)
+                                    gui::color_picker("##Skeleton_OnShot_Color", &CFG::Color_Skeleton_OnShot, false);
+                                if (CFG::ESP_Skeleton_OnHit)
+                                    gui::color_picker("##Skeleton_OnHit_Color", &CFG::Color_Skeleton_OnHit, false);
+                                if (CFG::ESP_Skeleton_AimPoints)
+                                    gui::color_picker("##Skeleton_AimPoints_Color", &CFG::Color_Skeleton_AimPoints, false);
+                                gui::checkbox_color("Bounds", CFG::ESP_Skeleton_Bounds, &CFG::Color_Skeleton_Bounds);
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Backtrack Options:");
+                                gui::checkbox_color("Backtrack Skeleton", CFG::ESP_Skeleton_Backtrack, &CFG::Color_BacktrackSkeleton);
+                                if (CFG::ESP_Skeleton_Backtrack)
+                                {
+                                    gui::combo("Backtrack Style", &CFG::ESP_Skeleton_BacktrackType,
+                                        std::vector<std::string>{"Lines", "Dots"});
+                                }
+                            }
+                            gui::end_group_scrollable();
                         }
-                        gui::end_group();
+
+                        if (vis_mode == 1) {
+                            if (gui::begin_group_scrollable("PLAYER MATERIALS", ImVec2(380, 500), 5.0f, 5.0f))
+                            {
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Player Chams");
+
+                                gui::checkbox("Chams Master", CFG::Materials_Active);
+
+                                if (CFG::Materials_Active)
+                                {
+                                    gui::checkbox("Player Chams", CFG::Materials_Players_Active);
+
+                                    if (CFG::Materials_Players_Active)
+                                    {
+                                        const char* material_types[] = { "None", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel" };
+                                        gui::combo("Material Type", &CFG::Materials_Players_Material,
+                                            std::vector<std::string>(material_types, material_types + 7));
+
+                                        gui::checkbox("Ignore Depth (Wallhack)", CFG::Materials_Players_IgnoreDepth);
+                                        if (ImGui::IsItemHovered())
+                                            ImGui::SetTooltip("Renders players through walls");
+
+                                        const char* overlay_types[] = { "None", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel", "Overlay", "Killstreak", "Exorcism", "Flat Overlay" };
+                                        gui::combo("Overlay Type", &CFG::Materials_Players_TwoModels,
+                                            std::vector<std::string>(overlay_types, overlay_types + 11));
+
+                                        // ===== IGNORE LOCAL =====
+                                        ImGui::BeginGroup();
+                                        gui::checkbox("Ignore Local", CFG::Materials_Players_Ignore_Local);
+                                        if (!CFG::Materials_Players_Ignore_Local)
+                                        {
+                                            ImGui::SameLine(280.0f);
+                                            gui::color_picker("##ColorLocal", &CFG::Color_Players_Local, true);
+                                            ImGui::SameLine(0.0f, 4.0f);
+                                            gui::color_picker("##OverlayLocal", &CFG::Color_Players_Overlay_Local, true);
+                                        }
+                                        ImGui::EndGroup();
+
+                                        // ===== IGNORE TEAMMATES =====
+                                        ImGui::BeginGroup();
+                                        gui::checkbox("Ignore Teammates", CFG::Materials_Players_Ignore_Teammates);
+                                        if (!CFG::Materials_Players_Ignore_Teammates)
+                                        {
+                                            ImGui::SameLine(280.0f);
+                                            gui::color_picker("##ColorTeammates", &CFG::Color_Players_Teammates, true);
+                                            ImGui::SameLine(0.0f, 4.0f);
+                                            gui::color_picker("##OverlayTeammates", &CFG::Color_Players_Overlay_Teammates, true);
+                                        }
+                                        ImGui::EndGroup();
+
+                                        // ===== IGNORE ENEMIES =====
+                                        ImGui::BeginGroup();
+                                        gui::checkbox("Ignore Enemies", CFG::Materials_Players_Ignore_Enemies);
+                                        if (!CFG::Materials_Players_Ignore_Enemies)
+                                        {
+                                            ImGui::SameLine(280.0f);
+                                            gui::color_picker("##ColorEnemies", &CFG::Color_Players_Enemies, true);
+                                            ImGui::SameLine(0.0f, 4.0f);
+                                            gui::color_picker("##OverlayEnemies", &CFG::Color_Players_Overlay_Enemies, true);
+                                        }
+                                        ImGui::EndGroup();
+
+                                        // ===== IGNORE FRIENDS =====
+                                        ImGui::BeginGroup();
+                                        gui::checkbox("Ignore Friends", CFG::Materials_Players_Ignore_Friends);
+                                        if (!CFG::Materials_Players_Ignore_Friends)
+                                        {
+                                            ImGui::SameLine(280.0f);
+                                            gui::color_picker("##ColorFriends", &CFG::Color_Players_Friends, true);
+                                            ImGui::SameLine(0.0f, 4.0f);
+                                            gui::color_picker("##OverlayFriends", &CFG::Color_Players_Overlay_Friends, true);
+                                        }
+                                        ImGui::EndGroup();
+
+                                        // ===== IGNORE LAG RECORDS =====
+                                        gui::checkbox("Ignore Lag Records", CFG::Materials_Players_Ignore_LagRecords);
+                                        if (!CFG::Materials_Players_Ignore_LagRecords)
+                                        {
+                                            ImGui::SameLine(280.0f);
+                                            gui::color_picker("##ColorLagRecords", &CFG::Color_Players_LagRecords, true);
+                                            ImGui::Spacing();
+                                            const char* lagrecord_styles[] = { "Flat", "Shaded" };
+                                            gui::combo("", &CFG::Materials_Players_LagRecords_Style,
+                                                std::vector<std::string>(lagrecord_styles, lagrecord_styles + 2));
+                                        }
+                                    }
+                                }
+                            }
+                            gui::end_group_scrollable();
+
+                            ImGui::SameLine(390);
+                            if (gui::begin_group_scrollable("BUILDING MATERIALS", ImVec2(380, 500), 5.0f, 5.0f))
+                            {
+
+                                if (CFG::Materials_Active)
+                                {
+                                    gui::checkbox("Building Chams", CFG::Materials_Buildings_Active);
+
+                                    if (CFG::Materials_Buildings_Active)
+                                    {
+                                        const char* material_types[] = { "None", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel" };
+                                        gui::combo("Material Type", &CFG::Materials_Buildings_Material,
+                                            std::vector<std::string>(material_types, material_types + 7));
+
+                                        gui::checkbox("Ignore Depth (Wallhack)", CFG::Materials_Buildings_IgnoreDepth);
+                                        if (ImGui::IsItemHovered())
+                                            ImGui::SetTooltip("Renders buildings through walls");
+
+                                        const char* overlay_types[] = { "None", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel", "Overlay", "Killstreak", "Exorcism", "Flat Overlay" };
+                                        gui::combo("Overlay Type", &CFG::Materials_Buildings_TwoModels,
+                                            std::vector<std::string>(overlay_types, overlay_types + 11));
+
+                                        // ===== IGNORE LOCAL =====
+                                        ImGui::BeginGroup();
+                                        gui::checkbox("Ignore Local", CFG::Materials_Buildings_Ignore_Local);
+                                        if (!CFG::Materials_Buildings_Ignore_Local)
+                                        {
+                                            ImGui::SameLine(280.0f);
+                                            gui::color_picker("##ColorBuildingsLocal", &CFG::Color_Buildings_Local, true);
+                                            if (CFG::Materials_Buildings_TwoModels > 0)
+                                            {
+                                                ImGui::SameLine(0.0f, 4.0f);
+                                                gui::color_picker("##OverlayBuildingsLocal", &CFG::Color_Buildings_Overlay_Local, true);
+                                            }
+                                        }
+                                        ImGui::EndGroup();
+
+                                        // ===== IGNORE TEAMMATES =====
+                                        ImGui::BeginGroup();
+                                        gui::checkbox("Ignore Teammates", CFG::Materials_Buildings_Ignore_Teammates);
+                                        if (!CFG::Materials_Buildings_Ignore_Teammates)
+                                        {
+                                            ImGui::SameLine(280.0f);
+                                            gui::color_picker("##ColorBuildingsTeammates", &CFG::Color_Buildings_Teammates, true);
+                                            if (CFG::Materials_Buildings_TwoModels > 0)
+                                            {
+                                                ImGui::SameLine(0.0f, 4.0f);
+                                                gui::color_picker("##OverlayBuildingsTeammates", &CFG::Color_Buildings_Overlay_Teammates, true);
+                                            }
+                                        }
+                                        ImGui::EndGroup();
+
+                                        if (!CFG::Materials_Buildings_Ignore_Teammates)
+                                        {
+                                            ImGui::Indent(15.0f);
+                                            gui::checkbox("Show Teammate Dispensers", CFG::Materials_Buildings_Show_Teammate_Dispensers);
+                                            ImGui::Unindent(15.0f);
+                                        }
+
+                                        // ===== IGNORE ENEMIES =====
+                                        ImGui::BeginGroup();
+                                        gui::checkbox("Ignore Enemies", CFG::Materials_Buildings_Ignore_Enemies);
+                                        if (!CFG::Materials_Buildings_Ignore_Enemies)
+                                        {
+                                            ImGui::SameLine(280.0f);
+                                            gui::color_picker("##ColorBuildingsEnemies", &CFG::Color_Buildings_Enemies, true);
+                                            if (CFG::Materials_Buildings_TwoModels > 0)
+                                            {
+                                                ImGui::SameLine(0.0f, 4.0f);
+                                                gui::color_picker("##OverlayBuildingsEnemies", &CFG::Color_Buildings_Overlay_Enemies, true);
+                                            }
+                                        }
+                                        ImGui::EndGroup();
+                                    }
+                                }
+                                else
+                                {
+                                    ImGui::Spacing();
+                                    ImGui::TextColored(ImVec4(0.8f, 0.3f, 0.3f, 1.f), "Enable Chams Master first!");
+                                }
+                            }
+                            gui::end_group_scrollable();
+                        }
+
+                        // ===== WORLD MODE =====
+                        else if (vis_mode == 2) {
+                            if (gui::begin_group_scrollable("WORLD SETTINGS", ImVec2(380, 500), 5.0f, 5.0f))
+                            {
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "World Modifications");
+                                // Adicione configurações de world
+                            }
+                            gui::end_group_scrollable();
+
+                            ImGui::SameLine(390);
+                            if (gui::begin_group_scrollable("PARTICLES", ImVec2(380, 500), 5.0f, 5.0f))
+                            {
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Particle Effects");
+                                // Adicione configurações de particles
+                            }
+                            gui::end_group_scrollable();
+                        }
                     }
 
                     // PLAYERS TAB
@@ -1093,10 +1435,6 @@ DWORD WINAPI MainThread(LPVOID lpReserved)
             icon_texture->Release();
             icon_texture = nullptr;
         }
-
-        ImGui_ImplDX9_Shutdown();
-        ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
     }
 
     App->Shutdown();

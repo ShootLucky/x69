@@ -49,7 +49,7 @@ MAKE_HOOK(IVModelRender_DrawModelExecute, Memory::GetVFunc(I::ModelRender, 19), 
                         {
                             I::RenderView->SetBlend(CFG::Materials_Hands_Alpha);
                         }
-                        if (CFG::Materials_Hands_No_Depth)
+                        if (CFG::Materials_Weapons_IgnoreDepth)
                         {
                             pRenderContext->DepthRange(0.0f, 0.2f);
                         }
@@ -80,7 +80,7 @@ MAKE_HOOK(IVModelRender_DrawModelExecute, Memory::GetVFunc(I::ModelRender, 19), 
                         {
                             I::RenderView->SetBlend(1.0f);
                         }
-                        if (CFG::Materials_Hands_No_Depth)
+                        if (CFG::Materials_Weapons_IgnoreDepth)
                         {
                             pRenderContext->DepthRange(0.0f, 1.0f);
                         }
@@ -167,7 +167,7 @@ MAKE_HOOK(CBaseAnimating_DrawModel, Signatures::CBaseAnimating_DrawModel.Get(), 
                 {
                     I::RenderView->SetBlend(CFG::Materials_Weapons_Alpha);
                 }
-                if (CFG::Materials_Weapons_No_Depth)
+                if (CFG::Materials_Weapons_IgnoreDepth)
                 {
                     pRenderContext->DepthRange(0.0f, 0.2f);
                 }
@@ -198,7 +198,7 @@ MAKE_HOOK(CBaseAnimating_DrawModel, Signatures::CBaseAnimating_DrawModel.Get(), 
                 {
                     I::RenderView->SetBlend(1.0f);
                 }
-                if (CFG::Materials_Weapons_No_Depth)
+                if (CFG::Materials_Weapons_IgnoreDepth)
                 {
                     pRenderContext->DepthRange(0.0f, 1.0f);
                 }

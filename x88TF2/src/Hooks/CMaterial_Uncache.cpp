@@ -5,7 +5,6 @@
 
 MAKE_SIGNATURE(CMaterial_Uncache, "materialsystem.dll", "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48 81 EC ? ? ? ? 48 8B F9", 0x0);
 
-/*
 MAKE_HOOK(CMaterial_Uncache, Signatures::CMaterial_Uncache.Get(), void, __fastcall,
 	void* ecx, bool bPreserveVars)
 {
@@ -20,4 +19,3 @@ MAKE_HOOK(CMaterial_Uncache, Signatures::CMaterial_Uncache.Get(), void, __fastca
 
 	CALL_ORIGINAL(ecx, bPreserveVars);
 }
-*/

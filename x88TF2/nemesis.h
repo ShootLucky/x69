@@ -109,6 +109,92 @@ namespace gui
         colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
     }
 
+    struct VisualsModeState {
+        bool context_open = false;
+        bool prev_context_open = false; // novo: detecta transição de aberto
+        float anim = 0.0f;
+        int selected_mode = 0;
+        ImVec2 anchor_pos = ImVec2(0.0f, 0.0f); // novo: posição fixa onde o menu aparece
+    };
+
+    static VisualsModeState g_visuals_mode_state;
+
+    void visuals_mode_selector(int* mode) {
+        auto& s = g_visuals_mode_state;
+
+        // Captura a posição de abertura apenas no frame em que o menu foi aberto
+        if (s.context_open && !s.prev_context_open) {
+            // Preferir cursor ao abrir; pode ser alterado para outra âncora se necessário
+            s.anchor_pos = ImGui::GetMousePos();
+        }
+
+        if (s.context_open) {
+            s.anim = std::min(100.0f, s.anim + 10.0f);
+        }
+        else {
+            s.anim = std::max(0.0f, s.anim - 10.0f);
+        }
+
+        if (s.anim > 0.01f) {
+            ImDrawList* fg_draw = ImGui::GetForegroundDrawList();
+            std::vector<std::string> items = { "ESP", "Materials", "World" };
+
+            float item_height = 18.0f;
+            float list_width = 89.0f;
+            float list_height = (item_height * items.size() + 4.0f) * (s.anim / 100.0f);
+
+            // Usar a posição capturada ao abrir para evitar seguir o mouse constantemente
+            ImVec2 list_pos = s.anchor_pos;
+
+            // Clamp para manter dentro da tela
+            ImVec2 display = ImGui::GetIO().DisplaySize;
+            if (list_pos.x + list_width > display.x) list_pos.x = display.x - list_width - 10.0f;
+            if (list_pos.y + list_height > display.y) list_pos.y = display.y - list_height - 10.0f;
+            list_pos.x = ImMax(list_pos.x, 5.0f);
+            list_pos.y = ImMax(list_pos.y, 5.0f);
+
+            ImRect list_rect(list_pos, ImVec2(list_pos.x + list_width, list_pos.y + list_height));
+
+            fg_draw->AddRectFilled(
+                ImVec2(list_pos.x + 1.0f, list_pos.y + 1.0f),
+                ImVec2(list_pos.x + list_width - 1.0f, list_pos.y + (item_height * items.size() + 2.0f) * (s.anim / 100.0f)),
+                IM_COL32(60, 60, 60, 255));
+            fg_draw->AddRect(list_pos, ImVec2(list_pos.x + list_width, list_pos.y + list_height),
+                IM_COL32(15, 15, 15, 155));
+
+            if (s.anim >= 100.0f) {
+                for (size_t i = 0; i < items.size(); i++) {
+                    ImVec2 item_pos(list_pos.x + 5.0f, list_pos.y + 4.0f + i * item_height);
+                    ImRect item_rect(item_pos, ImVec2(item_pos.x + 88.0f, item_pos.y + 15.0f));
+
+                    bool item_hovered = ImGui::IsMouseHoveringRect(item_rect.Min, item_rect.Max);
+                    bool item_selected = (*mode == static_cast<int>(i));
+
+                    ImU32 text_color = (item_hovered || item_selected) ?
+                        GetAccentColor(255) : IM_COL32(120, 120, 120, 255);
+
+                    fg_draw->AddText(
+                        ImVec2(list_pos.x + 24.0f, list_pos.y + 4.0f + i * item_height),
+                        text_color, items[i].c_str());
+
+                    if (item_hovered && ImGui::IsMouseClicked(0)) {
+                        *mode = static_cast<int>(i);
+                        s.context_open = false;
+                    }
+                }
+            }
+
+            // Fechar ao clicar fora (usa list_rect com a posição fixa)
+            if (s.context_open && s.anim >= 100.0f && ImGui::IsMouseClicked(0) &&
+                !ImGui::IsMouseHoveringRect(list_rect.Min, list_rect.Max)) {
+                s.context_open = false;
+            }
+        }
+
+        // Atualiza estado anterior para detectar aberturas futuras
+        s.prev_context_open = s.context_open;
+    }
+
     bool checkbox(const char* label, bool& value)
     {
         ImGuiContext* ctx = ImGui::GetCurrentContext();
@@ -1257,25 +1343,26 @@ namespace gui
         float hue = 0.0f;
         ImVec2 sv_cursor = ImVec2(0, 0);
         float alpha = 1.0f;
-        int fade_alpha = 0;
     };
 
     static std::map<ImGuiID, ColorPickerState> g_color_picker_states;
 
     // ===== CORES DO ARCO-ÍRIS =====
     static Color_t rainbow_colors[7] = {
-        Color_t(255, 0, 0, 255),     // Vermelho
-        Color_t(255, 255, 0, 255),   // Amarelo
-        Color_t(0, 255, 0, 255),     // Verde
-        Color_t(0, 255, 255, 255),   // Ciano
-        Color_t(0, 0, 255, 255),     // Azul
-        Color_t(255, 0, 255, 255),   // Magenta
-        Color_t(255, 0, 0, 255)      // Vermelho
+        Color_t(255, 0, 0, 255),
+        Color_t(255, 255, 0, 255),
+        Color_t(0, 255, 0, 255),
+        Color_t(0, 255, 255, 255),
+        Color_t(0, 0, 255, 255),
+        Color_t(255, 0, 255, 255),
+        Color_t(255, 0, 0, 255)
     };
 
-    // ===== FUNÇÃO COLOR PICKER =====
     bool color_picker(const char* label, Color_t* color, bool show_alpha = true)
     {
+        if (!color)
+            return false;
+
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
 
@@ -1297,230 +1384,202 @@ namespace gui
         bool value_changed = false;
 
         if (ImGui::IsItemClicked()) {
-            state.is_open = !state.is_open;
+            ImGui::OpenPopup(label);
 
-            if (state.is_open) {
-                HSV hsv = rgb_to_hsv({ color->r / 255.0, color->g / 255.0, color->b / 255.0 });
-                state.hue = (float)(hsv.h / 360.0);
-                state.sv_cursor.x = (float)(hsv.s * 148.0);
-                state.sv_cursor.y = (float)((1.0 - hsv.v) * 148.0);
-                state.alpha = color->a / 255.0f;
-            }
+            float sv_size = 180.0f;
+            HSV hsv = rgb_to_hsv({ color->r / 255.0, color->g / 255.0, color->b / 255.0 });
+            state.hue = (float)(hsv.h / 360.0);
+            state.sv_cursor.x = (float)(hsv.s * sv_size);
+            state.sv_cursor.y = (float)((1.0 - hsv.v) * sv_size);
+            state.alpha = color->a / 255.0f;
         }
 
-        if (state.is_open) {
-            state.fade_alpha += 25;
-            if (state.fade_alpha > 255) state.fade_alpha = 255;
-        }
-        else {
-            state.fade_alpha -= 25;
-            if (state.fade_alpha < 0) state.fade_alpha = 0;
-        }
+        // ===== POPUP =====
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, IM_COL32(35, 35, 35, 255));
+        ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(15, 15, 15, 255));
 
-        if (state.fade_alpha > 0) {
-            ImVec2 picker_pos = ImVec2(pos.x + box_size + 5, pos.y);
-            float picker_width = show_alpha ? 198.0f : 180.0f;
-            float picker_height = 168.0f;
+        float sv_size = 180.0f;
+        float hue_width = 15.0f;
+        float spacing = 8.0f;
+        float alpha_bar_height = 18.0f;
+        float popup_width = sv_size + hue_width + spacing + 16.0f;
+        float popup_height = sv_size + (show_alpha ? alpha_bar_height + spacing : 0.0f) + 16.0f;
 
-            if (state.is_open) {
-                ImGui::SetNextWindowPos(picker_pos);
-                ImGui::SetNextWindowSize(ImVec2(picker_width, picker_height));
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(0, 0, 0, 0));
-                ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
+        ImGui::SetNextWindowSize(ImVec2(popup_width, popup_height));
 
-                ImGui::Begin("##colorpicker_blocker", nullptr,
-                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
+        if (ImGui::BeginPopup(label, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+        {
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            ImVec2 popup_pos = ImGui::GetCursorScreenPos();
 
-                ImGui::InvisibleButton("##blocker", ImVec2(picker_width, picker_height));
-
-                ImGui::End();
-                ImGui::PopStyleColor(2);
-                ImGui::PopStyleVar(2);
-            }
-
-            draw = ImGui::GetForegroundDrawList();
-
-            draw->AddRectFilled(picker_pos,
-                ImVec2(picker_pos.x + picker_width, picker_pos.y + picker_height),
-                IM_COL32(35, 35, 35, state.fade_alpha));
-            draw->AddRect(picker_pos,
-                ImVec2(picker_pos.x + picker_width, picker_pos.y + picker_height),
-                IM_COL32(15, 15, 15, state.fade_alpha));
-
-            ImVec2 sv_pos = ImVec2(picker_pos.x + 6, picker_pos.y + 6);
-            float sv_size = 150.0f;
+            // ===== SV PICKER =====
+            ImVec2 sv_pos = popup_pos;
 
             RGB hue_color = hsv_to_rgb({ state.hue * 360.0, 1.0, 1.0 });
             ImU32 hue_col = IM_COL32(
                 (int)(hue_color.r * 255),
                 (int)(hue_color.g * 255),
                 (int)(hue_color.b * 255),
-                state.fade_alpha
+                255
             );
 
-            draw->AddRectFilledMultiColor(
+            // Gradiente horizontal: branco -> cor pura (saturação)
+            draw_list->AddRectFilledMultiColor(
                 sv_pos, ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
-                IM_COL32(255, 255, 255, state.fade_alpha),
-                IM_COL32(255, 255, 255, state.fade_alpha),
+                IM_COL32(255, 255, 255, 255),
                 hue_col,
-                hue_col
+                hue_col,
+                IM_COL32(255, 255, 255, 255)
             );
 
-            draw->AddRectFilledMultiColor(
+            // Gradiente vertical: transparente -> preto (valor/brilho)
+            draw_list->AddRectFilledMultiColor(
                 sv_pos, ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
                 IM_COL32(0, 0, 0, 0),
                 IM_COL32(0, 0, 0, 0),
-                IM_COL32(0, 0, 0, state.fade_alpha),
-                IM_COL32(0, 0, 0, state.fade_alpha)
+                IM_COL32(0, 0, 0, 255),
+                IM_COL32(0, 0, 0, 255)
             );
 
-            draw->AddRect(sv_pos, ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
-                IM_COL32(15, 15, 15, state.fade_alpha));
+            draw_list->AddRect(sv_pos, ImVec2(sv_pos.x + sv_size, sv_pos.y + sv_size),
+                IM_COL32(15, 15, 15, 200));
 
-            float cursor_x = sv_pos.x + state.sv_cursor.x + 1;
-            float cursor_y = sv_pos.y + state.sv_cursor.y + 1;
-            draw->AddCircle(ImVec2(cursor_x, cursor_y), 5.0f, IM_COL32(0, 0, 0, state.fade_alpha), 16, 2.0f);
-            draw->AddCircle(ImVec2(cursor_x, cursor_y), 5.0f, IM_COL32(255, 255, 255, state.fade_alpha), 16, 1.5f);
+            // Cursor SV
+            float cursor_x = sv_pos.x + state.sv_cursor.x;
+            float cursor_y = sv_pos.y + state.sv_cursor.y;
+            draw_list->AddCircleFilled(ImVec2(cursor_x, cursor_y), 6.0f, IM_COL32(0, 0, 0, 200), 16);
+            draw_list->AddCircle(ImVec2(cursor_x, cursor_y), 5.0f, IM_COL32(255, 255, 255, 255), 16, 2.0f);
 
-            ImVec2 hue_pos = ImVec2(sv_pos.x + sv_size + 6, sv_pos.y);
-            float hue_width = 12.0f;
-            float hue_height = 150.0f;
+            // ===== HUE BAR =====
+            ImVec2 hue_pos = ImVec2(sv_pos.x + sv_size + spacing, sv_pos.y);
 
             for (int i = 0; i < 6; i++) {
-                float segment_height = hue_height / 6.0f;
-                draw->AddRectFilledMultiColor(
+                float segment_height = sv_size / 6.0f;
+                draw_list->AddRectFilledMultiColor(
                     ImVec2(hue_pos.x, hue_pos.y + (segment_height * i)),
                     ImVec2(hue_pos.x + hue_width, hue_pos.y + (segment_height * (i + 1))),
-                    IM_COL32(rainbow_colors[i].r, rainbow_colors[i].g, rainbow_colors[i].b, state.fade_alpha),
-                    IM_COL32(rainbow_colors[i].r, rainbow_colors[i].g, rainbow_colors[i].b, state.fade_alpha),
-                    IM_COL32(rainbow_colors[i + 1].r, rainbow_colors[i + 1].g, rainbow_colors[i + 1].b, state.fade_alpha),
-                    IM_COL32(rainbow_colors[i + 1].r, rainbow_colors[i + 1].g, rainbow_colors[i + 1].b, state.fade_alpha)
+                    IM_COL32(rainbow_colors[i].r, rainbow_colors[i].g, rainbow_colors[i].b, 255),
+                    IM_COL32(rainbow_colors[i].r, rainbow_colors[i].g, rainbow_colors[i].b, 255),
+                    IM_COL32(rainbow_colors[i + 1].r, rainbow_colors[i + 1].g, rainbow_colors[i + 1].b, 255),
+                    IM_COL32(rainbow_colors[i + 1].r, rainbow_colors[i + 1].g, rainbow_colors[i + 1].b, 255)
                 );
             }
 
-            draw->AddRect(hue_pos, ImVec2(hue_pos.x + hue_width, hue_pos.y + hue_height),
-                IM_COL32(15, 15, 15, state.fade_alpha));
+            draw_list->AddRect(hue_pos, ImVec2(hue_pos.x + hue_width, hue_pos.y + sv_size),
+                IM_COL32(15, 15, 15, 200));
 
-            float hue_indicator_y = hue_pos.y + (hue_height * state.hue);
-            draw->AddLine(
-                ImVec2(hue_pos.x - 1, hue_indicator_y),
-                ImVec2(hue_pos.x + hue_width + 1, hue_indicator_y),
-                IM_COL32(0, 0, 0, state.fade_alpha), 3.0f
+            float hue_indicator_y = hue_pos.y + (sv_size * state.hue);
+            draw_list->AddLine(
+                ImVec2(hue_pos.x - 2, hue_indicator_y),
+                ImVec2(hue_pos.x + hue_width + 2, hue_indicator_y),
+                IM_COL32(0, 0, 0, 255), 3.0f
             );
-            draw->AddLine(
-                ImVec2(hue_pos.x - 1, hue_indicator_y),
-                ImVec2(hue_pos.x + hue_width + 1, hue_indicator_y),
-                IM_COL32(255, 255, 255, state.fade_alpha), 1.5f
+            draw_list->AddLine(
+                ImVec2(hue_pos.x - 2, hue_indicator_y),
+                ImVec2(hue_pos.x + hue_width + 2, hue_indicator_y),
+                IM_COL32(255, 255, 255, 255), 1.5f
             );
 
+            // ===== INTERAÇÃO (declarar mouse antes de usar) =====
+            ImVec2 mouse = ImGui::GetMousePos();
+            bool mouse_down = ImGui::IsMouseDown(0);
+
+            // ===== BARRA ALPHA EMBAIXO DO SV (apenas se show_alpha = true) =====
             if (show_alpha) {
-                ImVec2 alpha_pos = ImVec2(hue_pos.x + hue_width + 6, sv_pos.y);
-                float alpha_width = 12.0f;
-                float alpha_height = 150.0f;
+                ImVec2 alpha_bar_pos = ImVec2(sv_pos.x, sv_pos.y + sv_size + spacing);
+                float alpha_bar_width = sv_size;
 
-                for (int y = 0; y < 15; y++) {
-                    for (int x = 0; x < 2; x++) {
+                // Xadrez
+                for (int y = 0; y < 2; y++) {
+                    for (int x = 0; x < 15; x++) {
                         ImU32 checker_col = ((x + y) % 2 == 0) ?
-                            IM_COL32(200, 200, 200, state.fade_alpha) :
-                            IM_COL32(140, 140, 140, state.fade_alpha);
-                        draw->AddRectFilled(
-                            ImVec2(alpha_pos.x + (x * 6), alpha_pos.y + (y * 10)),
-                            ImVec2(alpha_pos.x + (x * 6) + 6, alpha_pos.y + (y * 10) + 10),
+                            IM_COL32(200, 200, 200, 255) :
+                            IM_COL32(140, 140, 140, 255);
+                        draw_list->AddRectFilled(
+                            ImVec2(alpha_bar_pos.x + (x * 12.0f), alpha_bar_pos.y + (y * 9.0f)),
+                            ImVec2(alpha_bar_pos.x + (x * 12.0f) + 12.0f, alpha_bar_pos.y + (y * 9.0f) + 9.0f),
                             checker_col
                         );
                     }
                 }
 
-                draw->AddRectFilledMultiColor(
-                    alpha_pos,
-                    ImVec2(alpha_pos.x + alpha_width, alpha_pos.y + alpha_height),
+                // Gradiente alpha
+                draw_list->AddRectFilledMultiColor(
+                    alpha_bar_pos,
+                    ImVec2(alpha_bar_pos.x + alpha_bar_width, alpha_bar_pos.y + alpha_bar_height),
                     IM_COL32(color->r, color->g, color->b, 0),
-                    IM_COL32(color->r, color->g, color->b, 0),
-                    IM_COL32(color->r, color->g, color->b, state.fade_alpha),
-                    IM_COL32(color->r, color->g, color->b, state.fade_alpha)
+                    IM_COL32(color->r, color->g, color->b, 255),
+                    IM_COL32(color->r, color->g, color->b, 255),
+                    IM_COL32(color->r, color->g, color->b, 0)
                 );
 
-                draw->AddRect(alpha_pos, ImVec2(alpha_pos.x + alpha_width, alpha_pos.y + alpha_height),
-                    IM_COL32(15, 15, 15, state.fade_alpha));
-
-                float alpha_indicator_y = alpha_pos.y + (alpha_height * state.alpha);
-                draw->AddLine(
-                    ImVec2(alpha_pos.x - 1, alpha_indicator_y),
-                    ImVec2(alpha_pos.x + alpha_width + 1, alpha_indicator_y),
-                    IM_COL32(0, 0, 0, state.fade_alpha), 3.0f
+                draw_list->AddRect(
+                    alpha_bar_pos,
+                    ImVec2(alpha_bar_pos.x + alpha_bar_width, alpha_bar_pos.y + alpha_bar_height),
+                    IM_COL32(15, 15, 15, 200)
                 );
-                draw->AddLine(
-                    ImVec2(alpha_pos.x - 1, alpha_indicator_y),
-                    ImVec2(alpha_pos.x + alpha_width + 1, alpha_indicator_y),
-                    IM_COL32(255, 255, 255, state.fade_alpha), 1.5f
+
+                // Cursor alpha
+                float alpha_indicator_x = alpha_bar_pos.x + (alpha_bar_width * state.alpha);
+                draw_list->AddLine(
+                    ImVec2(alpha_indicator_x, alpha_bar_pos.y - 2),
+                    ImVec2(alpha_indicator_x, alpha_bar_pos.y + alpha_bar_height + 2),
+                    IM_COL32(0, 0, 0, 255), 3.0f
+                );
+                draw_list->AddLine(
+                    ImVec2(alpha_indicator_x, alpha_bar_pos.y - 2),
+                    ImVec2(alpha_indicator_x, alpha_bar_pos.y + alpha_bar_height + 2),
+                    IM_COL32(255, 255, 255, 255), 1.5f
                 );
             }
 
-            if (state.is_open) {
-                ImVec2 mouse = ImGui::GetMousePos();
-                bool mouse_down = ImGui::IsMouseDown(0);
+            // ===== INTERAÇÕES COM MOUSE =====
+            // SV Picker
+            if (mouse_down && mouse.x >= sv_pos.x && mouse.x <= sv_pos.x + sv_size &&
+                mouse.y >= sv_pos.y && mouse.y <= sv_pos.y + sv_size)
+            {
+                state.sv_cursor.x = ImClamp(mouse.x - sv_pos.x, 0.0f, sv_size);
+                state.sv_cursor.y = ImClamp(mouse.y - sv_pos.y, 0.0f, sv_size);
+                value_changed = true;
+            }
+            // Hue Bar
+            else if (mouse_down && mouse.x >= hue_pos.x && mouse.x <= hue_pos.x + hue_width &&
+                mouse.y >= hue_pos.y && mouse.y <= hue_pos.y + sv_size)
+            {
+                state.hue = ImClamp((mouse.y - hue_pos.y) / sv_size, 0.0f, 1.0f);
+                value_changed = true;
+            }
+            // Alpha Bar (se habilitado)
+            else if (show_alpha && mouse_down) {
+                ImVec2 alpha_bar_pos = ImVec2(sv_pos.x, sv_pos.y + sv_size + spacing);
+                float alpha_bar_width = sv_size;
 
-                bool mouse_in_picker = (mouse.x >= picker_pos.x && mouse.x <= picker_pos.x + picker_width &&
-                    mouse.y >= picker_pos.y && mouse.y <= picker_pos.y + picker_height);
-
-                if (mouse_down && mouse_in_picker) {
-                    if (mouse.x >= sv_pos.x && mouse.x <= sv_pos.x + sv_size &&
-                        mouse.y >= sv_pos.y && mouse.y <= sv_pos.y + sv_size)
-                    {
-                        state.sv_cursor.x = ImClamp(mouse.x - sv_pos.x - 1, 0.0f, 148.0f);
-                        state.sv_cursor.y = ImClamp(mouse.y - sv_pos.y - 1, 0.0f, 148.0f);
-                        value_changed = true;
-                    }
-                    else if (mouse.x >= hue_pos.x && mouse.x <= hue_pos.x + hue_width &&
-                        mouse.y >= hue_pos.y && mouse.y <= hue_pos.y + hue_height)
-                    {
-                        state.hue = ImClamp((mouse.y - hue_pos.y) / hue_height, 0.0f, 1.0f);
-                        value_changed = true;
-                    }
-                    else if (show_alpha) {
-                        ImVec2 alpha_pos = ImVec2(hue_pos.x + hue_width + 6, sv_pos.y);
-                        float alpha_width = 12.0f;
-                        float alpha_height = 150.0f;
-
-                        if (mouse.x >= alpha_pos.x && mouse.x <= alpha_pos.x + alpha_width &&
-                            mouse.y >= alpha_pos.y && mouse.y <= alpha_pos.y + alpha_height)
-                        {
-                            state.alpha = ImClamp((mouse.y - alpha_pos.y) / alpha_height, 0.0f, 1.0f);
-                            value_changed = true;
-                        }
-                    }
-
-                    if (value_changed) {
-                        float sat = state.sv_cursor.x / 148.0f;
-                        float val = 1.0f - (state.sv_cursor.y / 148.0f);
-                        RGB new_color = hsv_to_rgb({ state.hue * 360.0, sat, val });
-
-                        color->r = (unsigned char)(new_color.r * 255.0);
-                        color->g = (unsigned char)(new_color.g * 255.0);
-                        color->b = (unsigned char)(new_color.b * 255.0);
-                        color->a = (unsigned char)(state.alpha * 255.0);
-                    }
-                }
-
-                if (ImGui::IsMouseClicked(0)) {
-                    bool clicked_inside =
-                        mouse.x >= picker_pos.x && mouse.x <= picker_pos.x + picker_width &&
-                        mouse.y >= picker_pos.y && mouse.y <= picker_pos.y + picker_height;
-
-                    bool clicked_preview =
-                        mouse.x >= pos.x && mouse.x <= pos.x + box_size &&
-                        mouse.y >= pos.y && mouse.y <= pos.y + box_size;
-
-                    if (!clicked_inside && !clicked_preview) {
-                        state.is_open = false;
-                    }
+                if (mouse.x >= alpha_bar_pos.x && mouse.x <= alpha_bar_pos.x + alpha_bar_width &&
+                    mouse.y >= alpha_bar_pos.y && mouse.y <= alpha_bar_pos.y + alpha_bar_height)
+                {
+                    state.alpha = (float)ImSaturate((mouse.x - alpha_bar_pos.x) / alpha_bar_width);
+                    value_changed = true;
                 }
             }
+
+            // Atualizar cor
+            if (value_changed) {
+                float sat = state.sv_cursor.x / sv_size;
+                float val = 1.0f - (state.sv_cursor.y / sv_size);
+                RGB new_color = hsv_to_rgb({ state.hue * 360.0, sat, val });
+
+                color->r = (unsigned char)(new_color.r * 255.0);
+                color->g = (unsigned char)(new_color.g * 255.0);
+                color->b = (unsigned char)(new_color.b * 255.0);
+                color->a = (unsigned char)(state.alpha * 255.0);
+            }
+
+            ImGui::EndPopup();
         }
+
+        ImGui::PopStyleColor(2);
+        ImGui::PopStyleVar();
 
         ImGui::SetCursorScreenPos(ImVec2(pos.x + box_size + 2, pos.y));
         return value_changed;
@@ -1543,21 +1602,18 @@ namespace gui
         float text_offset_x = 20.0f;
 
         ImVec2 text_size = ImGui::CalcTextSize(label);
-
-        // Tamanho total só do checkbox (sem o color picker)
         ImVec2 checkbox_size(text_offset_x + text_size.x, ImMax(box_size.y + box_offset_y, text_size.y));
 
-        // ✅ CORREÇÃO: Usar ItemAdd ao invés de InvisibleButton para não bloquear cliques
         ImGuiID id = ImGui::GetID(label);
         ImRect checkbox_bb(pos, ImVec2(pos.x + checkbox_size.x, pos.y + checkbox_size.y));
         ImGui::ItemSize(checkbox_bb);
         if (!ImGui::ItemAdd(checkbox_bb, id))
             return false;
 
-        // ✅ Detectar clique apenas na área do checkbox (não na linha toda)
         bool hovered = ImGui::IsMouseHoveringRect(checkbox_bb.Min, checkbox_bb.Max);
         if (hovered && ImGui::IsMouseClicked(0))
             value = !value;
+
         ImGuiStorage* storage = ImGui::GetStateStorage();
         float progress = storage->GetFloat(id, value ? 1.0f : 0.0f);
         progress += ((value ? 1.0f : 0.0f) - progress) * 0.15f;
@@ -1574,8 +1630,7 @@ namespace gui
             IM_COL32(41, 41, 41, 255)
         );
 
-        if (progress > 0.01f)
-        {
+        if (progress > 0.01f) {
             ImU32 accent_color = GetAccentColor((int)(255 * progress));
             ImU32 bottom_grad = IM_COL32(25, 25, 25, (int)(255 * progress));
 
@@ -1591,16 +1646,13 @@ namespace gui
         ImU32 text_col = IM_COL32(120, 120, 120, 255);
         draw->AddText(ImVec2(pos.x + text_offset_x, pos.y + 2.0f), text_col, label);
 
-        // ✅ Color picker na posição 350 (SameLine)
         ImVec2 color_picker_pos = ImVec2(pos.x + 340.0f, pos.y + 2.0f);
         ImGui::SetCursorScreenPos(color_picker_pos);
 
-        // ✅ Criar ID único para o color picker baseado no label
         char picker_id[64];
         snprintf(picker_id, sizeof(picker_id), "##color_%s", label);
         gui::color_picker(picker_id, color, show_alpha);
 
-        // Avança o cursor para a próxima linha
         ImGui::SetCursorScreenPos(ImVec2(pos.x, pos.y + checkbox_size.y + ctx->Style.ItemSpacing.y));
 
         return value;

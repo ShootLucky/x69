@@ -150,7 +150,19 @@ bool CAimbotMelee::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, MeleeT
 					const float flDistTo = vLocalPos.DistTo(vPos);
 					if (CFG::Aimbot_Melee_Sort == 0 && flFOVTo > CFG::Aimbot_Melee_FOV)
 						continue;
-					m_vecTargets.emplace_back(MeleeTarget_t{ pPlayer, vPos, vAngleTo, flFOVTo, flDistTo, pRecord->SimulationTime, pRecord });
+
+					// Construir explicitamente para evitar confusões de inicialização por agregados
+					MeleeTarget_t t{};
+					t.Entity = pPlayer;
+					t.Position = vPos;
+					t.AngleTo = vAngleTo;
+					t.FOVTo = flFOVTo;
+					t.DistanceTo = flDistTo;
+					t.SimulationTime = pRecord->SimulationTime;
+					t.LagRecord = pRecord;
+					t.Priority = static_cast<int>(t.Priority); // mantemos default, pode ser ajustado depois
+					t.Score = FLT_MAX;
+					m_vecTargets.emplace_back(t);
 				}
 			}
 			Vec3 vPos = pPlayer->GetHitboxPos(HITBOX_BODY);
@@ -159,7 +171,19 @@ bool CAimbotMelee::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, MeleeT
 			const float flDistTo = vLocalPos.DistTo(vPos);
 			if (CFG::Aimbot_Melee_Sort == 0 && flFOVTo > CFG::Aimbot_Melee_FOV)
 				continue;
-			m_vecTargets.emplace_back(MeleeTarget_t{ pPlayer, vPos, vAngleTo, flFOVTo, flDistTo, pPlayer->m_flSimulationTime() });
+
+			// Construir explicitamente para este caso sem LagRecord
+			MeleeTarget_t t{};
+			t.Entity = pPlayer;
+			t.Position = vPos;
+			t.AngleTo = vAngleTo;
+			t.FOVTo = flFOVTo;
+			t.DistanceTo = flDistTo;
+			t.SimulationTime = pPlayer->m_flSimulationTime();
+			t.LagRecord = nullptr;
+			t.Priority = static_cast<int>(t.Priority);
+			t.Score = FLT_MAX;
+			m_vecTargets.emplace_back(t);
 		}
 	}
 	// Find building targets
@@ -178,7 +202,19 @@ bool CAimbotMelee::GetTarget(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, MeleeT
 			const float flDistTo = vLocalPos.DistTo(vPos);
 			if (CFG::Aimbot_Melee_Sort == 0 && flFOVTo > CFG::Aimbot_Melee_FOV)
 				continue;
-			m_vecTargets.emplace_back(MeleeTarget_t{ pBuilding, vPos, vAngleTo, flFOVTo, flDistTo });
+
+			// Construir explicitamente para buildings
+			MeleeTarget_t t{};
+			t.Entity = pBuilding;
+			t.Position = vPos;
+			t.AngleTo = vAngleTo;
+			t.FOVTo = flFOVTo;
+			t.DistanceTo = flDistTo;
+			t.SimulationTime = -1.0f;
+			t.LagRecord = nullptr;
+			t.Priority = static_cast<int>(t.Priority);
+			t.Score = FLT_MAX;
+			m_vecTargets.emplace_back(t);
 		}
 	}
 	if (m_vecTargets.empty())

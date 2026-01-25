@@ -2,9 +2,69 @@
 #include "../../TF2/cdll_int.h"
 #include "../../TF2/ivrenderview.h"
 #include <cstdarg>
+#include <algorithm>
 
 #pragma warning (disable : 6385)
 #pragma warning (disable : 4996)
+
+// ============================================================================
+// ANIMATED VALUE (SMOOTH TRANSITIONS)
+// ============================================================================
+
+void AnimatedValue::Update(float newTarget, float currentTime, float deltaTime)
+{
+	target = newTarget;
+
+	if (lastUpdateTime == 0.0f) {
+		current = target;
+		lastUpdateTime = currentTime;
+		return;
+	}
+
+	float difference = target - current;
+
+	if (fabsf(difference) < 0.01f) {
+		current = target;
+		lastUpdateTime = currentTime;
+		return;
+	}
+
+	float maxChange = speed * deltaTime;
+
+	if (fabsf(difference) <= maxChange) {
+		current = target;
+	}
+	else {
+		current += (difference > 0.0f) ? maxChange : -maxChange;
+	}
+
+	lastUpdateTime = currentTime;
+}
+
+// ============================================================================
+// BOUNDING BOX 2D
+// ============================================================================
+
+bool BBox2D::IsOnScreen(int screenW, int screenH) const
+{
+	return !(right < 0 || bottom < 0 || left >= screenW || top >= screenH);
+}
+
+bool BBox2D::IsPartiallyOnScreen(int screenW, int screenH) const
+{
+	// Mais permissivo - permite parte da box fora da tela
+	const float margin = 50.0f; // Margem para evitar corte brusco
+	return !(right < -margin || bottom < -margin ||
+		left >= screenW + margin || top >= screenH + margin);
+}
+
+void BBox2D::ClipToScreen(int screenW, int screenH)
+{
+	left = std::max(0.0f, std::min(left, static_cast<float>(screenW)));
+	right = std::max(0.0f, std::min(right, static_cast<float>(screenW)));
+	top = std::max(0.0f, std::min(top, static_cast<float>(screenH)));
+	bottom = std::max(0.0f, std::min(bottom, static_cast<float>(screenH)));
+}
 
 // ============================================================================
 // INICIALIZAÇÃO E ATUALIZAÇÃO
@@ -31,6 +91,11 @@ void CDraw::ClearCache()
 	m_TextCache.valid = false;
 }
 
+void CDraw::ClearAllAnimations()
+{
+	m_AnimatedValues.clear();
+}
+
 bool CDraw::InitPolygonTexture()
 {
 	if (m_nPolygonTextureID == 0 || !I::MatSystemSurface->IsTextureIDValid(m_nPolygonTextureID))
@@ -39,6 +104,49 @@ bool CDraw::InitPolygonTexture()
 		return m_nPolygonTextureID != 0;
 	}
 	return true;
+}
+
+// ============================================================================
+// SISTEMA DE ANIMAÇÃO SMOOTH
+// ============================================================================
+
+float CDraw::GetAnimatedValue(int id, float targetValue, float speed)
+{
+	auto it = m_AnimatedValues.find(id);
+	if (it == m_AnimatedValues.end()) {
+		AnimatedValue newAnim;
+		newAnim.speed = speed;
+		newAnim.SetImmediate(targetValue);
+		m_AnimatedValues[id] = newAnim;
+		return targetValue;
+	}
+
+	// Obter tempo atual a partir da interface de engine (substitui I::GlobalVars)
+	float currentTime = 0.0f;
+	if (I::EngineClient) {
+		currentTime = I::EngineClient->Time();
+	}
+	else {
+		// Fallback robusto: aproximar com último tempo conhecido
+		currentTime = it->second.lastUpdateTime + 0.016f; // ~60 FPS
+	}
+
+	// Calcular deltaTime a partir do último update armazenado
+	float deltaTime = currentTime - it->second.lastUpdateTime;
+	if (deltaTime <= 0.0f) {
+		// Garantir um delta mínimo para evitar comportamento estranho
+		deltaTime = 0.016f;
+	}
+
+	it->second.speed = speed;
+	it->second.Update(targetValue, currentTime, deltaTime);
+
+	return it->second.Get();
+}
+
+void CDraw::ResetAnimatedValue(int id)
+{
+	m_AnimatedValues.erase(id);
 }
 
 // ============================================================================
@@ -71,8 +179,19 @@ inline void CDraw::ApplyRectAlignment(int& x, int& y, int width, int height, sho
 		y -= height / 2;
 }
 
+float CDraw::GetDistanceScale(float distance, float referenceDistance) const
+{
+	if (distance <= 0.0f) return 1.0f;
+
+	// Escala inversa com distância, mas com limites
+	float scale = referenceDistance / distance;
+	scale = std::clamp(scale, 0.5f, 2.0f); // Limita entre 50% e 200%
+
+	return scale;
+}
+
 // ============================================================================
-// WORLD TO SCREEN
+// WORLD TO SCREEN (MELHORADO)
 // ============================================================================
 
 bool CDraw::W2S(const Vec3& vOrigin, Vec3& vScreen) const
@@ -80,6 +199,7 @@ bool CDraw::W2S(const Vec3& vOrigin, Vec3& vScreen) const
 	const matrix3x4_t& w2s = m_WorldToProjection.As3x4();
 	const float w = w2s[3][0] * vOrigin.x + w2s[3][1] * vOrigin.y + w2s[3][2] * vOrigin.z + w2s[3][3];
 
+	// Melhor threshold para evitar divisão por zero
 	if (w < 0.001f)
 		return false;
 
@@ -131,6 +251,81 @@ bool CDraw::ScreenPosition(const Vec3& vPoint, Vec3& vScreen) const
 	vScreen.y = -halfHeight * vScreen.y + halfHeight;
 
 	return behind;
+}
+
+// ============================================================================
+// COMPUTE BOUNDING BOX 2D (NOVA FUNÇÃO)
+// ============================================================================
+
+BBox2D CDraw::ComputeBBox2D(const Vec3* worldPoints, int numPoints) const
+{
+	BBox2D result;
+	result.valid = false;
+
+	if (!worldPoints || numPoints < 1) {
+		return result;
+	}
+
+	std::vector<Vec3> screenPoints;
+	screenPoints.reserve(numPoints);
+
+	int validPoints = 0;
+	int behindPoints = 0;
+
+	// Projetar todos os pontos
+	for (int i = 0; i < numPoints; ++i) {
+		Vec3 screen;
+		if (W2S(worldPoints[i], screen)) {
+			// Validar se o ponto é finito
+			if (std::isfinite(screen.x) && std::isfinite(screen.y)) {
+				screenPoints.push_back(screen);
+				validPoints++;
+			}
+		}
+		else {
+			behindPoints++;
+		}
+	}
+
+	// Se todos os pontos estão atrás da câmera, a box não é válida
+	if (behindPoints == numPoints) {
+		return result;
+	}
+
+	// Se temos muito poucos pontos válidos, não podemos fazer uma box confiável
+	if (validPoints < 2) {
+		return result;
+	}
+
+	// Calcular bounding box dos pontos projetados
+	float minX = std::numeric_limits<float>::max();
+	float minY = std::numeric_limits<float>::max();
+	float maxX = std::numeric_limits<float>::lowest();
+	float maxY = std::numeric_limits<float>::lowest();
+
+	for (const auto& pt : screenPoints) {
+		minX = std::min(minX, pt.x);
+		minY = std::min(minY, pt.y);
+		maxX = std::max(maxX, pt.x);
+		maxY = std::max(maxY, pt.y);
+	}
+
+	// Validar dimensões
+	const float width = maxX - minX;
+	const float height = maxY - minY;
+
+	// Box muito pequena ou muito grande = inválida
+	if (width < 2.0f || height < 2.0f || width > m_nScreenW * 3.0f || height > m_nScreenH * 3.0f) {
+		return result;
+	}
+
+	result.left = minX;
+	result.top = minY;
+	result.right = maxX;
+	result.bottom = maxY;
+	result.valid = true;
+
+	return result;
 }
 
 // ============================================================================
