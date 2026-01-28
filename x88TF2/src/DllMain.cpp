@@ -555,54 +555,44 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 gui::checkbox("Projectile Aimbot", CFG::Aimbot_Projectile_Active);
                                 ImGui::SameLine(350.0f);
 
-                                // CORREÇÃO: Usar variáveis separadas para key e keymode
                                 static int projectile_key = CFG::Aimbot_Key;
                                 static int projectile_keymode = CFG::Aimbot_Projectile_KeyMode;
 
-                                // Sincronizar com as configurações
                                 if (projectile_key != CFG::Aimbot_Key || projectile_keymode != CFG::Aimbot_Projectile_KeyMode)
                                 {
                                     projectile_key = CFG::Aimbot_Key;
                                     projectile_keymode = CFG::Aimbot_Projectile_KeyMode;
                                 }
 
-                                // Passar as duas variáveis corretas para o keybind
                                 gui::keybind("##ProjectileKey", &projectile_key, &projectile_keymode);
 
-                                // Salvar de volta nas configurações
                                 CFG::Aimbot_Key = projectile_key;
                                 CFG::Aimbot_Projectile_KeyMode = projectile_keymode;
                                 ImGui::EndGroup();
 
+                                // Basic Settings
                                 gui::slider("FOV", &CFG::Aimbot_Projectile_FOV, 0.f, 180.f);
 
-                                // AIM TYPE COM PLAIN, SILENT E SMOOTH
                                 gui::combo("Aim Type", &CFG::Aimbot_Projectile_Mode,
                                     std::vector<std::string>{ "Plain", "Silent", "Smooth" });
 
-                                // Se for Smooth mode, mostrar o slider de smoothing
                                 if (CFG::Aimbot_Projectile_Mode == 2)
                                 {
                                     gui::slider("Smoothing", &CFG::Aimbot_Projectile_Smoothing, 1.f, 20.f);
                                 }
-
-                                gui::combo("Prediction Mode", &CFG::Aimbot_Projectile_PredictionMethod,
-                                    std::vector<std::string>{ "Basic", "Advanced", "Strafe" });
 
                                 gui::combo("Sort", &CFG::Aimbot_Projectile_Sort,
                                     std::vector<std::string>{ "FOV", "Distance", "Health" });
                             }
                             gui::end_group_scrollable();
 
+                            // ========== ACCURACY SETTINGS ==========
                             ImGui::SameLine(390);
-                            if (gui::begin_group("ACCURACY", ImVec2(380, 250), 5.0f, 5.0f))
+                            if (gui::begin_group_scrollable("ACCURACY", ImVec2(380, 250), 5.0f, 5.0f))
                             {
-                                gui::checkbox("Ground Strafe Prediction", CFG::Aimbot_Projectile_GroundStrafePrediction);
-                                gui::checkbox("Advanced Air Strafe", CFG::Aimbot_Projectile_AdvancedAirStrafe);
-
-                                // ✅ SPLASH BOT COM CONFIGURAÇÕES
+                                // Advanced Head Aim (NOVO - estava faltando!)
+                                gui::checkbox("Advanced Head Aim", CFG::Aimbot_Projectile_Advanced_Head_Aim);
                                 gui::checkbox("Splash Bot", CFG::Aimbot_Projectile_SplashBot);
-
                                 if (CFG::Aimbot_Projectile_SplashBot)
                                 {
                                     ImGui::Indent(15.0f);
@@ -615,35 +605,39 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                     gui::checkbox("Neural Network Prediction", CFG::Aimbot_Projectile_SplashUseNN);
                                     ImGui::Unindent(15.0f);
                                 }
-
-                                gui::checkbox("Auto Double Donk", CFG::Aimbot_Projectile_AutoDoubleDonk);
-
-                                // SIMULATION TIME DE 1.0 A 5.0
-                                gui::slider("Max Simulation Time", &CFG::Aimbot_Projectile_MaxSimulationTime, 1.0f, 5.0f);
-
-                                static int max_targets = CFG::Aimbot_Projectile_MaxTargets;
+                                // Double Donk (CORRIGIDO nome da variável)
+                                gui::checkbox("Auto Double Donk", CFG::Aimbot_Projectile_Auto_Double_Donk);
+                                gui::slider("Max Simulation Time", &CFG::Aimbot_Projectile_Max_Simulation_Time, 1.0f, 5.0f);
+                                static int max_targets = CFG::Aimbot_Projectile_Max_Processing_Targets;
                                 gui::slider("Max Targets", (float*)&max_targets, 1.f, 10.f);
-                                CFG::Aimbot_Projectile_MaxTargets = (int)max_targets;
+                                CFG::Aimbot_Projectile_Max_Processing_Targets = (int)max_targets;
                             }
-                            gui::end_group();
+                            gui::end_group_scrollable();
 
+                            // ========== TARGET SETTINGS ==========
                             if (gui::begin_group_scrollable("TARGET", ImVec2(380, 250), 5.0f, 5.0f))
                             {
-                                // USAR AS VARIÁVEIS QUE JÁ EXISTEM (compartilhadas com hitscan)
                                 gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
                                 gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
                                 gui::checkbox("Target Stickies", CFG::Aimbot_TargetStickies);
+
+                                ImGui::Spacing();
+                                ImGui::Separator();
+                                ImGui::Spacing();
 
                                 gui::checkbox("Team Check", CFG::Aimbot_Projectile_TeamCheck);
                                 gui::checkbox("Ignore Invisible", CFG::Aimbot_Ignore_Invisible);
                                 gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
                                 gui::checkbox("Ignore Taunting", CFG::Aimbot_Ignore_Taunting);
 
+                                ImGui::Spacing();
+
                                 gui::combo("Aim Position", &CFG::Aimbot_Projectile_AimPosition,
                                     std::vector<std::string>{ "Auto", "Head", "Body", "Feet" });
                             }
                             gui::end_group_scrollable();
 
+                            // ========== EXPLOITS ==========
                             ImGui::SameLine(390);
                             if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 5.0f, 5.0f))
                             {
@@ -699,6 +693,8 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 CFG::shifting_warp_key_mode = warp_bind_type;
                                 ImGui::EndGroup();
 
+                                ImGui::Spacing();
+                                ImGui::Separator();
                                 ImGui::Spacing();
 
                                 gui::checkbox("Seed Prediction", CFG::Exploits_SeedPred_Active);
