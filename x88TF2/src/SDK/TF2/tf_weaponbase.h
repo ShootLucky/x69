@@ -461,6 +461,7 @@ public:
 	}
 };
 
+
 class C_TFSniperRifle : public C_TFWeaponBase
 {
 public:

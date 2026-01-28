@@ -23,10 +23,18 @@ namespace CFG
 	CFGVAR(Aimbot_Hitscan_Multipoint_Scale, 0.f);
 	CFGVAR(Aimbot_Projectile_FOV, 45.f);
 	CFGVAR(Aimbot_Projectile_Smoothing, 5.f);
-	CFGVAR(Aimbot_Projectile_TicksPredict, 0);
 	CFGVAR(Aimbot_Projectile_TeamCheck, false);
 	CFGVAR(Debug_SplashPoints, false);
 	CFGVAR(Aimbot_Projectile_Mode, 0);
+	CFGVAR(Aimbot_Projectile_AutoRelease, 0);            // 0-100% da carga
+	CFGVAR(Aimbot_Projectile_DragCompensation, true);   // Compensar arrasto
+	CFGVAR(Aimbot_Projectile_PredictTicks, 14);         // Ticks de predição
+	CFGVAR(Aimbot_Projectile_Splash_Enable, false);
+	CFGVAR(Aimbot_Projectile_Splash_Prefer, false);     // Preferir splash sobre direto
+	CFGVAR(Aimbot_Projectile_Splash_Points, 32);
+	CFGVAR(Aimbot_Projectile_Splash_Radius, 100);       // Porcentagem
+	CFGVAR(Aimbot_Projectile_Huntsman_Headshot, true);
+	CFGVAR(Aimbot_Projectile_Huntsman_Bodyaim, 50);     // Se HP < X%, mirar corpo
 	CFGVAR(Aimbot_ActiveShoot, false);
 	CFGVAR(Aimbot_ActiveLagRecords, false);
 	CFGVAR(Aimbot_AutoShoot, false);
@@ -87,6 +95,11 @@ namespace CFG
 	CFGVAR(Aimbot_Hitscan_Scan_Buildings, false);
 	CFGVAR(Aimbot_Projectile_SplashBot, false);
 	CFGVAR(Aimbot_Projectile_SplashPoints, 80.0f);
+	CFGVAR(Aimbot_Projectile_SplashRadius, 1.0f);
+	CFGVAR(Aimbot_Projectile_SplashTestPoints, 8);
+	CFGVAR(Aimbot_Projectile_SplashMaxDist, 64.0f);
+	CFGVAR(Aimbot_Projectile_SplashPrioritizeGround, true);
+	CFGVAR(Aimbot_Projectile_SplashUseNN, false);
 	CFGVAR(Aimbot_Active, false);
 	CFGVAR(Aimbot_Hitscan_Active, false);
 	CFGVAR(Aimbot_Hitscan_Target_LagRecords, false);
@@ -172,7 +185,7 @@ namespace CFG
 	CFGVAR(ESP_Skeleton_Bounds, false);
 	CFGVAR(ESP_Skeleton_AimPoints, false);
 	CFGVAR(ESP_Skeleton_Backtrack, false);
-	CFGVAR(ESP_Skeleton_BacktrackType, 0); 
+	CFGVAR(ESP_Skeleton_BacktrackType, 0);
 #pragma endregion
 
 #pragma region Materials

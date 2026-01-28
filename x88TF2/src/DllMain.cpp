@@ -381,12 +381,21 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                 }
                 draw_list->AddRect(p, ImVec2(p.x + s.x, p.y + s.y), IM_COL32(40, 40, 40, 255));
 
-                /* tabs */
                 ImGui::SetCursorPosX(480);
                 ImGui::SetCursorPosY(25);
                 ImGui::BeginGroup();
                 {
-                    gui::TabButton("Aimbot", active_tab, 0);
+                    if (gui::TabButton("Aimbot", active_tab, 0)) {
+                        // Clique esquerdo normal
+                    }
+                    // Detectar clique direito no Aimbot
+                    ImVec2 aimbot_btn_min = ImGui::GetItemRectMin();
+                    ImVec2 aimbot_btn_max = ImGui::GetItemRectMax();
+                    if (ImGui::IsMouseHoveringRect(aimbot_btn_min, aimbot_btn_max) &&
+                        ImGui::IsMouseClicked(1)) {
+                        gui::g_aimbot_mode_state.context_open = true;
+                    }
+                    gui::aimbot_mode_selector(&gui::g_aimbot_mode_state.selected_mode);
                     ImGui::SameLine();
                     gui::TabButton("Anti-Aim", active_tab, 1);
                     ImGui::SameLine();
@@ -417,124 +426,344 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                     // AIMBOT TAB
                     if (active_tab == 0)
                     {
-                        if (gui::begin_group_scrollable("MAIN", ImVec2(380, 250), 5.0f, 0.0f))
-                        {
-                            ImGui::BeginGroup();
-                            gui::checkbox("Aimbot", CFG::Aimbot_Active);
-                            ImGui::SameLine(350.0f);
-                            static int aimbot_key = CFG::Aimbot_Key;
-                            static int aimbot_bind_type = CFG::Aimbot_KeyMode;
+                        int aimbot_mode = gui::g_aimbot_mode_state.selected_mode;
 
-                            // Sincronizar variáveis static com CFG (importante para quando carregar configs)
-                            if (aimbot_key != CFG::Aimbot_Key || aimbot_bind_type != CFG::Aimbot_KeyMode)
+                        // ===== AIMBOT MODE (0) =====
+                        if (aimbot_mode == 0) {
+                            if (gui::begin_group_scrollable("MAIN", ImVec2(380, 250), 5.0f, 0.0f))
                             {
-                                aimbot_key = CFG::Aimbot_Key;
-                                aimbot_bind_type = CFG::Aimbot_KeyMode;
+                                ImGui::BeginGroup();
+                                gui::checkbox("Aimbot", CFG::Aimbot_Active);
+                                ImGui::SameLine(350.0f);
+                                static int aimbot_key = CFG::Aimbot_Key;
+                                static int aimbot_bind_type = CFG::Aimbot_KeyMode;
+                                if (aimbot_key != CFG::Aimbot_Key || aimbot_bind_type != CFG::Aimbot_KeyMode)
+                                {
+                                    aimbot_key = CFG::Aimbot_Key;
+                                    aimbot_bind_type = CFG::Aimbot_KeyMode;
+                                }
+                                gui::keybind("##AimbotKey", &aimbot_key, &aimbot_bind_type);
+                                CFG::Aimbot_Key = aimbot_key;
+                                CFG::Aimbot_KeyMode = aimbot_bind_type;
+                                ImGui::EndGroup();
+                                gui::slider("FOV", &CFG::Aimbot_FOV, 0.f, 180.f);
+                                gui::combo("Aim Type", &CFG::Aimbot_Hitscan_Mode,
+                                    std::vector<std::string>{ "Plain", "Silent", "Smooth" });
+                                if (CFG::Aimbot_Hitscan_Mode == 2) // Smooth mode
+                                {
+                                    gui::slider("Smoothing", &CFG::Aimbot_Hitscan_Smoothing, 0.f, 100.f);
+                                }
+                                gui::checkbox("Auto Shoot", CFG::Aimbot_AutoShoot);
+                                gui::checkbox("Active Lag Records", CFG::Aimbot_ActiveLagRecords);
+                                gui::combo("Sort", &CFG::Aimbot_Hitscan_Sort,
+                                    std::vector<std::string>{ "FOV", "Distance", "Health" });
                             }
+                            gui::end_group_scrollable();
 
-                            gui::keybind("##AimbotKey", &aimbot_key, &aimbot_bind_type);
-
-                            // Atualizar CFG quando o usuário mudar o keybind
-                            CFG::Aimbot_Key = aimbot_key;
-                            CFG::Aimbot_KeyMode = aimbot_bind_type;
-                            ImGui::EndGroup();
-                            gui::slider("FOV", &CFG::Aimbot_FOV, 0.f, 180.f);
-                            gui::slider("Smoothing", &CFG::Aimbot_Hitscan_Smoothing, 1.f, 20.f);
-                            gui::checkbox("Auto Shoot", CFG::Aimbot_AutoShoot);
-                            gui::checkbox("Active Lag Records", CFG::Aimbot_ActiveLagRecords);
-                            gui::combo("Aim Type", &CFG::Aimbot_Hitscan_Mode, std::vector<std::string>{ "Aimlock", "Silent" });
-                            gui::combo("Sort", &CFG::Aimbot_Hitscan_Sort, std::vector<std::string>{ "Distance", "FOV", "Health" });
-                        }
-                        gui::end_group_scrollable();
-
-                        ImGui::SameLine(390);
-                        if (gui::begin_group("ACCURACY", ImVec2(380, 250), 5.0f, 5.0f))
-                        {
-                            gui::checkbox("Wait For Headshot", CFG::Aimbot_WaitForHeadshot);
-                            gui::checkbox("Wait For Charge", CFG::Aimbot_WaitForCharge);
-                            gui::checkbox("Minigun Tapfire", CFG::Aimbot_MinigunTapfire);
-                            gui::checkbox("Auto Scope", CFG::Aimbot_AutoScope);
-                        }
-                        gui::end_group();
-
-                        if (gui::begin_group_scrollable("TARGET", ImVec2(380, 250), 5.0f, 5.0f))
-                        {
-                            gui::checkbox("Target Lag Records", CFG::Aimbot_TargetLagRecords);
-                            gui::checkbox("Target Stickies", CFG::Aimbot_TargetStickies);
-                            gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
-                            gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
-
-                            std::vector<gui::MultiComboItem> items = {
-                                gui::MultiComboItem("Head", &CFG::Aimbot_Hitbox_Head),
-                                gui::MultiComboItem("Body", &CFG::Aimbot_Hitbox_Body),
-                                gui::MultiComboItem("Pelvis", &CFG::Aimbot_Hitbox_Pelvis),
-                                gui::MultiComboItem("Arms", &CFG::Aimbot_Hitbox_Arms),
-                                gui::MultiComboItem("Legs", &CFG::Aimbot_Hitbox_Legs)
-                            };
-                            gui::multi_combo("Hitbox Types", items);
-
-                            gui::combo("Hitbox Sort", &CFG::Aimbot_Hitbox_Sort, std::vector<std::string>{ "Auto", "Damage", "Accuracy" });
-                            gui::checkbox("Ignore Invisible", CFG::Aimbot_Ignore_Invisible);
-                            gui::checkbox("Ignore Taunting", CFG::Aimbot_Ignore_Taunting);
-                            gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
-                            gui::checkbox("Visible Check", CFG::Aimbot_VisibleCheck);
-                            gui::checkbox("Team Check", CFG::Aimbot_TeamCheck);
-                        }
-                        gui::end_group_scrollable();
-
-                        ImGui::SameLine(390);
-                        if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 5.0f, 5.0f))
-                        {
-                            ImGui::BeginGroup();
-                            gui::checkbox("Shifting", CFG::shifting_active);
-                            ImGui::SameLine(350.0f);
-                            static int shifting_key = CFG::shifting_key;
-                            static int shifting_bind_type = CFG::shifting_key_mode;
-                            if (shifting_key != CFG::shifting_key || shifting_bind_type != CFG::shifting_key_mode)
+                            ImGui::SameLine(390);
+                            if (gui::begin_group("ACCURACY", ImVec2(380, 250), 5.0f, 5.0f))
                             {
-                                shifting_key = CFG::shifting_key;
-                                shifting_bind_type = CFG::shifting_key_mode;
+                                gui::checkbox("Wait For Headshot", CFG::Aimbot_WaitForHeadshot);
+                                gui::checkbox("Wait For Charge", CFG::Aimbot_WaitForCharge);
+                                gui::checkbox("Minigun Tapfire", CFG::Aimbot_MinigunTapfire);
+                                gui::checkbox("Auto Scope", CFG::Aimbot_AutoScope);
                             }
-                            gui::keybind("##ShiftingKey", &shifting_key, &shifting_bind_type);
-                            CFG::shifting_key = shifting_key;
-                            CFG::shifting_key_mode = shifting_bind_type;
-                            ImGui::EndGroup();
-                            gui::slider("Delay Ticks", &CFG::shifting_delay_ticks, 0.f, 20.f);
-                            gui::slider("Delay Hitscan", &CFG::shifting_delay_hitscan, 0.f, 10.f);
-                            ImGui::BeginGroup();
-                            gui::checkbox("Shifting Recharge", CFG::shifting_active);
-                            ImGui::SameLine(350.0f);
-                            static int recharge_key = CFG::shifting_recharge_key;
-                            static int recharge_bind_type = CFG::shifting_recharge_key_mode;
-                            if (recharge_key != CFG::shifting_recharge_key || recharge_bind_type != CFG::shifting_recharge_key_mode)
+                            gui::end_group();
+
+                            if (gui::begin_group_scrollable("TARGET", ImVec2(380, 250), 5.0f, 5.0f))
                             {
-                                recharge_key = CFG::shifting_recharge_key;
-                                recharge_bind_type = CFG::shifting_recharge_key_mode;
+                                gui::checkbox("Target Lag Records", CFG::Aimbot_TargetLagRecords);
+                                gui::checkbox("Target Stickies", CFG::Aimbot_TargetStickies);
+                                gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
+                                gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
+
+                                std::vector<gui::MultiComboItem> items = {
+                                    gui::MultiComboItem("Head", &CFG::Aimbot_Hitbox_Head),
+                                    gui::MultiComboItem("Body", &CFG::Aimbot_Hitbox_Body),
+                                    gui::MultiComboItem("Pelvis", &CFG::Aimbot_Hitbox_Pelvis),
+                                    gui::MultiComboItem("Arms", &CFG::Aimbot_Hitbox_Arms),
+                                    gui::MultiComboItem("Legs", &CFG::Aimbot_Hitbox_Legs)
+                                };
+                                gui::multi_combo("Hitbox Types", items);
+
+                                gui::combo("Hitbox Sort", &CFG::Aimbot_Hitbox_Sort, std::vector<std::string>{ "Auto", "Damage", "Accuracy" });
+                                gui::checkbox("Ignore Invisible", CFG::Aimbot_Ignore_Invisible);
+                                gui::checkbox("Ignore Taunting", CFG::Aimbot_Ignore_Taunting);
+                                gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
+                                gui::checkbox("Visible Check", CFG::Aimbot_VisibleCheck);
+                                gui::checkbox("Team Check", CFG::Aimbot_TeamCheck);
                             }
-                            gui::keybind("##RechargeKey", &recharge_key, &recharge_bind_type);
-                            CFG::shifting_recharge_key = recharge_key;
-                            CFG::shifting_recharge_key_mode = recharge_bind_type;
-                            ImGui::EndGroup();
-                            ImGui::BeginGroup();
-                            gui::checkbox("Shifting Warp", CFG::shifting_warp);
-                            ImGui::SameLine(350.0f);
-                            static int warp_key = CFG::shifting_warp_key;
-                            static int warp_bind_type = CFG::shifting_warp_key_mode;
-                            if (warp_key != CFG::shifting_warp_key || warp_bind_type != CFG::shifting_warp_key_mode)
+                            gui::end_group_scrollable();
+
+                            ImGui::SameLine(390);
+                            if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 5.0f, 5.0f))
                             {
-                                warp_key = CFG::shifting_warp_key;
-                                warp_bind_type = CFG::shifting_warp_key_mode;
+                                ImGui::BeginGroup();
+                                gui::checkbox("Shifting", CFG::shifting_active);
+                                ImGui::SameLine(350.0f);
+                                static int shifting_key = CFG::shifting_key;
+                                static int shifting_bind_type = CFG::shifting_key_mode;
+                                if (shifting_key != CFG::shifting_key || shifting_bind_type != CFG::shifting_key_mode)
+                                {
+                                    shifting_key = CFG::shifting_key;
+                                    shifting_bind_type = CFG::shifting_key_mode;
+                                }
+                                gui::keybind("##ShiftingKey", &shifting_key, &shifting_bind_type);
+                                CFG::shifting_key = shifting_key;
+                                CFG::shifting_key_mode = shifting_bind_type;
+                                ImGui::EndGroup();
+                                gui::slider("Delay Ticks", &CFG::shifting_delay_ticks, 0.f, 20.f);
+                                gui::slider("Delay Hitscan", &CFG::shifting_delay_hitscan, 0.f, 10.f);
+                                ImGui::BeginGroup();
+                                gui::checkbox("Shifting Recharge", CFG::shifting_active);
+                                ImGui::SameLine(350.0f);
+                                static int recharge_key = CFG::shifting_recharge_key;
+                                static int recharge_bind_type = CFG::shifting_recharge_key_mode;
+                                if (recharge_key != CFG::shifting_recharge_key || recharge_bind_type != CFG::shifting_recharge_key_mode)
+                                {
+                                    recharge_key = CFG::shifting_recharge_key;
+                                    recharge_bind_type = CFG::shifting_recharge_key_mode;
+                                }
+                                gui::keybind("##RechargeKey", &recharge_key, &recharge_bind_type);
+                                CFG::shifting_recharge_key = recharge_key;
+                                CFG::shifting_recharge_key_mode = recharge_bind_type;
+                                ImGui::EndGroup();
+                                ImGui::BeginGroup();
+                                gui::checkbox("Shifting Warp", CFG::shifting_warp);
+                                ImGui::SameLine(350.0f);
+                                static int warp_key = CFG::shifting_warp_key;
+                                static int warp_bind_type = CFG::shifting_warp_key_mode;
+                                if (warp_key != CFG::shifting_warp_key || warp_bind_type != CFG::shifting_warp_key_mode)
+                                {
+                                    warp_key = CFG::shifting_warp_key;
+                                    warp_bind_type = CFG::shifting_warp_key_mode;
+                                }
+                                gui::keybind("##WarpKey", &warp_key, &warp_bind_type);
+                                CFG::shifting_warp_key = warp_key;
+                                CFG::shifting_warp_key_mode = warp_bind_type;
+                                ImGui::EndGroup();
+                                gui::checkbox("SeedPred", CFG::Exploits_SeedPred_Active);
+                                gui::checkbox("No Spread", CFG::Aimbot_Projectile_NoSpread);
                             }
-                            gui::keybind("##WarpKey", &warp_key, &warp_bind_type);
-                            CFG::shifting_warp_key = warp_key;
-                            CFG::shifting_warp_key_mode = warp_bind_type;
-                            ImGui::EndGroup();
-                            gui::checkbox("SeedPred", CFG::Exploits_SeedPred_Active);
-                            gui::checkbox("No Spread", CFG::Aimbot_Projectile_NoSpread);
+                            gui::end_group();
                         }
-                        gui::end_group();
+
+                        else if (aimbot_mode == 1) {
+                            if (gui::begin_group_scrollable("MAIN", ImVec2(380, 250), 5.0f, 0.0f))
+                            {
+                                ImGui::BeginGroup();
+                                gui::checkbox("Projectile Aimbot", CFG::Aimbot_Projectile_Active);
+                                ImGui::SameLine(350.0f);
+
+                                // CORREÇÃO: Usar variáveis separadas para key e keymode
+                                static int projectile_key = CFG::Aimbot_Key;
+                                static int projectile_keymode = CFG::Aimbot_Projectile_KeyMode;
+
+                                // Sincronizar com as configurações
+                                if (projectile_key != CFG::Aimbot_Key || projectile_keymode != CFG::Aimbot_Projectile_KeyMode)
+                                {
+                                    projectile_key = CFG::Aimbot_Key;
+                                    projectile_keymode = CFG::Aimbot_Projectile_KeyMode;
+                                }
+
+                                // Passar as duas variáveis corretas para o keybind
+                                gui::keybind("##ProjectileKey", &projectile_key, &projectile_keymode);
+
+                                // Salvar de volta nas configurações
+                                CFG::Aimbot_Key = projectile_key;
+                                CFG::Aimbot_Projectile_KeyMode = projectile_keymode;
+                                ImGui::EndGroup();
+
+                                gui::slider("FOV", &CFG::Aimbot_Projectile_FOV, 0.f, 180.f);
+
+                                // AIM TYPE COM PLAIN, SILENT E SMOOTH
+                                gui::combo("Aim Type", &CFG::Aimbot_Projectile_Mode,
+                                    std::vector<std::string>{ "Plain", "Silent", "Smooth" });
+
+                                // Se for Smooth mode, mostrar o slider de smoothing
+                                if (CFG::Aimbot_Projectile_Mode == 2)
+                                {
+                                    gui::slider("Smoothing", &CFG::Aimbot_Projectile_Smoothing, 1.f, 20.f);
+                                }
+
+                                gui::combo("Prediction Mode", &CFG::Aimbot_Projectile_PredictionMethod,
+                                    std::vector<std::string>{ "Basic", "Advanced", "Strafe" });
+
+                                gui::combo("Sort", &CFG::Aimbot_Projectile_Sort,
+                                    std::vector<std::string>{ "FOV", "Distance", "Health" });
+                            }
+                            gui::end_group_scrollable();
+
+                            ImGui::SameLine(390);
+                            if (gui::begin_group("ACCURACY", ImVec2(380, 250), 5.0f, 5.0f))
+                            {
+                                gui::checkbox("Ground Strafe Prediction", CFG::Aimbot_Projectile_GroundStrafePrediction);
+                                gui::checkbox("Advanced Air Strafe", CFG::Aimbot_Projectile_AdvancedAirStrafe);
+
+                                // ✅ SPLASH BOT COM CONFIGURAÇÕES
+                                gui::checkbox("Splash Bot", CFG::Aimbot_Projectile_SplashBot);
+
+                                if (CFG::Aimbot_Projectile_SplashBot)
+                                {
+                                    ImGui::Indent(15.0f);
+                                    gui::slider("Splash Radius Multiplier", &CFG::Aimbot_Projectile_SplashRadius, 0.5f, 2.0f);
+                                    static int splash_points = CFG::Aimbot_Projectile_SplashTestPoints;
+                                    gui::slider("Splash Test Points", (float*)&splash_points, 4.f, 16.f);
+                                    CFG::Aimbot_Projectile_SplashTestPoints = (int)splash_points;
+                                    gui::slider("Splash Max Distance", &CFG::Aimbot_Projectile_SplashMaxDist, 32.0f, 200.0f);
+                                    gui::checkbox("Prioritize Ground Shots", CFG::Aimbot_Projectile_SplashPrioritizeGround);
+                                    gui::checkbox("Neural Network Prediction", CFG::Aimbot_Projectile_SplashUseNN);
+                                    ImGui::Unindent(15.0f);
+                                }
+
+                                gui::checkbox("Auto Double Donk", CFG::Aimbot_Projectile_AutoDoubleDonk);
+
+                                // SIMULATION TIME DE 1.0 A 5.0
+                                gui::slider("Max Simulation Time", &CFG::Aimbot_Projectile_MaxSimulationTime, 1.0f, 5.0f);
+
+                                static int max_targets = CFG::Aimbot_Projectile_MaxTargets;
+                                gui::slider("Max Targets", (float*)&max_targets, 1.f, 10.f);
+                                CFG::Aimbot_Projectile_MaxTargets = (int)max_targets;
+                            }
+                            gui::end_group();
+
+                            if (gui::begin_group_scrollable("TARGET", ImVec2(380, 250), 5.0f, 5.0f))
+                            {
+                                // USAR AS VARIÁVEIS QUE JÁ EXISTEM (compartilhadas com hitscan)
+                                gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
+                                gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
+                                gui::checkbox("Target Stickies", CFG::Aimbot_TargetStickies);
+
+                                gui::checkbox("Team Check", CFG::Aimbot_Projectile_TeamCheck);
+                                gui::checkbox("Ignore Invisible", CFG::Aimbot_Ignore_Invisible);
+                                gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
+                                gui::checkbox("Ignore Taunting", CFG::Aimbot_Ignore_Taunting);
+
+                                gui::combo("Aim Position", &CFG::Aimbot_Projectile_AimPosition,
+                                    std::vector<std::string>{ "Auto", "Head", "Body", "Feet" });
+                            }
+                            gui::end_group_scrollable();
+
+                            ImGui::SameLine(390);
+                            if (gui::begin_group("EXPLOITS", ImVec2(380, 250), 5.0f, 5.0f))
+                            {
+                                ImGui::BeginGroup();
+                                gui::checkbox("Shifting", CFG::shifting_active);
+                                ImGui::SameLine(350.0f);
+                                static int shifting_key = CFG::shifting_key;
+                                static int shifting_bind_type = CFG::shifting_key_mode;
+                                if (shifting_key != CFG::shifting_key || shifting_bind_type != CFG::shifting_key_mode)
+                                {
+                                    shifting_key = CFG::shifting_key;
+                                    shifting_bind_type = CFG::shifting_key_mode;
+                                }
+                                gui::keybind("##ShiftingKey", &shifting_key, &shifting_bind_type);
+                                CFG::shifting_key = shifting_key;
+                                CFG::shifting_key_mode = shifting_bind_type;
+                                ImGui::EndGroup();
+
+                                gui::slider("Delay Ticks", &CFG::shifting_delay_ticks, 0.f, 20.f);
+                                gui::slider("Delay Hitscan", &CFG::shifting_delay_hitscan, 0.f, 10.f);
+
+                                ImGui::Spacing();
+
+                                ImGui::BeginGroup();
+                                gui::checkbox("Recharge", CFG::shifting_active);
+                                ImGui::SameLine(350.0f);
+                                static int recharge_key = CFG::shifting_recharge_key;
+                                static int recharge_bind_type = CFG::shifting_recharge_key_mode;
+                                if (recharge_key != CFG::shifting_recharge_key || recharge_bind_type != CFG::shifting_recharge_key_mode)
+                                {
+                                    recharge_key = CFG::shifting_recharge_key;
+                                    recharge_bind_type = CFG::shifting_recharge_key_mode;
+                                }
+                                gui::keybind("##RechargeKey", &recharge_key, &recharge_bind_type);
+                                CFG::shifting_recharge_key = recharge_key;
+                                CFG::shifting_recharge_key_mode = recharge_bind_type;
+                                ImGui::EndGroup();
+
+                                ImGui::Spacing();
+
+                                ImGui::BeginGroup();
+                                gui::checkbox("Warp", CFG::shifting_warp);
+                                ImGui::SameLine(350.0f);
+                                static int warp_key = CFG::shifting_warp_key;
+                                static int warp_bind_type = CFG::shifting_warp_key_mode;
+                                if (warp_key != CFG::shifting_warp_key || warp_bind_type != CFG::shifting_warp_key_mode)
+                                {
+                                    warp_key = CFG::shifting_warp_key;
+                                    warp_bind_type = CFG::shifting_warp_key_mode;
+                                }
+                                gui::keybind("##WarpKey", &warp_key, &warp_bind_type);
+                                CFG::shifting_warp_key = warp_key;
+                                CFG::shifting_warp_key_mode = warp_bind_type;
+                                ImGui::EndGroup();
+
+                                ImGui::Spacing();
+
+                                gui::checkbox("Seed Prediction", CFG::Exploits_SeedPred_Active);
+                                gui::checkbox("No Spread", CFG::Aimbot_Projectile_NoSpread);
+                            }
+                            gui::end_group();
+                        }
+
+                        // ===== MELEE MODE (2) =====
+                        else if (aimbot_mode == 2) {
+                            if (gui::begin_group_scrollable("MELEE SETTINGS", ImVec2(380, 500), 5.0f, 5.0f))
+                            {
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Melee Aimbot Settings");
+
+                                static bool melee_active = false;
+                                gui::checkbox("Enable Melee Aimbot", melee_active);
+
+                                gui::slider("Melee FOV", &CFG::Aimbot_FOV, 0.f, 180.f);
+
+                                static int melee_mode = 0;
+                                gui::combo("Melee Mode", &melee_mode,
+                                    std::vector<std::string>{"Normal", "Backstab", "Auto-Facestab"});
+
+                                static bool swing_prediction = false;
+                                gui::checkbox("Swing Prediction", swing_prediction);
+
+                                static bool auto_backstab = false;
+                                gui::checkbox("Auto Backstab", auto_backstab);
+
+                                static bool ignore_razorback = false;
+                                gui::checkbox("Ignore Razorback", ignore_razorback);
+
+                                static int melee_sort = 0;
+                                gui::combo("Sort Method", &melee_sort,
+                                    std::vector<std::string>{"FOV", "Distance", "Health"});
+                            }
+                            gui::end_group_scrollable();
+
+                            ImGui::SameLine(390);
+                            if (gui::begin_group_scrollable("MELEE OPTIONS", ImVec2(380, 500), 5.0f, 5.0f))
+                            {
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Melee Options");
+
+                                gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
+                                gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
+
+                                gui::checkbox("Ignore Invisible", CFG::Aimbot_Ignore_Invisible);
+                                gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
+                                gui::checkbox("Team Check", CFG::Aimbot_TeamCheck);
+
+                                ImGui::Spacing();
+                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Spy Tools");
+
+                                static bool auto_disguise = false;
+                                gui::checkbox("Auto Disguise After Stab", auto_disguise);
+
+                                static bool cloak_warning = false;
+                                gui::checkbox("Low Cloak Warning", cloak_warning);
+
+                                static bool backstab_indicator = false;
+                                gui::checkbox("Backstab Indicator", backstab_indicator);
+                            }
+                            gui::end_group_scrollable();
+                        }
                     }
-
                     // ANTI AIM TAB
                     if (active_tab == 1)
                     {
@@ -707,7 +936,7 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                         if (ImGui::IsItemHovered())
                                             ImGui::SetTooltip("Renders players through walls");
 
-                                        const char* overlay_types[] = { "None", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel", "Overlay", "Killstreak", "Exorcism", "Flat Overlay" };
+                                        const char* overlay_types[] = { "None", "Flat", "Shaded", "Glossy", "Glow", "Plastic", "Fresnel", "Overlay", "Exorcism", };
                                         gui::combo("Overlay Type", &CFG::Materials_Players_TwoModels,
                                             std::vector<std::string>(overlay_types, overlay_types + 11));
 

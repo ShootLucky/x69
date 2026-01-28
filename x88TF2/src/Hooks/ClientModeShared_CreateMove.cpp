@@ -1,8 +1,6 @@
-﻿// ClientModeShared_CreateMove.cpp - VERSÃO CORRIGIDA
-#include "../SDK/SDK.h"
+﻿#include "../SDK/SDK.h"
 #include "../Features/Misc/Misc.h"
 #include "../Features/Aimbot/Aimbot.h"
-#include "../Features/Aimbot/AimbotHitscan/AimbotHitscan.h"  // ✅ ADICIONAR INCLUDE
 #include "../Features/EnginePrediction/EnginePrediction.h"
 #include "../Features/Exploits/nospread/nospread.h"
 #include "../Features/Exploits/shifting/shifting.h"
@@ -13,6 +11,7 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 	G::bSilentAngles = false;
 	G::bPSilentAngles = false;
 	G::bFiring = false;
+	G::bRunCmd = false; // ← ADICIONAR ESTA LINHA
 	G::CurrentUserCmd = pCmd;
 
 	if (!pCmd || !pCmd->command_number)
@@ -28,10 +27,8 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 		I::ClientState->lastoutgoingcommand + I::ClientState->chokedcommands
 	);
 
-
 	if (g_shifting->should_exit_create_move(pCmd))
 	{
-
 		return g_shifting->get_shift_silent_angles() ? false : CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 	}
 
@@ -47,16 +44,16 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 
 	bool* pSendPacket = reinterpret_cast<bool*>(uintptr_t(_AddressOfReturnAddress()) + 0x128);
 
-	// OPTIMIZATION: Cache angles and movement for later restoration
+	// Cache angles and movement for later restoration
 	const Vec3 vOldAngles = pCmd->viewangles;
 	const float flOldSide = pCmd->sidemove;
 	const float flOldForward = pCmd->forwardmove;
 
-	// OPTIMIZATION: Cache entity pointers once (used multiple times below)
+	// Cache entity pointers
 	auto pLocal = H::Entities->GetLocal();
 	auto pWeapon = H::Entities->GetWeapon();
 
-	// Cache weapon capabilities (used by multiple features)
+	// Cache weapon capabilities
 	if (pLocal && pWeapon)
 	{
 		G::bCanPrimaryAttack = pWeapon->CanPrimaryAttack(pLocal);
@@ -70,7 +67,7 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 		G::bCanHeadshot = false;
 	}
 
-	//nTicksSinceCanFire
+	// Track ticks since can fire
 	{
 		static bool bOldCanFire = G::bCanPrimaryAttack;
 
@@ -79,16 +76,16 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			G::nTicksSinceCanFire = 0;
 			bOldCanFire = G::bCanPrimaryAttack;
 		}
-
 		else
 		{
 			if (G::bCanPrimaryAttack)
 				G::nTicksSinceCanFire++;
-
-			else G::nTicksSinceCanFire = 0;
+			else
+				G::nTicksSinceCanFire = 0;
 		}
 	}
-	// OPTIMIZATION: Early exit if no local player (rare but possible)
+
+	// Early exit if no local player
 	if (!pLocal)
 		return CALL_ORIGINAL(ecx, flInputSampleTime, pCmd);
 
@@ -105,13 +102,18 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			}
 		}
 
+		// ← MODIFICAÇÃO: Setar flag para fire_projectile
+		G::bRunCmd = true;
+
+		// Rodar aimbot (vai rodar PROJECTILE weapons aqui)
+		// Hitscan será rodado no fire_projectile
 		F::Aimbot->Run(pCmd);
 	}
 	F::EnginePrediction->End();
 
 	g_no_spread->AdjustAngles(pCmd);
 
-	//nTicksTargetSame
+	// Track target consistency
 	{
 		static int nOldTargetIndex = G::nTargetIndexEarly;
 
@@ -120,7 +122,6 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			G::nTicksTargetSame = 0;
 			nOldTargetIndex = G::nTargetIndexEarly;
 		}
-
 		else
 		{
 			G::nTicksTargetSame++;
@@ -130,7 +131,7 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			G::nTicksTargetSame = 0;
 	}
 
-	//pSilent
+	// pSilent
 	{
 		static bool bWasSet = false;
 
@@ -139,7 +140,6 @@ MAKE_HOOK(ClientModeShared_CreateMove, Memory::GetVFunc(I::ClientModeShared, 21)
 			*pSendPacket = false;
 			bWasSet = true;
 		}
-
 		else
 		{
 			if (bWasSet)

@@ -10,7 +10,8 @@ bool CLagRecords::IsSimulationTimeValid(float flCurSimTime, float flCmprSimTime)
 	float flMaxTime = 0.2f + m_flFakeLatency;
 
 	// Clamp to sv_maxunlag to avoid breaking server lag compensation
-	flMaxTime = std::min(flMaxTime, m_flMaxUnlag);
+	if (flMaxTime > m_flMaxUnlag)
+		flMaxTime = m_flMaxUnlag;
 
 	return flCurSimTime - flCmprSimTime < flMaxTime;
 }
@@ -330,7 +331,9 @@ void CLagRecords::AdjustPing(INetChannel* pNetChanInterface)
 		// Smooth back to 0 if we had fake latency active
 		if (m_flFakeLatency > 0.0f)
 		{
-			m_flFakeLatency = std::max(0.0f, m_flFakeLatency - I::GlobalVars->interval_per_tick);
+			m_flFakeLatency -= I::GlobalVars->interval_per_tick;
+			if (m_flFakeLatency < 0.0f)
+				m_flFakeLatency = 0.0f;
 		}
 		return;
 	}
@@ -348,7 +351,9 @@ void CLagRecords::AdjustPing(INetChannel* pNetChanInterface)
 		// No fake latency desired, smooth back to 0
 		if (m_flFakeLatency > 0.0f)
 		{
-			m_flFakeLatency = std::max(0.0f, m_flFakeLatency - I::GlobalVars->interval_per_tick);
+			m_flFakeLatency -= I::GlobalVars->interval_per_tick;
+			if (m_flFakeLatency < 0.0f)
+				m_flFakeLatency = 0.0f;
 		}
 		return;
 	}
@@ -390,7 +395,12 @@ void CLagRecords::AdjustPing(INetChannel* pNetChanInterface)
 	if (m_flWishFakeLatency > 0.0f || m_flFakeLatency > 0.0f)
 	{
 		float flDelta = flLatency - m_flFakeLatency;
-		flDelta = std::clamp(flDelta, -I::GlobalVars->interval_per_tick, I::GlobalVars->interval_per_tick);
+		// Manual clamp
+		if (flDelta < -I::GlobalVars->interval_per_tick)
+			flDelta = -I::GlobalVars->interval_per_tick;
+		if (flDelta > I::GlobalVars->interval_per_tick)
+			flDelta = I::GlobalVars->interval_per_tick;
+
 		m_flFakeLatency += flDelta * 0.1f;
 
 		// Snap to 0 if very close

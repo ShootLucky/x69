@@ -94,6 +94,7 @@
     <ClCompile Include="src\Hooks\CL_Move.cpp" />
     <ClCompile Include="src\Features\Network\network_fix.cpp" />
     <ClCompile Include="src\Features\Exploits\shifting\shifting.cpp" />
+    <ClCompile Include="src\Hooks\FireProjectile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />

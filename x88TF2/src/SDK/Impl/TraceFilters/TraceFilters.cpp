@@ -20,13 +20,13 @@ bool CTraceFilterHitscan::ShouldHitEntity(IHandleEntity* pServerEntity, int cont
 		case ETFClassIds::CFuncAreaPortalWindow:
 		case ETFClassIds::CFuncRespawnRoomVisualizer:
 		case ETFClassIds::CSniperDot:
-		case ETFClassIds::CTFAmmoPack: return false;
+		case ETFClassIds::CTFAmmoPack:
+			return false;
 
 		case ETFClassIds::CTFMedigunShield:
 		{
 			if (pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
 				return false;
-
 			break;
 		}
 
@@ -43,19 +43,16 @@ bool CTraceFilterHitscan::ShouldHitEntity(IHandleEntity* pServerEntity, int cont
 			{
 				if (pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
 					return false;
-
 				break;
 			}
-
-			default: break;
+			default:
+				break;
 			}
-
 			break;
 		}
-
-		default: break;
+		default:
+			break;
 		}
-
 	}
 
 	return true;
@@ -70,16 +67,19 @@ bool CTraceFilterWorldCustom::ShouldHitEntity(IHandleEntity* pServerEntity, int 
 		case ETFClassIds::CTFPlayer:
 		case ETFClassIds::CObjectSentrygun:
 		case ETFClassIds::CObjectDispenser:
-		case ETFClassIds::CObjectTeleporter: return pEntity == m_pTarget;
+		case ETFClassIds::CObjectTeleporter:
+			return pEntity == m_pTarget;
 
 		case ETFClassIds::CObjectCartDispenser:
 		case ETFClassIds::CBaseDoor:
 		case ETFClassIds::CPhysicsProp:
 		case ETFClassIds::CDynamicProp:
 		case ETFClassIds::CBaseEntity:
-		case ETFClassIds::CFuncTrackTrain: return true;
+		case ETFClassIds::CFuncTrackTrain:
+			return true;
 
-		default: return false;
+		default:
+			return false;
 		}
 	}
 
@@ -102,14 +102,10 @@ bool CTraceFilterArc::ShouldHitEntity(IHandleEntity* pServerEntity, int contents
 		case ETFClassIds::CDynamicProp:
 		case ETFClassIds::CBaseEntity:
 		case ETFClassIds::CFuncTrackTrain:
-		{
 			return true;
-		}
 
 		default:
-		{
 			return false;
-		}
 		}
 	}
 

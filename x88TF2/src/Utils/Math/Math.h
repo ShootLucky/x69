@@ -34,8 +34,8 @@ public:
 	Vector m[4][4];
 
 public:
-	inline const matrix3x4_t &As3x4() const {
-		return *((const matrix3x4_t *)this);
+	inline const matrix3x4_t& As3x4() const {
+		return *((const matrix3x4_t*)this);
 	}
 };
 
@@ -55,13 +55,13 @@ namespace Math
 		return (!std::isfinite(ang) ? 0.0f : std::remainder(ang, 360.0f));
 	}
 
-	inline void SinCos(float radians, float *sine, float *cosine)
+	inline void SinCos(float radians, float* sine, float* cosine)
 	{
 		*sine = std::sin(radians);
 		*cosine = std::cos(radians);
 	}
 
-	inline void ClampAngles(Vec3 &v) {
+	inline void ClampAngles(Vec3& v) {
 		v.x = std::max(-89.0f, std::min(89.0f, NormalizeAngle(v.x)));
 		v.y = NormalizeAngle(v.y);
 		v.z = 0.0f;
@@ -76,8 +76,82 @@ namespace Math
 		return start;
 	}
 
+	// ========== FUNÇÕES ADICIONADAS ==========
 
-	inline void VectorAngles(const Vec3 &forward, Vec3 &angles)
+	// Resolve equação quadrática ax² + bx + c = 0
+	inline bool SolveQuadratic(float a, float b, float c, float& x1, float& x2)
+	{
+		float discriminant = b * b - 4.0f * a * c;
+
+		if (discriminant < 0.0f)
+			return false;
+
+		if (a == 0.0f)
+		{
+			if (b == 0.0f)
+				return false;
+
+			x1 = x2 = -c / b;
+			return true;
+		}
+
+		float sqrtDisc = sqrtf(discriminant);
+		x1 = (-b + sqrtDisc) / (2.0f * a);
+		x2 = (-b - sqrtDisc) / (2.0f * a);
+
+		return true;
+	}
+
+	// Rotaciona um ponto 2D ao redor de um centro
+	inline Vec2 RotatePoint(const Vec2& point, const Vec2& center, float angle)
+	{
+		float rad = DEG2RAD(angle);
+		float s = sinf(rad);
+		float c = cosf(rad);
+
+		// Translate point to origin
+		Vec2 p = point - center;
+
+		// Rotate
+		Vec2 rotated;
+		rotated.x = p.x * c - p.y * s;
+		rotated.y = p.x * s + p.y * c;
+
+		// Translate back
+		return rotated + center;
+	}
+
+	// Normaliza um vetor 2D (ignora Z)
+	inline Vec3 Normalized2D(const Vec3& v)
+	{
+		float len = sqrtf(v.x * v.x + v.y * v.y);
+
+		if (len <= 0.0f)
+			return Vec3(0.0f, 0.0f, v.z);
+
+		return Vec3(v.x / len, v.y / len, v.z);
+	}
+
+	// Calcula a diferença entre dois ângulos (considerando wraparound)
+	inline float AngleDelta(float destAngle, float srcAngle)
+	{
+		float delta = fmodf(destAngle - srcAngle, 360.0f);
+
+		if (destAngle > srcAngle)
+		{
+			if (delta >= 180.0f)
+				delta -= 360.0f;
+		}
+		else
+		{
+			if (delta <= -180.0f)
+				delta += 360.0f;
+		}
+
+		return delta;
+	}
+
+	inline void VectorAngles(const Vec3& forward, Vec3& angles)
 	{
 		float tmp, yaw, pitch;
 
@@ -115,7 +189,7 @@ namespace Math
 		return 1.0f / (1.0f + std::exp(-x));
 	}
 
-	inline void AngleVectors(const Vec3 &angles, Vec3 *forward)
+	inline void AngleVectors(const Vec3& angles, Vec3* forward)
 	{
 		float sp, sy, cp, cy;
 
@@ -130,7 +204,7 @@ namespace Math
 		}
 	}
 
-	inline void AngleVectors(const Vec3 &angles, Vec3 *forward, Vec3 *right, Vec3 *up)
+	inline void AngleVectors(const Vec3& angles, Vec3* forward, Vec3* right, Vec3* up)
 	{
 		float sr, sp, sy, cr, cp, cy;
 		SinCos(DEG2RAD(angles.x), &sp, &cp);
@@ -159,7 +233,7 @@ namespace Math
 		}
 	}
 
-	inline Vec3 CalcAngle(const Vec3 &source, const Vec3 &destination, bool clamp = true)
+	inline Vec3 CalcAngle(const Vec3& source, const Vec3& destination, bool clamp = true)
 	{
 		Vec3 angles = {};
 		Vec3 delta = source - destination;
@@ -178,7 +252,7 @@ namespace Math
 		return angles;
 	}
 
-	inline float CalcFov(const Vec3 &src, const Vec3 &dst)
+	inline float CalcFov(const Vec3& src, const Vec3& dst)
 	{
 		Vec3 v_src = Vec3();
 		AngleVectors(src, &v_src);
@@ -194,10 +268,10 @@ namespace Math
 		return result;
 	}
 
-	inline void VectorTransform(const Vec3 &input, const matrix3x4_t &matrix, Vec3 &output)
+	inline void VectorTransform(const Vec3& input, const matrix3x4_t& matrix, Vec3& output)
 	{
 		for (auto i = 0; i < 3; i++)
-			output[i] = input.Dot((Vec3 &)matrix[i]) + matrix[i][3];
+			output[i] = input.Dot((Vec3&)matrix[i]) + matrix[i][3];
 	}
 
 	inline float RemapValClamped(float val, float A, float B, float C, float D)
@@ -211,11 +285,11 @@ namespace Math
 		return C + (D - C) * cVal;
 	}
 
-	inline Vec3 VelocityToAngles(const Vec3 &direction)
+	inline Vec3 VelocityToAngles(const Vec3& direction)
 	{
-		auto Magnitude = [&](const Vec3 &v) -> float {
+		auto Magnitude = [&](const Vec3& v) -> float {
 			return sqrtf(v.Dot(v));
-		};
+			};
 
 		float yaw, pitch;
 
@@ -244,14 +318,14 @@ namespace Math
 		return { pitch, yaw, 0.0f };
 	}
 
-	inline void MatrixSetColumn(const Vec3 &in, int column, matrix3x4_t &out)
+	inline void MatrixSetColumn(const Vec3& in, int column, matrix3x4_t& out)
 	{
 		out[0][column] = in.x;
 		out[1][column] = in.y;
 		out[2][column] = in.z;
 	}
 
-	inline void AngleMatrix(const Vec3 &angles, matrix3x4_t &matrix)
+	inline void AngleMatrix(const Vec3& angles, matrix3x4_t& matrix)
 	{
 		float sr, sp, sy, cr, cp, cy;
 
@@ -281,7 +355,7 @@ namespace Math
 		matrix[2][3] = 0.0f;
 	}
 
-	inline void MatrixAngles(const matrix3x4_t &matrix, float *angles)
+	inline void MatrixAngles(const matrix3x4_t& matrix, float* angles)
 	{
 		float forward[3] = {};
 		float left[3] = {};
@@ -314,11 +388,11 @@ namespace Math
 		}
 	}
 
-	inline void RotateTriangle(std::array<Vec2, 3> &points, float rotation)
+	inline void RotateTriangle(std::array<Vec2, 3>& points, float rotation)
 	{
 		Vec2 points_center = (points[0] + points[1] + points[2]) / 3;
 
-		for (auto &point : points)
+		for (auto& point : points)
 		{
 			point -= points_center;
 			float temp_x = point.x;
@@ -332,7 +406,7 @@ namespace Math
 		}
 	}
 
-	inline bool RayToOBB(const  Vec3 &origin, const  Vec3 &direction, const Vec3 &position, const Vec3 &min, const Vec3 &max, const matrix3x4_t orientation)
+	inline bool RayToOBB(const  Vec3& origin, const  Vec3& direction, const Vec3& position, const Vec3& min, const Vec3& max, const matrix3x4_t orientation)
 	{
 		Vec3 p = position - origin;
 
@@ -371,7 +445,7 @@ namespace Math
 		return true;
 	}
 
-	inline void VectorRotate(Vec3 &in1, const matrix3x4_t &in2, Vec3 &out)
+	inline void VectorRotate(Vec3& in1, const matrix3x4_t& in2, Vec3& out)
 	{
 		out[0] = in1.Dot(in2[0]);
 		out[1] = in1.Dot(in2[1]);

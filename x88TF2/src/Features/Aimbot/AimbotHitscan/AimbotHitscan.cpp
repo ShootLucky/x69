@@ -1,19 +1,14 @@
-﻿#include "AimbotHitscan.h"
-#include "CFG.h"
-#include "../../ESP/ESP.h" // add ESP include to notify aim points and shots
-
+﻿// AimbotHitscan.cpp - CORRIGIDO para o SEU SDK
 // Adapted from Amalgam by rei-2
-// https://github.com/rei-2/Amalgam
+
+#include "AimbotHitscan.h"
+#include "CFG.h"
 
 void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
-    const int nWeaponID = pWeapon->GetWeaponID();
-
-    // Check if aimbot is active
     if (!CFG::Aimbot_Active)
         return;
 
-    // Check keybind
     static bool bToggled = false;
     if (!H::Input->KeybindMethod(CFG::Aimbot_Key, CFG::Aimbot_KeyMode, &bToggled))
         return;
@@ -21,23 +16,23 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
     if (!pLocal || !pWeapon || pLocal->deadflag())
         return;
 
-    // Minigun handling - EXATAMENTE como no Amalgam
+    const int nWeaponID = pWeapon->GetWeaponID();
+
+    // ========== MINIGUN HANDLING ==========
     if (nWeaponID == TF_WEAPON_MINIGUN)
     {
+        pCmd->buttons |= IN_ATTACK2; // Auto rev
+
         auto pMinigun = pWeapon->As<C_TFMinigun>();
         if (pMinigun)
         {
-            int nState = pMinigun->m_iWeaponState();
-            // Se não está girando/atirando, força o spin
-            if (nState != AC_STATE_FIRING && nState != AC_STATE_SPINNING)
-            {
-                pCmd->buttons |= IN_ATTACK2;
-                return; // IMPORTANTE: Retorna aqui e espera próximo tick
-            }
+            int nWeaponState = pMinigun->m_iWeaponState();
+            if (nWeaponState != AC_STATE_FIRING && nWeaponState != AC_STATE_SPINNING)
+                return;
         }
     }
 
-    // Auto scope - EXATAMENTE como no Amalgam
+    // ========== AUTO SCOPE ==========
     if (nWeaponID == TF_WEAPON_SNIPERRIFLE || nWeaponID == TF_WEAPON_SNIPERRIFLE_DECAP)
     {
         bool bScoped = pLocal->InCond(TF_COND_ZOOMED);
@@ -48,94 +43,81 @@ void CAimbotHitscan::Run(CUserCmd* pCmd, C_TFPlayer* pLocal, C_TFWeaponBase* pWe
         }
     }
 
-    // Classic sniper - mantém attack pressionado
+    // ========== CLASSIC CHARGE ==========
     if (nWeaponID == TF_WEAPON_SNIPERRIFLE_CLASSIC)
     {
-        if (CFG::Aimbot_Hitscan_Mode) // Se é silent
+        if (CFG::Aimbot_Hitscan_Mode) // Se mode != 0
             pCmd->buttons |= IN_ATTACK;
     }
 
-    // Get targets
+    // ========== GET TARGETS ==========
     std::vector<Target_t> vTargets = GetTargets(pLocal, pWeapon);
     if (vTargets.empty())
         return;
 
-    // Process targets
-    for (auto& target : vTargets)
+    // ========== PROCESS TARGETS ==========
+    for (auto& tTarget : vTargets)
     {
-        const auto iResult = CanHit(target, pLocal, pWeapon);
+        const int iResult = CanHit(tTarget, pLocal, pWeapon, pCmd);
         if (!iResult)
             continue;
 
-        // Inform ESP about where aimbot is currently aiming (dynamic aim point)
-        gESP.SetAimbotAimPoint(target.pEntity, target.vPos);
+        // Setar globals
+        G::nTargetIndex = tTarget.pEntity->entindex();
+        G::flAimbotFOV = tTarget.fFOV;
 
-        // Se só pode mirar mas não atirar (result == 2)
+        // Se só pode mirar mas não atirar
         if (iResult == 2)
         {
-            Aim(pCmd, target.vAngles);
+            Aim(pCmd, tTarget.vAngles, CFG::Aimbot_Hitscan_Mode);
             break;
         }
 
-        // Target válido - aplicar aim
-        G::nTargetIndex = target.pEntity->entindex();
-        G::flAimbotFOV = target.fFOV;
-
-        // Aplicar ângulos baseado no modo
-        Aim(pCmd, target.vAngles);
-
-        // AUTO SHOOT - EXATAMENTE como no Amalgam
-        if (ShouldFire(pLocal, pWeapon, pCmd, target))
+        // ========== SHOULD FIRE ==========
+        if (ShouldFire(pLocal, pWeapon, pCmd, tTarget))
         {
             switch (nWeaponID)
             {
             case TF_WEAPON_SNIPERRIFLE_CLASSIC:
-                // Classic: solta o botão quando carregado
-                if (pWeapon->As<C_TFSniperRifle>() && pWeapon->As<C_TFSniperRifle>()->m_flChargedDamage() > 0.0f)
+                if (pWeapon->As<C_TFSniperRifle>()->m_flChargedDamage() && pLocal->m_hGroundEntity())
                     pCmd->buttons &= ~IN_ATTACK;
                 break;
-
             default:
-                // Todas as outras armas: pressiona attack
                 pCmd->buttons |= IN_ATTACK;
                 break;
             }
 
-            // Notify ESP of a shot snapshot (captures bone matrix at shot time to visualize)
-            gESP.StoreShotSnapshot(target.pEntity);
-
-            // TAPFIRE - EXATAMENTE como no Amalgam
-            if (CFG::Aimbot_MinigunTapfire && pWeapon->GetWeaponSpread() != 0.0f
-                && target.fDist > 1000.0f)
+            // Tapfire
+            if (CFG::Aimbot_MinigunTapfire && pWeapon->GetWeaponSpread() != 0.f
+                && m_vEyePos.DistTo(tTarget.vPos) > 1000.0f)
             {
-                float flTimeSinceShot = (pLocal->m_nTickBase() * TICK_INTERVAL) - pWeapon->m_flLastFireTime();
-                float flTapTime = (pWeapon->GetBulletsPerShot() > 1) ? 0.25f : 1.25f;
-
-                if (flTimeSinceShot <= flTapTime)
+                const float flTimeSinceLastShot = (pLocal->m_nTickBase() * TICK_INTERVAL) - pWeapon->m_flLastFireTime();
+                if (flTimeSinceLastShot <= (pWeapon->GetBulletsPerShot() > 1 ? 0.25f : 1.25f))
                     pCmd->buttons &= ~IN_ATTACK;
             }
         }
 
         // Backtrack
-        if (target.bBacktrack && CFG::Aimbot_Hitscan_Target_LagRecords)
+        if (tTarget.bBacktrack && tTarget.pRecord)
         {
-            pCmd->tick_count = target.nTickCount;
+            pCmd->tick_count = TIME_TO_TICKS(tTarget.pRecord->m_flSimTime);
         }
 
-        break; // Só processa o primeiro target válido
+        // Aplicar aim
+        Aim(pCmd, tTarget.vAngles, CFG::Aimbot_Hitscan_Mode);
+        break;
     }
 }
 
-// Get targets - simplificado do Amalgam
+// ========== GET TARGETS ==========
 std::vector<CAimbotHitscan::Target_t> CAimbotHitscan::GetTargets(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
 {
     std::vector<Target_t> vTargets;
     vTargets.reserve(32);
 
-    Vec3 vLocalPos = pLocal->GetShootPos();
-    Vec3 vLocalAngles = I::EngineClient->GetViewAngles();
+    const Vec3 vLocalPos = pLocal->GetShootPos();
+    const Vec3 vLocalAngles = I::EngineClient->GetViewAngles();
 
-    // Scan players
     for (int i = 1; i <= I::EngineClient->GetMaxClients(); i++)
     {
         if (i == pLocal->entindex())
@@ -145,8 +127,8 @@ std::vector<CAimbotHitscan::Target_t> CAimbotHitscan::GetTargets(C_TFPlayer* pLo
         if (!pEntity || !IsValidTarget(pEntity, pLocal))
             continue;
 
-        // Scan hitboxes deste player
         auto hitboxes = GetActiveHitboxes();
+
         for (int nHitbox : hitboxes)
         {
             Vec3 vHitboxPos = GetHitboxPos(pEntity, nHitbox);
@@ -161,74 +143,225 @@ std::vector<CAimbotHitscan::Target_t> CAimbotHitscan::GetTargets(C_TFPlayer* pLo
 
             float flDist = vLocalPos.DistTo(vHitboxPos);
 
-            Target_t target;
+            Target_t target{};
             target.pEntity = pEntity;
             target.vPos = vHitboxPos;
             target.vAngles = vAngleTo;
             target.fFOV = flFOV;
             target.fDist = flDist;
             target.nHitbox = nHitbox;
-            target.nPriority = GetHitboxPriority(nHitbox);
+            target.nPriority = GetHitboxPriority(nHitbox, pLocal, pWeapon, pEntity);
+            target.bBacktrack = false;
+            target.pRecord = nullptr;
 
             vTargets.push_back(target);
         }
     }
 
-    // Sort por FOV (como Amalgam por padrão)
+    // Sort
     std::sort(vTargets.begin(), vTargets.end(), [](const Target_t& a, const Target_t& b) {
+        if (a.nPriority != b.nPriority)
+            return a.nPriority < b.nPriority;
         return a.fFOV < b.fFOV;
         });
 
     return vTargets;
 }
 
-// CanHit - verificação de visibilidade
-int CAimbotHitscan::CanHit(Target_t& target, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon)
+// ========== GET HITBOX PRIORITY ==========
+int CAimbotHitscan::GetHitboxPriority(int nHitbox, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, C_BaseEntity* pTarget)
 {
-    Vec3 vStart = pLocal->GetShootPos();
-    Vec3 vEnd = target.vPos;
+    if (nHitbox < 0)
+        return -1;
 
-    // Visibility check básico
-    if (!H::AimUtils->VisPos(pLocal, target.pEntity, vStart, vEnd))
+    bool bHeadshot = false;
+
+    // Verificar se é player (não tem IsPlayer(), então checamos diretamente)
+    if (pTarget->entindex() >= 1 && pTarget->entindex() <= I::EngineClient->GetMaxClients())
     {
-        // Try backtrack
-        if (CFG::Aimbot_Hitscan_Target_LagRecords)
+        switch (pWeapon->GetWeaponID())
         {
-            // TODO: implementar backtrack completo
-            return 0;
+        case TF_WEAPON_SNIPERRIFLE:
+        case TF_WEAPON_SNIPERRIFLE_DECAP:
+        case TF_WEAPON_SNIPERRIFLE_CLASSIC:
+        {
+            // Verificar se pode dar headshot (scoped ou classic charged)
+            if (pLocal->InCond(TF_COND_ZOOMED) || CFG::Aimbot_WaitForHeadshot)
+                bHeadshot = true;
+            break;
         }
-        return 0;
+        }
     }
 
-    target.bBacktrack = false;
-    return 1; // Pode atirar
+    bool bHeadOnly = bHeadshot; // Sem HeadshotOnly cfg
+
+    int iHeadPriority = bHeadOnly || bHeadshot ? 0 : 1;
+    int iBodyPriority = bHeadOnly ? -1 : bHeadshot ? 1 : 0;
+    int iMiscPriority = bHeadOnly ? -1 : 2;
+    int iLimbPriority = bHeadOnly ? -1 : 3;
+
+    switch (nHitbox)
+    {
+    case AIMBOT_HITBOX_HEAD: return iHeadPriority;
+    case AIMBOT_HITBOX_SPINE0:
+    case AIMBOT_HITBOX_SPINE1:
+    case AIMBOT_HITBOX_SPINE2:
+    case AIMBOT_HITBOX_SPINE3: return iBodyPriority;
+    case AIMBOT_HITBOX_PELVIS: return iMiscPriority;
+    }
+
+    return iLimbPriority;
 }
 
-// ShouldFire - EXATAMENTE como no Amalgam
-bool CAimbotHitscan::ShouldFire(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, CUserCmd* pCmd, const Target_t& target)
+// ========== CAN HIT (ADAPTADO) ==========
+int CAimbotHitscan::CanHit(Target_t& tTarget, C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, CUserCmd* pCmd)
+{
+    m_vEyePos = pLocal->GetShootPos();
+
+    // GetRange não existe, usar valor fixo
+    const float flMaxRange = 8192.0f * 8192.0f; // Squared
+
+    auto pModel = tTarget.pEntity->GetModel();
+    if (!pModel) return 0;
+
+    auto pHDR = I::ModelInfoClient->GetStudiomodel(pModel);
+    if (!pHDR) return 0;
+
+    auto pSet = pHDR->pHitboxSet(tTarget.pEntity->As<C_BaseAnimating>()->m_nHitboxSet());
+    if (!pSet) return 0;
+
+    // Sem backtrack - apenas current state
+    matrix3x4_t aBones[MAXSTUDIOBONES];
+    if (!tTarget.pEntity->SetupBones(aBones, MAXSTUDIOBONES, BONE_USED_BY_ANYTHING, tTarget.pEntity->m_flSimulationTime()))
+        return 0;
+
+    // Construir lista de hitboxes com prioridade
+    std::vector<std::tuple<const mstudiobbox_t*, int, int>> vHitboxes;
+    for (int nHitbox = 0; nHitbox < pSet->numhitboxes; nHitbox++)
+    {
+        int iPriority = GetHitboxPriority(nHitbox, pLocal, pWeapon, tTarget.pEntity);
+        if (iPriority == -1)
+            continue;
+
+        auto pBox = pSet->pHitbox(nHitbox);
+        if (!pBox) continue;
+
+        vHitboxes.emplace_back(pBox, nHitbox, iPriority);
+    }
+
+    std::sort(vHitboxes.begin(), vHitboxes.end(), [&](const auto& a, const auto& b) -> bool
+        {
+            return std::get<2>(a) < std::get<2>(b);
+        });
+
+    float flModelScale = tTarget.pEntity->As<C_BaseAnimating>()->m_flModelScale();
+    float flBoneScale = 0.5f; // BoneSizeMinimumScale fixo
+    float flBoneSubtract = 0.0f; // BoneSizeSubtract fixo
+
+    int iReturn = 0;
+
+    for (auto& [pBox, nHitbox, _] : vHitboxes)
+    {
+        Vec3 vMins = pBox->bbmin;
+        Vec3 vMaxs = pBox->bbmax;
+        Vec3 vCheckMins = (vMins + flBoneSubtract / flModelScale) * flBoneScale;
+        Vec3 vCheckMaxs = (vMaxs - flBoneSubtract / flModelScale) * flBoneScale;
+
+        Vec3 vOffset;
+        {
+            Vec3 vOrigin, vCenter;
+            Math::VectorTransform({}, aBones[pBox->bone], vOrigin);
+            Math::VectorTransform((vMins + vMaxs) / 2, aBones[pBox->bone], vCenter);
+            vOffset = vCenter - vOrigin;
+        }
+
+        // ========== MULTIPOINT ==========
+        std::vector<Vec3> vPoints = { Vec3() };
+
+        // Multipoint simples apenas para cabeça
+        if (nHitbox == AIMBOT_HITBOX_HEAD && CFG::Aimbot_Hitscan_Multipoint_Scale > 0.f)
+        {
+            float flScale = CFG::Aimbot_Hitscan_Multipoint_Scale / 100.f;
+            Vec3 vMinsS = (vMins - vMaxs) / 2 * flScale;
+            Vec3 vMaxsS = (vMaxs - vMins) / 2 * flScale;
+
+            vPoints = {
+                Vec3(),
+                Vec3(vMinsS.x, vMinsS.y, vMaxsS.z),
+                Vec3(vMaxsS.x, vMinsS.y, vMaxsS.z),
+                Vec3(vMinsS.x, vMaxsS.y, vMaxsS.z),
+                Vec3(vMaxsS.x, vMaxsS.y, vMaxsS.z),
+                Vec3(vMinsS.x, vMinsS.y, vMinsS.z),
+                Vec3(vMaxsS.x, vMinsS.y, vMinsS.z),
+                Vec3(vMinsS.x, vMaxsS.y, vMinsS.z),
+                Vec3(vMaxsS.x, vMaxsS.y, vMinsS.z)
+            };
+        }
+
+        for (auto& vPoint : vPoints)
+        {
+            Vec3 vOrigin;
+            Math::VectorTransform(vPoint, aBones[pBox->bone], vOrigin);
+            vOrigin += vOffset;
+
+            if (m_vEyePos.DistToSqr(vOrigin) > flMaxRange)
+                continue;
+
+            Vec3 vAngles;
+            bool bChanged = Aim(pCmd->viewangles, Math::CalcAngle(m_vEyePos, vOrigin), vAngles, CFG::Aimbot_Hitscan_Mode);
+
+            Vec3 vForward;
+            Math::AngleVectors(vAngles, &vForward);
+            float flDist = m_vEyePos.DistTo(vOrigin);
+
+            if (bChanged || H::AimUtils->VisPos(pLocal, tTarget.pEntity, m_vEyePos, vOrigin))
+            {
+                // Verificar se ray acerta a hitbox (SEM RayToOBB - usar vischeck simples)
+                if (!bChanged || H::AimUtils->VisPos(pLocal, tTarget.pEntity, m_vEyePos, m_vEyePos + vForward * flDist))
+                {
+                    // Pode atirar!
+                    tTarget.vPos = vOrigin;
+                    tTarget.vAngles = vAngles;
+                    tTarget.nAimedHitbox = nHitbox;
+                    tTarget.bBacktrack = false;
+                    return 1;
+                }
+                else if (bChanged && H::AimUtils->VisPos(pLocal, tTarget.pEntity, m_vEyePos, vOrigin))
+                {
+                    // Pode mirar mas não atirar
+                    if (iReturn != 2 || Math::CalcFov(pCmd->viewangles, vAngles) < Math::CalcFov(pCmd->viewangles, tTarget.vAngles))
+                        tTarget.vAngles = vAngles;
+                    iReturn = 2;
+                }
+            }
+        }
+    }
+
+    return iReturn;
+}
+
+// ========== SHOULD FIRE ==========
+bool CAimbotHitscan::ShouldFire(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, CUserCmd* pCmd, const Target_t& tTarget)
 {
     if (!CFG::Aimbot_AutoShoot)
         return false;
 
-    // Wait for headshot (snipers) — target.pEntity já é C_TFPlayer*, não precisa de IsPlayer()
     if (CFG::Aimbot_WaitForHeadshot)
     {
         switch (pWeapon->GetWeaponID())
         {
         case TF_WEAPON_SNIPERRIFLE:
         case TF_WEAPON_SNIPERRIFLE_DECAP:
-            // substitui G::CanHeadshot por verificação direta usando a função do weapon
-            if (!pWeapon->CanHeadShot(pLocal) && pLocal->InCond(TF_COND_AIMING))
+            if (!pLocal->InCond(TF_COND_ZOOMED) && pLocal->InCond(TF_COND_AIMING))
                 return false;
             break;
         case TF_WEAPON_SNIPERRIFLE_CLASSIC:
-            if (!pWeapon->CanHeadShot(pLocal))
+            if (!pLocal->InCond(TF_COND_ZOOMED))
                 return false;
             break;
         }
     }
 
-    // Wait for charge (snipers)
     if (CFG::Aimbot_WaitForCharge)
     {
         switch (pWeapon->GetWeaponID())
@@ -238,23 +371,20 @@ bool CAimbotHitscan::ShouldFire(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, CUs
         case TF_WEAPON_SNIPERRIFLE_CLASSIC:
         {
             auto pSniper = pWeapon->As<C_TFSniperRifle>();
-            if (pSniper)
+            if (pSniper && pLocal->InCond(TF_COND_AIMING))
             {
-                if (!pLocal->InCond(TF_COND_AIMING))
-                    break;
-
                 float flCharge = pSniper->m_flChargedDamage();
-                if (flCharge < 150.0f) // Não está full charge
+                if (flCharge < 150.f)
                 {
-                    // Checa se pode matar com bodyshot
-                    int iHealth = target.pEntity->m_iHealth();
-                    int iDamage = (int)std::ceil(std::max(flCharge, 50.0f));
+                    int iHealth = tTarget.pEntity->m_iHealth();
+                    int iDamage = static_cast<int>(std::ceil(std::max(flCharge, 50.f)));
 
                     if (iHealth > iDamage)
-                        return false; // Precisa esperar mais carga
+                        return false;
                 }
             }
-            break;
+
+            return false;
         }
         }
     }
@@ -262,65 +392,74 @@ bool CAimbotHitscan::ShouldFire(C_TFPlayer* pLocal, C_TFWeaponBase* pWeapon, CUs
     return true;
 }
 
-// Aim - aplicar ângulos EXATAMENTE como no Amalgam
-void CAimbotHitscan::Aim(CUserCmd* pCmd, Vec3 vAngle)
+// ========== AIM OVERLOAD 1 (CALCULAR ÂNGULO) ==========
+bool CAimbotHitscan::Aim(Vec3 vCurAngle, Vec3 vToAngle, Vec3& vOut, int iMethod)
 {
-    Vec3 vOldAngles = pCmd->viewangles;
+    Vec3 vPunch = H::Entities->GetLocal() ? H::Entities->GetLocal()->m_vecPunchAngle() : Vec3();
 
-    switch (CFG::Aimbot_Hitscan_Mode)
+    bool bReturn = false;
+    vToAngle -= vPunch;
+
+    switch (iMethod)
     {
-    case 0: // Smooth
+    case 0: // Plain
+    case 1: // Silent
+    case 3: // Locking
+        vOut = vToAngle;
+        break;
+    case 2: // Smooth
     {
-        float fSmooth = CFG::Aimbot_Hitscan_Smoothing;
-        if (fSmooth > 1.0f)
+        // LerpAngle manual
+        Vec3 vDelta = vToAngle - vCurAngle;
+        Math::ClampAngles(vDelta);
+        float fLerp = CFG::Aimbot_Hitscan_Smoothing / 100.f;
+        vOut = vCurAngle + (vDelta * fLerp);
+        bReturn = true;
+        break;
+    }
+    }
+
+    Math::ClampAngles(vOut);
+    return bReturn;
+}
+
+// ========== AIM OVERLOAD 2 (APLICAR AO COMANDO) ==========
+void CAimbotHitscan::Aim(CUserCmd* pCmd, Vec3& vAngle, int iMethod)
+{
+    switch (iMethod)
+    {
+    case 0: // Plain
+        if (G::bCanPrimaryAttack)
         {
-            Vec3 vDelta = vAngle - vOldAngles;
-            Math::ClampAngles(vDelta);
-            vAngle = vOldAngles + (vDelta / fSmooth);
+            pCmd->viewangles = vAngle;
+            I::EngineClient->SetViewAngles(vAngle);
         }
+        break;
 
+    case 2: // Smooth
         pCmd->viewangles = vAngle;
         I::EngineClient->SetViewAngles(vAngle);
-        Math::ClampAngles(pCmd->viewangles);
         break;
-    }
 
     case 1: // Silent
-    {
-        // Fix movement ANTES de alterar viewangles
-        Vec3 vMove(pCmd->forwardmove, pCmd->sidemove, 0.0f);
-        float fSpeed = vMove.Length2D();
-
-        if (fSpeed > 0.0f)
+        if (G::bCanPrimaryAttack)
         {
-            Vec3 vMoveAng;
-            Math::VectorAngles(vMove, vMoveAng);
-
-            float fYawDelta = vAngle.y - vOldAngles.y;
-            vMoveAng.y -= fYawDelta;
-
-            Vec3 vNewMove;
-            Math::AngleVectors(vMoveAng, &vNewMove);
-            vNewMove *= fSpeed;
-
-            pCmd->forwardmove = vNewMove.x;
-            pCmd->sidemove = vNewMove.y;
+            H::AimUtils->FixMovement(pCmd, vAngle);
+            pCmd->viewangles = vAngle;
+            G::bPSilentAngles = true;
         }
-
-        pCmd->viewangles = vAngle;
-        Math::ClampAngles(pCmd->viewangles);
-        G::bPSilentAngles = true;
         break;
-    }
 
-    default:
+    case 3: // Locking
+        H::AimUtils->FixMovement(pCmd, vAngle);
         pCmd->viewangles = vAngle;
-        Math::ClampAngles(pCmd->viewangles);
+        G::bPSilentAngles = true;
         break;
     }
 }
 
-// Helper functions
+// ========== HELPER FUNCTIONS ==========
+
 std::vector<int> CAimbotHitscan::GetActiveHitboxes()
 {
     std::vector<int> hitboxes;
@@ -337,39 +476,7 @@ std::vector<int> CAimbotHitscan::GetActiveHitboxes()
         hitboxes.push_back(AIMBOT_HITBOX_SPINE3);
     }
 
-    if (CFG::Aimbot_Hitbox_Arms)
-    {
-        // Arms hitboxes
-        for (int i = 5; i <= 10; i++)
-            hitboxes.push_back(i);
-    }
-
-    if (CFG::Aimbot_Hitbox_Legs)
-    {
-        // Legs hitboxes
-        for (int i = 11; i <= 16; i++)
-            hitboxes.push_back(i);
-    }
-
     return hitboxes;
-}
-
-int CAimbotHitscan::GetHitboxPriority(int nHitbox)
-{
-    // Higher priority = lower number (será atingido primeiro)
-    if (nHitbox == AIMBOT_HITBOX_HEAD)
-        return 0;
-
-    if (nHitbox >= AIMBOT_HITBOX_PELVIS && nHitbox <= AIMBOT_HITBOX_SPINE3)
-        return 1;
-
-    if (nHitbox >= 5 && nHitbox <= 10) // Arms
-        return 2;
-
-    if (nHitbox >= 11 && nHitbox <= 16) // Legs
-        return 3;
-
-    return 4;
 }
 
 bool CAimbotHitscan::IsValidTarget(C_TFPlayer* pEntity, C_TFPlayer* pLocal)
@@ -387,9 +494,6 @@ bool CAimbotHitscan::IsValidTarget(C_TFPlayer* pEntity, C_TFPlayer* pLocal)
         return false;
 
     if (CFG::Aimbot_Ignore_Invisible && pEntity->IsInvisible())
-        return false;
-
-    if (CFG::Aimbot_Ignore_Taunting && pEntity->InCond(TF_COND_TAUNTING))
         return false;
 
     return true;

@@ -43,12 +43,18 @@ class CTraceFilterSimple : public CTraceFilter
 {
 public:
 	CTraceFilterSimple(const IHandleEntity* passentity, int collisionGroup)
-		: m_pPassEnt(passentity), m_iCollisionGroup(collisionGroup) {
+		: m_pPassEnt(passentity), m_iCollisionGroup(collisionGroup)
+	{
 	}
 
-	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override
 	{
 		return pHandleEntity != m_pPassEnt;
+	}
+
+	virtual TraceType_t GetTraceType() const override
+	{
+		return TRACE_EVERYTHING;
 	}
 
 	const IHandleEntity* m_pPassEnt;

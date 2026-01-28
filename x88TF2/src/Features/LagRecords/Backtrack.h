@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "../src/SDK/SDK.h"
 
@@ -47,12 +47,19 @@ public:
 	void AddRecord(C_TFPlayer* pPlayer);
 	const LagRecord_t* GetRecord(C_TFPlayer* pPlayer, int nRecord, bool bSafe = false);
 	bool HasRecords(C_TFPlayer* pPlayer, int* pTotalRecords = nullptr);
+	int GetRecordCount(C_TFPlayer* pPlayer) const
+	{
+		auto it = m_LagRecords.find(pPlayer);
+		if (it != m_LagRecords.end())
+			return static_cast<int>(it->second.size());
+		return 0;
+	}
 	void UpdateRecords();
 	bool DiffersFromCurrent(const LagRecord_t* pRecord);
 	bool IsSettingUpBones() { return m_bSettingUpBones; }
 
 	// Expose the raw container of records for a player.
-	// Retorna uma referência constante para a deque de registros (pode ser vazia).
+	// Retorna uma referï¿½ncia constante para a deque de registros (pode ser vazia).
 	const std::deque<LagRecord_t>& Records(C_TFPlayer* pPlayer) const
 	{
 		static const std::deque<LagRecord_t> empty;

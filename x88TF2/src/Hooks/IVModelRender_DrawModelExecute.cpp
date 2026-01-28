@@ -154,7 +154,6 @@ MAKE_HOOK(CBaseAnimating_DrawModel, Signatures::CBaseAnimating_DrawModel.Get(), 
                     case 7: return F::Materials->m_pOverlay;
                     case 8: return F::Materials->m_pKSOverlay;
                     case 9: return F::Materials->m_pEsoOverlay;
-                    case 10: return F::Materials->m_pFlatOverlay;
                     default: return nullptr;
                     }
                     };

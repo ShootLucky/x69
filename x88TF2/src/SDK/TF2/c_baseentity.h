@@ -223,4 +223,9 @@ public:
 	{
 		reinterpret_cast<void(__fastcall*)(void*)>(Signatures::CBaseEntity_InvalidateBoneCache.Get())(this);
 	}
+
+	static C_BaseEntity* FromIClientEntity(IClientEntity* pEntity)
+	{
+		return reinterpret_cast<C_BaseEntity*>(pEntity);
+	}
 };

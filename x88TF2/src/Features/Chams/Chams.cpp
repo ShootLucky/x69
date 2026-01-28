@@ -102,7 +102,7 @@ void CMaterials::Initialize()
         KeyValues* kv = new KeyValues("UnlitGeneric");
         kv->SetString("$basetexture", "vgui/white_additive");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pFlat = I::MaterialSystem->CreateMaterial("seo_material_flat", kv);
+        m_pFlat = I::MaterialSystem->CreateMaterial("material_flat", kv);
     }
 
     if (!m_pFlatIgnoreZ)
@@ -111,7 +111,7 @@ void CMaterials::Initialize()
         kv->SetString("$basetexture", "vgui/white_additive");
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pFlatIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_flat_ignorez", kv);
+        m_pFlatIgnoreZ = I::MaterialSystem->CreateMaterial("material_flat_ignorez", kv);
     }
 
     // ===== SHADED =====
@@ -124,7 +124,7 @@ void CMaterials::Initialize()
         kv->SetString("$selfillumFresnel", "1");
         kv->SetString("$selfillumFresnelMinMaxExp", "[-0.25 1 1]");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pShaded = I::MaterialSystem->CreateMaterial("seo_material_shaded", kv);
+        m_pShaded = I::MaterialSystem->CreateMaterial("material_shaded", kv);
     }
 
     if (!m_pShadedIgnoreZ)
@@ -137,7 +137,7 @@ void CMaterials::Initialize()
         kv->SetString("$selfillumFresnelMinMaxExp", "[-0.25 1 1]");
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pShadedIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_shaded_ignorez", kv);
+        m_pShadedIgnoreZ = I::MaterialSystem->CreateMaterial("material_shaded_ignorez", kv);
     }
 
     // ===== GLOSSY =====
@@ -157,7 +157,7 @@ void CMaterials::Initialize()
         kv->SetString("$nodecal", "1");
         kv->SetString("$model", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pGlossy = I::MaterialSystem->CreateMaterial("seo_material_glossy", kv);
+        m_pGlossy = I::MaterialSystem->CreateMaterial("material_glossy", kv);
     }
 
     if (!m_pGlossyIgnoreZ)
@@ -177,7 +177,7 @@ void CMaterials::Initialize()
         kv->SetString("$model", "1");
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pGlossyIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_glossy_ignorez", kv);
+        m_pGlossyIgnoreZ = I::MaterialSystem->CreateMaterial("material_glossy_ignorez", kv);
     }
 
     // ===== GLOW =====
@@ -196,7 +196,7 @@ void CMaterials::Initialize()
         kv->SetString("$envmaptint", "[0 1 0]");
         kv->SetString("$selfillumtint", "[0 0 0]");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pGlow = I::MaterialSystem->CreateMaterial("seo_material_glow", kv);
+        m_pGlow = I::MaterialSystem->CreateMaterial("material_glow", kv);
         m_pGlowEnvmapTint = m_pGlow->FindVar("$envmaptint", nullptr);
         m_pGlowSelfillumTint = m_pGlow->FindVar("$selfillumtint", nullptr);
     }
@@ -217,7 +217,7 @@ void CMaterials::Initialize()
         kv->SetString("$selfillumtint", "[0 0 0]");
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pGlowIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_glow_ignorez", kv);
+        m_pGlowIgnoreZ = I::MaterialSystem->CreateMaterial("material_glow_ignorez", kv);
         m_pGlowIgnoreZEnvmapTint = m_pGlowIgnoreZ->FindVar("$envmaptint", nullptr);
         m_pGlowIgnoreZSelfillumTint = m_pGlowIgnoreZ->FindVar("$selfillumtint", nullptr);
     }
@@ -239,7 +239,7 @@ void CMaterials::Initialize()
         kv->SetString("$nodecal", "1");
         kv->SetString("$model", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pPlastic = I::MaterialSystem->CreateMaterial("seo_material_plastic", kv);
+        m_pPlastic = I::MaterialSystem->CreateMaterial("material_plastic", kv);
     }
 
     if (!m_pPlasticIgnoreZ)
@@ -259,7 +259,7 @@ void CMaterials::Initialize()
         kv->SetString("$model", "1");
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pPlasticIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_plastic_ignorez", kv);
+        m_pPlasticIgnoreZ = I::MaterialSystem->CreateMaterial("material_plastic_ignorez", kv);
     }
 
     // ===== FRESNEL =====
@@ -282,7 +282,7 @@ void CMaterials::Initialize()
         kv->SetString("$rimlightexponent", "3");        // ← ADICIONADO
         kv->SetString("$rimlightboost", "1.5");         // ← ADICIONADO
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pFresnel = I::MaterialSystem->CreateMaterial("seo_material_fresnel", kv);
+        m_pFresnel = I::MaterialSystem->CreateMaterial("material_fresnel", kv);
     }
 
     if (!m_pFresnelIgnoreZ)
@@ -305,7 +305,7 @@ void CMaterials::Initialize()
         kv->SetString("$rimlightboost", "1.5");         // ← ADICIONADO
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pFresnelIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_fresnel_ignorez", kv);
+        m_pFresnelIgnoreZ = I::MaterialSystem->CreateMaterial("material_fresnel_ignorez", kv);
     }
 
     // ===== OVERLAY =====
@@ -323,7 +323,7 @@ void CMaterials::Initialize()
         kv->SetString("$phong", "1");
         kv->SetString("$phongfresnelranges", "[0 0 1.5]");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pOverlay = I::MaterialSystem->CreateMaterial("seo_material_overlay", kv);
+        m_pOverlay = I::MaterialSystem->CreateMaterial("material_overlay", kv);
     }
 
     if (!m_pOverlayIgnoreZ)
@@ -341,7 +341,7 @@ void CMaterials::Initialize()
         kv->SetString("$phongfresnelranges", "[0 0 1.5]");
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pOverlayIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_overlay_ignorez", kv);
+        m_pOverlayIgnoreZ = I::MaterialSystem->CreateMaterial("material_overlay_ignorez", kv);
     }
 
     // ===== KS OVERLAY =====
@@ -374,7 +374,7 @@ void CMaterials::Initialize()
             }
             proxies->FindKey("invis", true);
         }
-        m_pKSOverlay = I::MaterialSystem->CreateMaterial("seo_material_ksoverlay", kv);
+        m_pKSOverlay = I::MaterialSystem->CreateMaterial("material_ksoverlay", kv);
     }
 
     if (!m_pKSOverlayIgnoreZ)
@@ -407,7 +407,7 @@ void CMaterials::Initialize()
             }
             proxies->FindKey("invis", true);
         }
-        m_pKSOverlayIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_ksoverlay_ignorez", kv);
+        m_pKSOverlayIgnoreZ = I::MaterialSystem->CreateMaterial("material_ksoverlay_ignorez", kv);
     }
 
     // ===== ESO OVERLAY =====
@@ -427,7 +427,7 @@ void CMaterials::Initialize()
         kv->SetString("$nodecal", "1");
         kv->SetString("$model", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pEsoOverlay = I::MaterialSystem->CreateMaterial("seo_material_esooverlay", kv);
+        m_pEsoOverlay = I::MaterialSystem->CreateMaterial("material_esooverlay", kv);
     }
 
     if (!m_pEsoOverlayIgnoreZ)
@@ -447,7 +447,7 @@ void CMaterials::Initialize()
         kv->SetString("$model", "1");
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pEsoOverlayIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_esooverlay_ignorez", kv);
+        m_pEsoOverlayIgnoreZ = I::MaterialSystem->CreateMaterial("material_esooverlay_ignorez", kv);
     }
 
     // ===== FLAT OVERLAY =====
@@ -463,7 +463,7 @@ void CMaterials::Initialize()
         kv->SetString("$nodecal", "1");
         kv->SetString("$model", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pFlatOverlay = I::MaterialSystem->CreateMaterial("seo_material_flatoverlay", kv);
+        m_pFlatOverlay = I::MaterialSystem->CreateMaterial("material_flatoverlay", kv);
     }
 
     if (!m_pFlatOverlayIgnoreZ)
@@ -479,7 +479,7 @@ void CMaterials::Initialize()
         kv->SetString("$model", "1");
         kv->SetString("$ignorez", "1");
         if (const auto proxies = kv->FindKey("Proxies", true)) { proxies->FindKey("invis", true); }
-        m_pFlatOverlayIgnoreZ = I::MaterialSystem->CreateMaterial("seo_material_flatoverlay_ignorez", kv);
+        m_pFlatOverlayIgnoreZ = I::MaterialSystem->CreateMaterial("material_flatoverlay_ignorez", kv);
     }
 }
 

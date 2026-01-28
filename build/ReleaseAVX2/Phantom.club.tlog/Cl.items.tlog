@@ -46,6 +46,7 @@ C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CTFVi
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CTFWeaponBase_GetTracerType.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CTFWeaponBase_GetTracerType.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CUserMessages_DispatchUserMessage.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CUserMessages_DispatchUserMessage.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CViewRender_DrawViewModels.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CViewRender_DrawViewModels.obj
+C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\FireProjectile.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\FireProjectile.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\FX_FireBullets.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\FX_FireBullets.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\IBaseClientDLL_FrameStageNotify.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\IBaseClientDLL_FrameStageNotify.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\IBaseClientDLL_LevelInitPostEntity.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\IBaseClientDLL_LevelInitPostEntity.obj

@@ -118,6 +118,7 @@ namespace gui
     };
 
     static VisualsModeState g_visuals_mode_state;
+    static VisualsModeState g_aimbot_mode_state;
 
     void visuals_mode_selector(int* mode) {
         auto& s = g_visuals_mode_state;
@@ -138,6 +139,81 @@ namespace gui
         if (s.anim > 0.01f) {
             ImDrawList* fg_draw = ImGui::GetForegroundDrawList();
             std::vector<std::string> items = { "ESP", "Materials", "World" };
+
+            float item_height = 18.0f;
+            float list_width = 89.0f;
+            float list_height = (item_height * items.size() + 4.0f) * (s.anim / 100.0f);
+
+            // Usar a posição capturada ao abrir para evitar seguir o mouse constantemente
+            ImVec2 list_pos = s.anchor_pos;
+
+            // Clamp para manter dentro da tela
+            ImVec2 display = ImGui::GetIO().DisplaySize;
+            if (list_pos.x + list_width > display.x) list_pos.x = display.x - list_width - 10.0f;
+            if (list_pos.y + list_height > display.y) list_pos.y = display.y - list_height - 10.0f;
+            list_pos.x = ImMax(list_pos.x, 5.0f);
+            list_pos.y = ImMax(list_pos.y, 5.0f);
+
+            ImRect list_rect(list_pos, ImVec2(list_pos.x + list_width, list_pos.y + list_height));
+
+            fg_draw->AddRectFilled(
+                ImVec2(list_pos.x + 1.0f, list_pos.y + 1.0f),
+                ImVec2(list_pos.x + list_width - 1.0f, list_pos.y + (item_height * items.size() + 2.0f) * (s.anim / 100.0f)),
+                IM_COL32(60, 60, 60, 255));
+            fg_draw->AddRect(list_pos, ImVec2(list_pos.x + list_width, list_pos.y + list_height),
+                IM_COL32(15, 15, 15, 155));
+
+            if (s.anim >= 100.0f) {
+                for (size_t i = 0; i < items.size(); i++) {
+                    ImVec2 item_pos(list_pos.x + 5.0f, list_pos.y + 4.0f + i * item_height);
+                    ImRect item_rect(item_pos, ImVec2(item_pos.x + 88.0f, item_pos.y + 15.0f));
+
+                    bool item_hovered = ImGui::IsMouseHoveringRect(item_rect.Min, item_rect.Max);
+                    bool item_selected = (*mode == static_cast<int>(i));
+
+                    ImU32 text_color = (item_hovered || item_selected) ?
+                        GetAccentColor(255) : IM_COL32(120, 120, 120, 255);
+
+                    fg_draw->AddText(
+                        ImVec2(list_pos.x + 24.0f, list_pos.y + 4.0f + i * item_height),
+                        text_color, items[i].c_str());
+
+                    if (item_hovered && ImGui::IsMouseClicked(0)) {
+                        *mode = static_cast<int>(i);
+                        s.context_open = false;
+                    }
+                }
+            }
+
+            // Fechar ao clicar fora (usa list_rect com a posição fixa)
+            if (s.context_open && s.anim >= 100.0f && ImGui::IsMouseClicked(0) &&
+                !ImGui::IsMouseHoveringRect(list_rect.Min, list_rect.Max)) {
+                s.context_open = false;
+            }
+        }
+
+        // Atualiza estado anterior para detectar aberturas futuras
+        s.prev_context_open = s.context_open;
+    }
+
+    void aimbot_mode_selector(int* mode) {
+        auto& s = g_aimbot_mode_state;
+        // Captura a posição de abertura apenas no frame em que o menu foi aberto
+        if (s.context_open && !s.prev_context_open) {
+            // Preferir cursor ao abrir; pode ser alterado para outra âncora se necessário
+            s.anchor_pos = ImGui::GetMousePos();
+        }
+
+        if (s.context_open) {
+            s.anim = std::min(100.0f, s.anim + 10.0f);
+        }
+        else {
+            s.anim = std::max(0.0f, s.anim - 10.0f);
+        }
+
+        if (s.anim > 0.01f) {
+            ImDrawList* fg_draw = ImGui::GetForegroundDrawList();
+            std::vector<std::string> items = { "Main", "Projectile", "Melee" };  // Personalize com modos de aimbot
 
             float item_height = 18.0f;
             float list_width = 89.0f;

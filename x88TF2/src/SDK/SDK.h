@@ -281,6 +281,8 @@ namespace G
 	inline int nTargetIndex = -1;
 	inline float flAimbotFOV = 0.0f;
 	inline bool bCanPrimaryAttack = false;
+	inline bool bRunningPrediction = false;
+	inline bool bRunCmd = false;
 	inline bool bCanSecondaryAttack = false;
 	inline bool bCanHeadshot = false;
 	inline int nOldButtons = 0;
