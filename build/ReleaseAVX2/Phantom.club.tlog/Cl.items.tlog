@@ -19,6 +19,7 @@ C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Features\La
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Features\Misc\Misc.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\Misc.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Features\ProjectileSim\ProjectileSim.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\ProjectileSim.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Features\Exploits\nospread\nospread.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\nospread.obj
+C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Features\SkinChanger\SkinChanger.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\SkinChanger.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Features\VisualUtils\VisualUtils.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\VisualUtils.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CBaseAnimating_SetupBones.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CBaseAnimating_SetupBones.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CBaseEntity_AddVar.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CBaseEntity_AddVar.obj
@@ -31,6 +32,7 @@ C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CGame
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CHudTFCrosshair_ShouldDraw.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CHudTFCrosshair_ShouldDraw.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\ClientModeShared_CreateMove.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\ClientModeShared_CreateMove.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\ClientModeShared_OverrideView.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\ClientModeShared_OverrideView.obj
+C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CL_CallPostDataUpdates.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CL_CallPostDataUpdates.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CL_Move.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CL_Move.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CMaterial_Uncache.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CMaterial_Uncache.obj
 C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\x88TF2\src\Hooks\CMultiPlayerAnimState_ResetGestureSlot.cpp;C:\Users\userp\OneDrive\Desktop\Phantom.club\Phantom.club\build\ReleaseAVX2\CMultiPlayerAnimState_ResetGestureSlot.obj

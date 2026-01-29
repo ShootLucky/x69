@@ -95,6 +95,8 @@
     <ClCompile Include="src\Features\Network\network_fix.cpp" />
     <ClCompile Include="src\Features\Exploits\shifting\shifting.cpp" />
     <ClCompile Include="src\Hooks\FireProjectile.cpp" />
+    <ClCompile Include="src\Hooks\CL_CallPostDataUpdates.cpp" />
+    <ClCompile Include="src\Features\SkinChanger\SkinChanger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SDK\Helpers\AimUtils\AimUtils.h" />
@@ -285,5 +287,7 @@
     <ClInclude Include="src\Features\Exploits\shifting\shifting.h" />
     <ClInclude Include="src\icons.h" />
     <ClInclude Include="include\stb_image.h" />
+    <ClInclude Include="src\Features\SkinChanger\SkinChanger.h" />
+    <ClInclude Include="src\Utils\fnv1a.h" />
   </ItemGroup>
 </Project>
