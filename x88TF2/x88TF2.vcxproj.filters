@@ -289,5 +289,9 @@
     <ClInclude Include="include\stb_image.h" />
     <ClInclude Include="src\Features\SkinChanger\SkinChanger.h" />
     <ClInclude Include="src\Utils\fnv1a.h" />
+    <ClInclude Include="src\SDK\TF2\baseclientstate.h" />
+    <ClInclude Include="src\SDK\TF2\client_render_handle.h" />
+    <ClInclude Include="src\SDK\TF2\UtlSortVector.h" />
+    <ClInclude Include="src\Features\SkinChanger\Warpainterdatabase.h" />
   </ItemGroup>
 </Project>

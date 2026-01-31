@@ -1,16 +1,16 @@
 ﻿#include "SkinChanger.h"
-#include "../src/SDK/TF2/tf_shareddefs.h"
 
 #include <array>
 #include <format>
-#include "../Include/nlohmann/json.hpp"
 #include <fstream>
+#include <iostream>
+#include "../include/nlohmann/json.hpp"
+#include "../src/SDK/TF2/tf_shareddefs.h"
 
-// ===== SIGNATURES =====
 #ifndef _WIN64
-MAKE_SIGNATURE(GetItemSchema, "client.dll", "E8 ? ? ? ? 83 C0 ? C3 CC", 0);
-MAKE_SIGNATURE(CEconItemSchema_GetAttributeDefinition, "client.dll", "55 8B EC 83 EC ? 53 56 8B D9 8D 4D ? 57 E8 ? ? ? ? 8B 45", 0);
-MAKE_SIGNATURE(CAttributeList_SetRuntimeAttributeValue, "client.dll", "55 8B EC 83 EC ? 33 C0 53 8B D9 56 57 8B 7D", 0);
+SIGNATURE(GetItemSchema, "client.dll", "E8 ? ? ? ? 83 C0 ? C3 CC");
+SIGNATURE(CEconItemSchema_GetAttributeDefinition, "client.dll", "55 8B EC 83 EC ? 53 56 8B D9 8D 4D ? 57 E8 ? ? ? ? 8B 45");
+SIGNATURE(CAttributeList_SetRuntimeAttributeValue, "client.dll", "55 8B EC 83 EC ? 33 C0 53 8B D9 56 57 8B 7D");
 #else
 MAKE_SIGNATURE(GetItemSchema, "client.dll", "48 83 EC ? E8 ? ? ? ? 48 83 C0 ? 48 83 C4 ? C3 CC CC CC", 0);
 MAKE_SIGNATURE(CEconItemSchema_GetAttributeDefinition, "client.dll", "89 54 24 ? 53 48 83 EC ? 48 8B D9 48 8D 54 24 ? 48 81 C1 ? ? ? ? E8 ? ? ? ? 8B D0 3B 83 ? ? ? ? 73 ? 8B 83 ? ? ? ? 83 F8 ? 74 ? 3B D0 7F ? 48 81 C3 ? ? ? ? 44 8B C2 83 FA ? 74 ? 48 8B 03 8B CA", 0);
@@ -68,24 +68,13 @@ public:
 
 	void SetAttribute(int index, float value)
 	{
-		if (!Signatures::GetItemSchema.Get() ||
-			!Signatures::CEconItemSchema_GetAttributeDefinition.Get() ||
-			!Signatures::CAttributeList_SetRuntimeAttributeValue.Get())
-		{
-			return;
-		}
-
 		auto schema = reinterpret_cast<GetItemSchemaFN>(Signatures::GetItemSchema.Get())();
-		if (!schema)
-			return;
 
-		auto attributeDefinition = reinterpret_cast<GetAttributeDefinitionFN>(
-			Signatures::CEconItemSchema_GetAttributeDefinition.Get())(schema, index);
+		auto attributeDefinition = reinterpret_cast<GetAttributeDefinitionFN>(Signatures::CEconItemSchema_GetAttributeDefinition.Get())(schema, index);
 		if (!attributeDefinition)
 			return;
 
-		reinterpret_cast<SetRuntimeAttributeValueFN>(
-			Signatures::CAttributeList_SetRuntimeAttributeValue.Get())(this, attributeDefinition, value);
+		reinterpret_cast<SetRuntimeAttributeValueFN>(Signatures::CAttributeList_SetRuntimeAttributeValue.Get())(this, attributeDefinition, value);
 	}
 };
 
@@ -135,27 +124,48 @@ void SkinChanger::ApplySkin(Weapon* pWeapon)
 #else
 	auto attributeList = reinterpret_cast<CAttributeList*>(reinterpret_cast<std::uintptr_t>(pWeapon) + 3512);
 #endif
+
 	if (!attributeList)
 		return;
 
+#ifdef _DEBUG
+	if (attributeList->m_Attributes.Count() > 0 && m_Skins.find(nWeaponIndex) == m_Skins.end())
+	{
+		// This weapon seems to already have a skin applied, but we don't have it in our map
+		// Let's print out what attributes it has
+		std::cout << "Weapon that needs to have different pre-filled attributes: " << nWeaponIndex << std::endl;
+
+		for (const auto& attribute : attributeList->m_Attributes)
+		{
+			std::cout << "Attribute: " << attribute.m_iAttributeDefinitionIndex << " Value: " << attribute.m_flValue << std::endl;
+		}
+	}
+#endif
+
 	auto PreFilledAttributeCount = [&](int index) -> int
 		{
+			// Most weapons have no attributes, some have more than one.
+			// Seems all snipers have this "no_jump" attribute
 			switch (index)
 			{
 			case Sniper_m_TheBazaarBargain:
 			case Sniper_m_SniperRifle:
 			case Sniper_m_SniperRifleR:
 				return 1;
+
 			default: return 0;
 			}
 		};
 
+	// If we have attributes, we've already applied all the attributes we want
 	if (attributeList->m_Attributes.Count() > PreFilledAttributeCount(m_nCurrentWeaponIndex))
 		return;
 
+	// Not a weapon we plan to add attributes to
 	if (m_Skins.find(nWeaponIndex) == m_Skins.end())
 		return;
 
+	// Apply the attributes if we have requested attributes for it
 	const auto& vecAttributes = m_Skins[nWeaponIndex].m_Attributes;
 	if (vecAttributes.empty())
 		return;
@@ -166,9 +176,6 @@ void SkinChanger::ApplySkin(Weapon* pWeapon)
 
 void SkinChanger::ApplySkins()
 {
-	if (!I::ClientEntityList || !I::EngineClient || !I::ClientState)
-		return;
-
 	if (!m_bInitialSkinLoad)
 	{
 		Load();
@@ -212,15 +219,13 @@ void SkinChanger::SetAttribute(int index, std::string attributeStr, float value)
 
 	uint16_t attributeIndex = attributes::StringToAttribute(attributeStr);
 
-	if (attributeIndex == 0)
-		return;
-
 	if (attributeIndex == attributes::paintkit_proto_def_index)
 		value = IntToStupidFloat(static_cast<int>(value));
 
 	if (m_Skins.find(index) == m_Skins.end())
 		m_Skins[index] = SkinInfo();
 
+	// Check if attribute already exists, if so, update it
 	bool bFound = false;
 
 	for (auto& attribute : m_Skins[index].m_Attributes)
@@ -228,12 +233,13 @@ void SkinChanger::SetAttribute(int index, std::string attributeStr, float value)
 		if (attribute.attributeIndex == attributeIndex)
 		{
 			attribute.attributeValue = value;
+
 			bFound = true;
 			break;
 		}
 	}
 
-	if (!bFound)
+	if (!bFound)// Attribute doesn't exist, add it
 		m_Skins[index].m_Attributes.push_back({ attributeIndex, value });
 
 	m_bForceFullUpdate = true;
@@ -245,96 +251,199 @@ void SkinChanger::RemoveAttribute(int index, std::string attributeStr)
 		return;
 
 	auto& attributes = m_Skins[index].m_Attributes;
+
 	uint16_t attributeIndex = attributes::StringToAttribute(attributeStr);
 
-	// CORREÇÃO: Se não conseguiu converter a string, tenta converter direto do número
-	if (attributeIndex == 0)
-	{
-		try {
-			attributeIndex = static_cast<uint16_t>(std::stoi(attributeStr));
-		}
-		catch (...) {
-			return;
-		}
-	}
-
+	// Find attribute
 	for (auto it = attributes.begin(); it != attributes.end(); ++it)
 	{
 		if (it->attributeIndex == attributeIndex)
 		{
 			attributes.erase(it);
 			m_bForceFullUpdate = true;
+
 			return;
 		}
 	}
+}
+
+void SkinChanger::ApplyWarPaint(int weaponIndex, int warpaintID, float wear, int seedLo, int seedHi, bool teamColor)
+{
+	if (weaponIndex == -1)
+		return;
+
+	// Remove any existing warpaint attributes first
+	RemoveWarPaint(weaponIndex);
+
+	// Apply the warpaint ID (as stupid float)
+	SetAttribute(weaponIndex, "paintkit_proto_def_index", static_cast<float>(warpaintID));
+
+	// Apply wear level (0.0 = Factory New, 1.0 = Battle Scarred)
+	SetAttribute(weaponIndex, "set_item_texture_wear", wear);
+
+	// Apply seed values for pattern variation
+	if (seedLo != 0)
+		SetAttribute(weaponIndex, "custom_paintkit_seed_lo", static_cast<float>(seedLo));
+
+	if (seedHi != 0)
+		SetAttribute(weaponIndex, "custom_paintkit_seed_hi", static_cast<float>(seedHi));
+
+	// Apply team color if needed
+	if (teamColor)
+		SetAttribute(weaponIndex, "has_team_color_paintkit", 1.0f);
+
+	// Allow inspect
+	SetAttribute(weaponIndex, "weapon_allow_inspect", 1.0f);
+
+	m_bForceFullUpdate = true;
+
+#ifdef _DEBUG
+	std::cout << "[SkinChanger] Applied warpaint ID " << warpaintID << " to weapon " << weaponIndex << std::endl;
+	std::cout << "  Wear: " << wear << ", SeedLo: " << seedLo << ", SeedHi: " << seedHi << ", TeamColor: " << teamColor << std::endl;
+#endif
+}
+
+void SkinChanger::RemoveWarPaint(int weaponIndex)
+{
+	if (weaponIndex == -1 || m_Skins.find(weaponIndex) == m_Skins.end())
+		return;
+
+	// Remove all warpaint-related attributes
+	RemoveAttribute(weaponIndex, "paintkit_proto_def_index");
+	RemoveAttribute(weaponIndex, "set_item_texture_wear");
+	RemoveAttribute(weaponIndex, "custom_paintkit_seed_lo");
+	RemoveAttribute(weaponIndex, "custom_paintkit_seed_hi");
+	RemoveAttribute(weaponIndex, "has_team_color_paintkit");
+	RemoveAttribute(weaponIndex, "weapon_allow_inspect");
+
+	m_bForceFullUpdate = true;
+
+#ifdef _DEBUG
+	std::cout << "[SkinChanger] Removed warpaint from weapon " << weaponIndex << std::endl;
+#endif
+}
+
+bool SkinChanger::HasWarPaint(int weaponIndex)
+{
+	if (weaponIndex == -1 || m_Skins.find(weaponIndex) == m_Skins.end())
+		return false;
+
+	return m_Skins[weaponIndex].HasAttribute(attributes::paintkit_proto_def_index);
 }
 
 void SkinChanger::Save()
 {
-	try
+	std::ofstream file("skins.json");
+	if (!file.good())
+		return;
+
+	nlohmann::json j;
+
+	for (const auto& skin : m_Skins)
 	{
-		std::ofstream file("skins.json");
-		if (!file.good())
-			return;
+		int index = skin.first;
+		if (index == -1)
+			continue;
 
-		nlohmann::json j;
+		const auto& vecAttributes = skin.second.m_Attributes;
+		std::string strIndex = std::to_string(index);
 
-		for (const auto& skin : m_Skins)
+		for (const auto& attribute : vecAttributes)
 		{
-			int index = skin.first;
-			if (index == -1)
-				continue;
+			// Save attribute name for readability
+			std::string attrName = attributes::AttributeToString(attribute.attributeIndex);
 
-			const auto& vecAttributes = skin.second.m_Attributes;
-			std::string strIndex = std::to_string(index);
-
-			for (const auto& attribute : vecAttributes)
+			// Special handling for paintkit_proto_def_index (save as int, not float)
+			if (attribute.attributeIndex == attributes::paintkit_proto_def_index)
 			{
-				j[strIndex][std::to_string(attribute.attributeIndex)] = attribute.attributeValue;
+				int paintID = StupidFloatToInt(attribute.attributeValue);
+				j[strIndex][attrName] = paintID;
+			}
+			else
+			{
+				j[strIndex][attrName] = attribute.attributeValue;
 			}
 		}
+	}
 
-		file << j.dump(4);
-		file.close();
-	}
-	catch (...)
-	{
-	}
+	file << j.dump(4);
+
+	file.close();
+
+#ifdef _DEBUG
+	std::cout << "[SkinChanger] Saved " << m_Skins.size() << " weapon configurations" << std::endl;
+#endif
 }
 
 void SkinChanger::Load()
 {
+	std::ifstream file("skins.json");
+	if (!file.good())
+		return;
+
+	m_Skins.clear();
+
+	nlohmann::json j;
+
 	try
 	{
-		std::ifstream file("skins.json");
-		if (!file.good())
-			return;
-
-		m_Skins.clear();
-
-		nlohmann::json j = nlohmann::json::parse(file);
-
-		for (auto it = j.begin(); it != j.end(); ++it)
-		{
-			int index = std::stoi(it.key());
-			if (index == -1)
-				continue;
-
-			const auto& vecAttributes = it.value();
-
-			for (auto it2 = vecAttributes.begin(); it2 != vecAttributes.end(); ++it2)
-			{
-				int attributeIndex = std::stoi(it2.key());
-				float attributeValue = it2.value();
-
-				m_Skins[index].m_Attributes.push_back({ static_cast<uint16_t>(attributeIndex), attributeValue });
-			}
-		}
-
-		file.close();
+		j = nlohmann::json::parse(file);
 	}
-	catch (...)
+	catch (const std::exception& e)
 	{
-		m_Skins.clear();
+#ifdef _DEBUG
+		std::cout << "[SkinChanger] Failed to parse skins.json: " << e.what() << std::endl;
+#endif
+		file.close();
+		return;
 	}
+
+	for (auto it = j.begin(); it != j.end(); ++it)
+	{
+		int index = std::stoi(it.key());
+		if (index == -1)
+			continue;
+
+		const auto& vecAttributes = it.value();
+
+		for (auto it2 = vecAttributes.begin(); it2 != vecAttributes.end(); ++it2)
+		{
+			std::string attrName = it2.key();
+			uint16_t attributeIndex = attributes::StringToAttribute(attrName);
+
+			if (attributeIndex == 0)
+			{
+				// Try parsing as numeric index for backwards compatibility
+				try
+				{
+					attributeIndex = static_cast<uint16_t>(std::stoi(attrName));
+				}
+				catch (...)
+				{
+					continue;
+				}
+			}
+
+			float attributeValue;
+
+			// Special handling for paintkit_proto_def_index
+			if (attributeIndex == attributes::paintkit_proto_def_index)
+			{
+				int paintID = it2.value();
+				attributeValue = IntToStupidFloat(paintID);
+			}
+			else
+			{
+				attributeValue = it2.value();
+			}
+
+			m_Skins[index].m_Attributes.push_back({ attributeIndex, attributeValue });
+		}
+	}
+
+	file.close();
+
+#ifdef _DEBUG
+	std::cout << "[SkinChanger] Loaded " << m_Skins.size() << " weapon configurations" << std::endl;
+#endif
 }

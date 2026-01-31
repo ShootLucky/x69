@@ -5,6 +5,7 @@
 #include "../Features/Misc/Misc.h"
 #include "../src/Features/ESP/ESP.h"
 
+// Usando a macro MAKE_HOOK (compatível com código existente)
 MAKE_HOOK(IBaseClientDLL_FrameStageNotify, Memory::GetVFunc(I::BaseClientDLL, 35), void, __fastcall,
 	void* ecx, ClientFrameStage_t curStage)
 {

@@ -7,12 +7,12 @@
 class CHook
 {
 private:
-	void *m_pOriginal = nullptr;
+	void* m_pOriginal = nullptr;
 
 public:
-	CHook(void *pInitFunc);
+	CHook(void* pInitFunc);
 
-	inline void Create(void *pSrc, void *pDst)
+	inline void Create(void* pSrc, void* pDst)
 	{
 		MH_CreateHook(pSrc, pDst, &m_pOriginal);
 	}
@@ -39,7 +39,7 @@ type callconvo Hooks::name::Func(__VA_ARGS__)
 class CHookManager
 {
 private:
-	std::vector<void *> m_vecHookInits = {};
+	std::vector<void*> m_vecHookInits = {};
 
 public:
 	void InitializeAllHooks();
@@ -49,7 +49,7 @@ public:
 		MH_Uninitialize();
 	}
 
-	inline void AddInit(void *pInitFunc)
+	inline void AddInit(void* pInitFunc)
 	{
 		m_vecHookInits.push_back(pInitFunc);
 	}

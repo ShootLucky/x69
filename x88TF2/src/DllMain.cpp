@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <Psapi.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "icons.h"
 #include "stb_image.h"
@@ -12,6 +13,118 @@
 #define GWL_WNDPROC GWLP_WNDPROC
 #endif
 #include "../nemesis.h"
+
+namespace PatternScan
+{
+    std::vector<int> PatternToBytes(const char* pattern)
+    {
+        std::vector<int> bytes;
+        char* start = const_cast<char*>(pattern);
+        char* end = const_cast<char*>(pattern) + strlen(pattern);
+
+        for (char* current = start; current < end; ++current)
+        {
+            if (*current == '?')
+            {
+                ++current;
+                if (*current == '?')
+                    ++current;
+                bytes.push_back(-1);
+            }
+            else
+            {
+                bytes.push_back(strtoul(current, &current, 16));
+            }
+        }
+        return bytes;
+    }
+
+    uintptr_t FindPattern(const char* moduleName, const char* pattern)
+    {
+        HMODULE module = GetModuleHandleA(moduleName);
+        if (!module)
+            return 0;
+
+        MODULEINFO moduleInfo;
+        if (!GetModuleInformation(GetCurrentProcess(), module, &moduleInfo, sizeof(MODULEINFO)))
+            return 0;
+
+        uintptr_t moduleBase = reinterpret_cast<uintptr_t>(module);
+        uintptr_t moduleEnd = moduleBase + moduleInfo.SizeOfImage;
+
+        std::vector<int> patternBytes = PatternToBytes(pattern);
+
+        for (uintptr_t i = moduleBase; i < moduleEnd - patternBytes.size(); ++i)
+        {
+            bool found = true;
+            for (size_t j = 0; j < patternBytes.size(); ++j)
+            {
+                if (patternBytes[j] != -1 && patternBytes[j] != *(reinterpret_cast<uint8_t*>(i + j)))
+                {
+                    found = false;
+                    break;
+                }
+            }
+
+            if (found)
+                return i;
+        }
+
+        return 0;
+    }
+
+    uintptr_t FindPatternWithOffset(const char* moduleName, const char* pattern, int offset = 0, int relativeOffset = 0)
+    {
+        uintptr_t address = FindPattern(moduleName, pattern);
+        if (!address)
+            return 0;
+
+        address += offset;
+
+        if (relativeOffset != 0)
+        {
+            int32_t rel = *reinterpret_cast<int32_t*>(address);
+            address = address + relativeOffset + rel;
+        }
+
+        return address;
+    }
+}
+
+// ============================================================================
+// PATTERN SCANNING INITIALIZATION
+// ============================================================================
+bool InitializePatternScanning()
+{
+    // Check if client.dll is loaded
+    HMODULE clientDll = GetModuleHandleA("client.dll");
+    if (!clientDll)
+    {
+        MessageBoxA(nullptr,
+            "Failed to find client.dll!\n\n"
+            "Make sure the game is running.",
+            "Pattern Scan Error",
+            MB_OK | MB_ICONERROR);
+        return false;
+    }
+
+    // Pattern scanning will be done by the existing Signatures system
+    // We just need to verify the signatures are initialized
+
+    // The signatures are already defined in SkinChanger.cpp:
+    // - GetItemSchema
+    // - CEconItemSchema_GetAttributeDefinition  
+    // - CAttributeList_SetRuntimeAttributeValue
+
+    // These signatures use the SIGNATURE() and MAKE_SIGNATURE() macros
+    // which automatically scan when .Get() is called
+
+    // We can enable pattern scanning mode in SkinChanger
+    g_SkinChanger.SetPatternScanningMode(true);
+
+    return true;
+}
+
 
 static IDirect3DTexture9* icon_texture = nullptr;
 static int selected_weapon = 0;
@@ -31,6 +144,19 @@ IDirect3DStateBlock9* pStateBlock = NULL;
 static std::vector<std::string> config_list;
 static int selected_config = 0;
 static char new_config_name[128] = "";
+
+static int sc_selected_weapon_slot = 0;
+static int sc_paintkit_id = 0;
+static int sc_seed = 0;
+static float sc_wear = 0.01f;
+static int sc_effect_id = 0;
+static bool sc_australium = false;
+static bool sc_festivized = false;
+static int sc_killstreak_tier = 0;
+static int sc_killstreak_effect = 0;
+static char sc_attribute_input[32] = "";
+static char sc_value_input[32] = "";
+
 
 IDirect3DTexture9* LoadTextureFromMemory(LPDIRECT3DDEVICE9 device, const unsigned char* data, int data_size)
 {
@@ -1389,412 +1515,468 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                         gui::end_group_scrollable();
                     }
 
-                    // ============================================================================
-                    // SKIN CHANGER TAB - SEM LISTA DE SKINS (INPUTS MANUAIS)
-                    // ============================================================================
-
-                    if (active_tab == 4)
+                    if (active_tab == 4) // SK
                     {
-                        int current_weapon_index = g_SkinChanger.GetWeaponIndex();
-
-                        // ===== ESTADO DA UI (LOCAL) =====
-                        static int last_weapon_index = -1;
-                        static char input_paintkit[32] = "0";
-                        static char input_wear[32] = "0.0";
-                        static char input_seed[32] = "0";
-                        static bool cb_australium = false;
-                        static bool cb_festivized = false;
-                        static char input_unusual[32] = "0";
-                        static char input_ks_tier[32] = "0";
-                        static char input_ks_effect[32] = "0";
-
-                        // ===== HELPER PARA NOME DA ARMA =====
-                        auto GetWeaponName = [](int index) -> std::string {
-                            switch (index)
-                            {
-                            case 13: case 200: return "Scattergun";
-                            case 18: case 205: return "Rocket Launcher";
-                            case 21: case 208: return "Flame Thrower";
-                            case 19: case 206: return "Grenade Launcher";
-                            case 20: case 207: return "Stickybomb Launcher";
-                            case 15: case 202: return "Minigun";
-                            case 29: case 211: return "Medi Gun";
-                            case 14: case 201: return "Sniper Rifle";
-                            case 16: case 203: return "SMG";
-                            case 24: case 210: return "Revolver";
-                            case 4: case 194: return "Knife";
-                            case 7: case 197: return "Wrench";
-                            case 22: case 209: return "Pistol";
-                            case 10: case 12: case 11: case 9: case 199: return "Shotgun";
-                            case 0: case 190: return "Bat";
-                            case 6: case 196: return "Shovel";
-                            case 2: case 192: return "Fire Axe";
-                            case 1: case 191: return "Bottle";
-                            case 5: case 195: return "Fists";
-                            case 8: case 198: return "Bonesaw";
-                            case 3: case 193: return "Kukri";
-                            case 264: return "Frying Pan";
-                            case 1071: return "Golden Frying Pan";
-                            default: return "Unknown Weapon (" + std::to_string(index) + ")";
-                            }
-                            };
-
-                        // ===== CARREGAR ATRIBUTOS SALVOS =====
-                        if (current_weapon_index != last_weapon_index && current_weapon_index != -1)
-                        {
-                            last_weapon_index = current_weapon_index;
-
-                            // Reset
-                            strcpy_s(input_paintkit, "0");
-                            strcpy_s(input_wear, "0.0");
-                            strcpy_s(input_seed, "0");
-                            cb_australium = false;
-                            cb_festivized = false;
-                            strcpy_s(input_unusual, "0");
-                            strcpy_s(input_ks_tier, "0");
-                            strcpy_s(input_ks_effect, "0");
-
-                            // Carregar do SkinChanger
-                            const auto& skin_info = g_SkinChanger.GetSkinInfo(current_weapon_index);
-                            for (const auto& attr : skin_info.m_Attributes)
-                            {
-                                if (attr.attributeIndex == 834) // paintkit
-                                {
-                                    int paintkit_id = *reinterpret_cast<const int*>(&attr.attributeValue);
-                                    sprintf_s(input_paintkit, "%d", paintkit_id);
-                                }
-                                else if (attr.attributeIndex == 725) // wear
-                                {
-                                    sprintf_s(input_wear, "%.2f", attr.attributeValue);
-                                }
-                                else if (attr.attributeIndex == 866) // seed
-                                {
-                                    sprintf_s(input_seed, "%d", static_cast<int>(attr.attributeValue));
-                                }
-                                else if (attr.attributeIndex == 2027) // australium
-                                {
-                                    cb_australium = true;
-                                }
-                                else if (attr.attributeIndex == 2053) // festivized
-                                {
-                                    cb_festivized = true;
-                                }
-                                else if (attr.attributeIndex == 134) // unusual
-                                {
-                                    sprintf_s(input_unusual, "%d", static_cast<int>(attr.attributeValue));
-                                }
-                                else if (attr.attributeIndex == 2025) // killstreak tier
-                                {
-                                    sprintf_s(input_ks_tier, "%d", static_cast<int>(attr.attributeValue));
-                                }
-                                else if (attr.attributeIndex == 2013) // killstreak effect
-                                {
-                                    sprintf_s(input_ks_effect, "%d", static_cast<int>(attr.attributeValue));
-                                }
-                            }
-                        }
-
-                        // ===== APLICAR ATRIBUTOS =====
-                        auto ApplyAttributes = [&]() {
-                            if (current_weapon_index == -1) return;
-
-                            // Limpar todos os atributos
-                            const auto& skin_info = g_SkinChanger.GetSkinInfo(current_weapon_index);
-                            std::vector<uint16_t> to_remove;
-                            for (const auto& attr : skin_info.m_Attributes)
-                            {
-                                to_remove.push_back(attr.attributeIndex);
-                            }
-                            for (auto idx : to_remove)
-                            {
-                                g_SkinChanger.RemoveAttribute(current_weapon_index, std::to_string(idx));
-                            }
-
-                            // War Paint
-                            int paintkit_id = atoi(input_paintkit);
-                            if (paintkit_id > 0 && !cb_australium)
-                            {
-                                g_SkinChanger.SetAttribute(current_weapon_index, "paintkit_proto_def_index", static_cast<float>(paintkit_id));
-
-                                float wear = static_cast<float>(atof(input_wear));
-                                if (wear < 0.0f) wear = 0.0f;
-                                if (wear > 1.0f) wear = 1.0f;
-                                g_SkinChanger.SetAttribute(current_weapon_index, "set_item_texture_wear", wear);
-
-                                int seed = atoi(input_seed);
-                                if (seed > 0)
-                                {
-                                    g_SkinChanger.SetAttribute(current_weapon_index, "custom_paintkit_seed_lo", static_cast<float>(seed));
-                                }
-                            }
-
-                            // Australium
-                            if (cb_australium)
-                            {
-                                g_SkinChanger.SetAttribute(current_weapon_index, "is_australium_item", 1.0f);
-                            }
-
-                            // Festivized
-                            if (cb_festivized)
-                            {
-                                g_SkinChanger.SetAttribute(current_weapon_index, "is_festivized", 1.0f);
-                            }
-
-                            // Unusual
-                            int unusual_id = atoi(input_unusual);
-                            if (unusual_id > 0)
-                            {
-                                g_SkinChanger.SetAttribute(current_weapon_index, "set_attached_particle", static_cast<float>(unusual_id));
-                            }
-
-                            // Killstreak
-                            int ks_tier = atoi(input_ks_tier);
-                            if (ks_tier > 0)
-                            {
-                                g_SkinChanger.SetAttribute(current_weapon_index, "killstreak_tier", static_cast<float>(ks_tier));
-
-                                int ks_effect = atoi(input_ks_effect);
-                                if (ks_effect > 0)
-                                {
-                                    g_SkinChanger.SetAttribute(current_weapon_index, "killstreak_effect", static_cast<float>(ks_effect));
-                                }
-                            }
-
-                            g_SkinChanger.Save();
-                            };
-
-                        // ===== UI LAYOUT =====
                         ImGui::BeginGroup();
                         {
-                            // COLUNA ESQUERDA
-                            if (gui::begin_group_scrollable("WEAPON CUSTOMIZATION", ImVec2(380, 500), 5.0f, 5.0f))
+                            // COLUNA ESQUERDA - War Paints
+                            if (gui::begin_group_scrollable("WAR PAINTS & ATTRIBUTES", ImVec2(380, 500), 5.0f, 5.0f))
                             {
-                                if (current_weapon_index != -1)
+                                int current_weapon = g_SkinChanger.GetWeaponIndex();
+                                bool has_weapon = (current_weapon != -1);
+
+                                if (has_weapon)
                                 {
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 200, 100, 255));
-                                    ImGui::Text("Current Weapon:");
-                                    ImGui::PopStyleColor();
+                                    // Lista de War Paints
+                                    static const struct {
+                                        const char* name;
+                                        int id;
+                                    } war_paints[] = {
+                                        {"None", 0},
+                                        // Jungle Jackpot Collection (IDs around 700-710)
+                                        {"Park Pigmented", 700},
+                                        {"Sax Waxed", 701},
+                                        {"Yeti Coated", 702},
+                                        {"Croc Dusted", 703},
+                                        {"Macaw Masked", 704},
+                                        {"Piña Polished", 705},
+                                        {"Anodized Aloha", 706},
+                                        {"Bamboo Brushed", 707},
+                                        {"Leopard Printed", 708},
+                                        {"Mannana Peeled", 709},
+                                        {"Tiger Buffed", 710},
+                                        // Infernal Reward Collection (IDs around 711-723)
+                                        {"Fire Glazed", 711},
+                                        {"Bonk Varnished", 712},
+                                        {"Dream Piped", 713},
+                                        {"Freedom Wrapped", 714},
+                                        {"Bank Rolled", 715},
+                                        {"Clover Camo'd", 716},
+                                        {"Kill Covered", 717},
+                                        {"Pizza Polished", 718},
+                                        {"Bloom Buffed", 719},
+                                        {"Cardboard Boxed", 720},
+                                        {"Merc Stained", 721},
+                                        {"Quack Canvassed", 722},
+                                        {"Star Crossed", 723},
+                                        // Decorated War Hero Collection (IDs around 390-399)
+                                        {"Carpet Bomber Mk.II", 397},
+                                        {"Woodland Warrior Mk.II", 390},
+                                        {"Wrapped Reviver Mk.II", 398},
+                                        {"Forest Fire Mk.II", 391},
+                                        {"Night Owl Mk.II", 394},
+                                        {"Woodsy Widowmaker Mk.II", 392},
+                                        {"Autumn Mk.II", 416},
+                                        {"Plaid Potshotter Mk.II", 392},
+                                        {"Civil Servant Mk.II", 399},
+                                        {"Civic Duty Mk.II", 393},
+                                        // Contract Campaigner Collection (IDs around 600-610)
+                                        {"Bovine Blazemaker Mk.II", 391},
+                                        {"Dead Reckoner Mk.II", 605},
+                                        {"Backwoods Boomstick Mk.II", 393},
+                                        {"Masked Mender Mk.II", 399},
+                                        {"Iron Wood Mk.II", 390},
+                                        {"Macabre Web Mk.II", 408},
+                                        {"Nutcracker Mk.II", 409},
+                                        {"Smalltown Bringdown Mk.II", 419},
+                                        // Saxton Select Collection
+                                        {"Dragon Slayer", 800},
+                                        // Winter 2017 Collection (IDs around 420-434)
+                                        {"Miami Element", 420},
+                                        {"Jazzy", 421},
+                                        {"Mosaic", 422},
+                                        {"Cosmic Calamity", 423},
+                                        {"Hana", 424},
+                                        {"Neo Tokyo", 425},
+                                        {"Uranium", 426},
+                                        {"Alien Tech", 427},
+                                        {"Bomber Soul", 428},
+                                        {"Cabin Fevered", 429},
+                                        {"Damascus and Mahogany", 430},
+                                        {"Dovetailed", 431},
+                                        {"Geometrical Teams", 432},
+                                        {"Hazard Warning", 433},
+                                        {"Polar Surprise", 434},
+                                        // Scream Fortress X Collection (IDs around 435-445)
+                                        {"Electroshocked", 435},
+                                        {"Ghost Town", 436},
+                                        {"Tumor Toasted", 437},
+                                        {"Calavera Canvas", 438},
+                                        {"Spectral Shimmered", 439},
+                                        {"Skull Study", 440},
+                                        {"Haunted Ghosts", 441},
+                                        {"Horror Holiday", 442},
+                                        {"Spirit of Halloween", 443},
+                                        {"Totally Boned", 444},
+                                        // Winter 2019 Collection (IDs around 445-455)
+                                        {"Winterland Wrapped", 445},
+                                        {"Smissmas Camo", 446},
+                                        {"Smissmas Village", 447},
+                                        {"Frost Ornamented", 448},
+                                        {"Sleighin' Style", 449},
+                                        {"Snow Covered", 450},
+                                        {"Alpine", 451},
+                                        {"Gift Wrapped", 452},
+                                        {"Igloo", 453},
+                                        {"Seriously Snowed", 454},
+                                        // Scream Fortress XII Collection (IDs around 455-470)
+                                        {"Spectrum Splattered", 455},
+                                        {"Pumpkin Pied", 456},
+                                        {"Mummified Mimic", 457},
+                                        {"Helldriver", 458},
+                                        {"Sweet Toothed", 459},
+                                        {"Crawlspace Critters", 460},
+                                        {"Raving Dead", 461},
+                                        {"Spider's Cluster", 462},
+                                        {"Candy Coated", 463},
+                                        {"Portal Plastered", 464},
+                                        {"Death Deluxe", 465},
+                                        {"Eyestalker", 466},
+                                        {"Gourdy Green", 467},
+                                        {"Spider Season", 468},
+                                        {"Organ-ically Hellraised", 469},
+                                        // Winter 2020 Collection (IDs around 470-482)
+                                        {"Starlight Serenity", 470},
+                                        {"Saccharine Striped", 471},
+                                        {"Frosty Delivery", 472},
+                                        {"Cookie Fortress", 473},
+                                        {"Frozen Aurora", 474},
+                                        {"Elfin Enamel", 475},
+                                        {"Smissmas Spycrabs", 476},
+                                        {"Gingerbread Winner", 477},
+                                        {"Peppermint Swirl", 478},
+                                        {"Gifting Mann's Wrapping Paper", 479},
+                                        {"Glacial Glazed", 480},
+                                        {"Snow Globalization", 481},
+                                        {"Snowflake Swirled", 482},
+                                        // Scream Fortress XIII Collection (IDs around 483-495)
+                                        {"Misfortunate", 483},
+                                        {"Broken Bones", 484},
+                                        {"Party Phantoms", 485},
+                                        {"Necromanced", 486},
+                                        {"Neon-ween", 487},
+                                        {"Polter-Guised", 488},
+                                        {"Swashbuckled", 489},
+                                        {"Kiln and Conquer", 490},
+                                        {"Potent Poison", 491},
+                                        {"Sarsaparilla Sprayed", 492},
+                                        {"Searing Souls", 493},
+                                        {"Simple Spirits", 494},
+                                        {"Skull Cracked", 495},
+                                        // Scream Fortress XIV Collection (IDs around 496-506)
+                                        {"Sacred Slayer", 496},
+                                        {"Bonzo Gnawed", 497},
+                                        {"Ghoul Blaster", 498},
+                                        {"Metalized Soul", 499},
+                                        {"Pumpkin Plastered", 500},
+                                        {"Chilly Autumn", 501},
+                                        {"Sunriser", 502},
+                                        {"Health and Hell", 503},
+                                        {"Health and Hell (Green)", 504},
+                                        {"Hypergon", 505},
+                                        {"Cream Corned", 506},
+                                        // Summer 2023 Collection (IDs around 507-517)
+                                        {"Sky Stallion", 507},
+                                        {"Business Class", 508},
+                                        {"Deadly Dragon", 509},
+                                        {"Mechanized Monster", 510},
+                                        {"Steel Brushed", 511},
+                                        {"Warborn", 512},
+                                        {"Bomb Carrier", 513},
+                                        {"Pacific Peacemaker", 514},
+                                        {"Secretly Serviced", 515},
+                                        {"Team Serviced", 516},
+                                        // Scream Fortress XVI Collection (IDs around 517-528)
+                                        {"Broken Record", 517},
+                                        {"Necropolish", 518},
+                                        {"Stardust", 519},
+                                        {"Graphite Gripped", 520},
+                                        {"Piranha Mania", 521},
+                                        {"Stealth Specialist", 522},
+                                        {"Blackout", 523},
+                                        {"Brawler's Iron", 524},
+                                        {"Gobi Glazed", 525},
+                                        {"Sleek Greek", 526},
+                                        {"Team Charged", 527},
+                                        {"Team Detail", 528},
+                                    };
 
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(200, 200, 100, 255));
-                                    ImGui::Text("%s", GetWeaponName(current_weapon_index).c_str());
-                                    ImGui::PopStyleColor();
+                                    static int selected_paint = 0;
+                                    static int last_clicked_paint = -1;
+                                    static float last_click_time = 0.0f;
+                                    const float double_click_threshold = 0.3f; // 300ms para duplo clique
 
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
-                                    ImGui::Text("ID: %d", current_weapon_index);
-                                    ImGui::PopStyleColor();
-
-                                    ImGui::Spacing();
-                                    ImGui::Separator();
-                                    ImGui::Spacing();
-
-                                    // War Paint ID
                                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
-                                    ImGui::Text("War Paint ID:");
+                                    ImGui::Text("Weapon ID: %d", current_weapon);
                                     ImGui::PopStyleColor();
-
-                                    ImGui::PushItemWidth(360.0f);
-                                    ImGui::InputText("##paintkit", input_paintkit, sizeof(input_paintkit), ImGuiInputTextFlags_CharsDecimal);
-                                    ImGui::PopItemWidth();
 
                                     ImGui::Spacing();
 
-                                    // Wear
+                                    // LISTBOX COM DUPLO CLIQUE
                                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
-                                    ImGui::Text("Wear (0.0 - 1.0):");
+                                    ImGui::Text("Double-click to apply:");
                                     ImGui::PopStyleColor();
 
-                                    ImGui::PushItemWidth(360.0f);
-                                    ImGui::InputText("##wear", input_wear, sizeof(input_wear), ImGuiInputTextFlags_CharsDecimal);
-                                    ImGui::PopItemWidth();
+                                    ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(17, 17, 17, 255));
+                                    ImGui::PushStyleColor(ImGuiCol_Header, gui::GetAccentColor(180));
+                                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, gui::GetAccentColor(200));
+                                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, gui::GetAccentColor(255));
 
-                                    ImGui::Spacing();
+                                    ImGui::BeginChild("##warpaint_list", ImVec2(360.0f, 300.0f), true, ImGuiWindowFlags_NoScrollWithMouse);
 
-                                    // Seed
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
-                                    ImGui::Text("Seed (Pattern):");
-                                    ImGui::PopStyleColor();
-
-                                    ImGui::PushItemWidth(360.0f);
-                                    ImGui::InputText("##seed", input_seed, sizeof(input_seed), ImGuiInputTextFlags_CharsDecimal);
-                                    ImGui::PopItemWidth();
-
-                                    ImGui::Spacing();
-                                    ImGui::Spacing();
-
-                                    // Info
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(120, 120, 120, 255));
-                                    ImGui::TextWrapped("Common War Paint IDs: 17000-17064");
-                                    ImGui::TextWrapped("Wear: 0.0=Factory New, 1.0=Battle Scarred");
-                                    ImGui::PopStyleColor();
-
-                                    ImGui::Spacing();
-                                    ImGui::Separator();
-                                    ImGui::Spacing();
-
-                                    // Apply button
-                                    if (gui::button("Apply Attributes", ImVec2(360, 35)))
+                                    for (int i = 0; i < IM_ARRAYSIZE(war_paints); i++)
                                     {
-                                        ApplyAttributes();
+                                        bool is_selected = (selected_paint == i);
+
+                                        if (ImGui::Selectable(war_paints[i].name, is_selected))
+                                        {
+                                            float current_time = (float)ImGui::GetTime();
+
+                                            // Detectar duplo clique
+                                            if (last_clicked_paint == i && (current_time - last_click_time) < double_click_threshold)
+                                            {
+                                                // DUPLO CLIQUE - Aplicar a skin
+                                                g_SkinChanger.SetAttribute(current_weapon, "paintkit_proto_def_index", static_cast<float>(war_paints[i].id));
+                                                I::ClientState->ForceFullUpdate();
+
+                                                // Reset do duplo clique
+                                                last_clicked_paint = -1;
+                                                last_click_time = 0.0f;
+                                            }
+                                            else
+                                            {
+                                                // PRIMEIRO CLIQUE - Apenas selecionar
+                                                selected_paint = i;
+                                                last_clicked_paint = i;
+                                                last_click_time = current_time;
+                                            }
+                                        }
+
+                                        if (is_selected)
+                                            ImGui::SetItemDefaultFocus();
                                     }
 
+                                    ImGui::EndChild();
+                                    ImGui::PopStyleColor(4);
+
                                     ImGui::Spacing();
 
-                                    // Clear button
-                                    if (gui::button("Clear All", ImVec2(360, 30)))
+                                    // SEED E WEAR
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
+                                    ImGui::Text("Seed");
+                                    ImGui::PopStyleColor();
+
+                                    static int seed = 0;
+                                    ImGui::PushItemWidth(360.0f);
+                                    if (ImGui::InputInt("##seed", &seed))
                                     {
-                                        const auto& skin_info = g_SkinChanger.GetSkinInfo(current_weapon_index);
-                                        std::vector<uint16_t> to_remove;
-                                        for (const auto& attr : skin_info.m_Attributes)
-                                        {
-                                            to_remove.push_back(attr.attributeIndex);
-                                        }
-                                        for (auto idx : to_remove)
-                                        {
-                                            g_SkinChanger.RemoveAttribute(current_weapon_index, std::to_string(idx));
-                                        }
+                                        if (seed < 0) seed = 0;
+                                        if (seed > 9999) seed = 9999;
+                                    }
+                                    ImGui::PopItemWidth();
 
-                                        strcpy_s(input_paintkit, "0");
-                                        strcpy_s(input_wear, "0.0");
-                                        strcpy_s(input_seed, "0");
-                                        cb_australium = false;
-                                        cb_festivized = false;
-                                        strcpy_s(input_unusual, "0");
-                                        strcpy_s(input_ks_tier, "0");
-                                        strcpy_s(input_ks_effect, "0");
+                                    ImGui::Spacing();
 
-                                        g_SkinChanger.Save();
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
+                                    ImGui::Text("Wear (0.00 - 1.00)");
+                                    ImGui::PopStyleColor();
+
+                                    static float wear = 0.01f;
+                                    ImGui::PushItemWidth(360.0f);
+                                    if (ImGui::SliderFloat("##wear", &wear, 0.0f, 1.0f, "%.2f"))
+                                    {
+                                        g_SkinChanger.SetAttribute(current_weapon, "set_item_texture_wear", wear);
+                                    }
+                                    ImGui::PopItemWidth();
+
+                                    ImGui::Spacing();
+                                    ImGui::Spacing();
+
+                                    // BOTÃO FORCE UPDATE
+                                    if (gui::button("Force Update", ImVec2(360, 30)))
+                                    {
+                                        I::ClientState->ForceFullUpdate();
                                     }
                                 }
                                 else
                                 {
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(200, 100, 100, 255));
-                                    ImGui::TextWrapped("No weapon equipped.");
-                                    ImGui::TextWrapped("Hold a weapon to customize it.");
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 100, 100, 255));
+                                    const char* text = "Equip a weapon to customize";
+                                    float text_width = ImGui::CalcTextSize(text).x;
+                                    ImGui::SetCursorPosX((360 - text_width) * 0.5f);
+                                    ImGui::SetCursorPosY(220);
+                                    ImGui::Text("%s", text);
                                     ImGui::PopStyleColor();
                                 }
-
-                                gui::end_group_scrollable();
                             }
-                            ImGui::EndGroup();
+                            gui::end_group_scrollable();
 
-                            // COLUNA DIREITA
                             ImGui::SameLine(390);
-                            ImGui::BeginGroup();
+
+                            // COLUNA DIREITA - Killstreaks & Effects
+                            if (gui::begin_group_scrollable("KILLSTREAKS & EFFECTS", ImVec2(380, 500), 5.0f, 5.0f))
                             {
-                                if (gui::begin_group_scrollable("SPECIAL ATTRIBUTES", ImVec2(380, 500), 5.0f, 5.0f))
+                                int current_weapon = g_SkinChanger.GetWeaponIndex();
+                                bool has_weapon = (current_weapon != -1);
+
+                                if (has_weapon)
                                 {
-                                    if (current_weapon_index != -1)
+                                    // KILLSTREAKS
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
+                                    ImGui::Text("KILLSTREAKS");
+                                    ImGui::PopStyleColor();
+                                    ImGui::Separator();
+                                    ImGui::Spacing();
+
+                                    static int ks_tier = 0;
+                                    static int ks_sheen = 0;
+                                    static int ks_effect = 0;
+
+                                    const char* tiers[] = { "None", "Basic", "Specialized", "Professional" };
+                                    const char* sheens[] = { "Team Shine", "Deadly Daffodil", "Manndarin", "Mean Green", "Agonizing Emerald", "Hot Rod", "Villainous Violet" };
+                                    const char* effects[] = { "Fire Horns", "Cerebral Discharge", "Tornado", "Flames", "Singularity", "Incinerator", "Hypno-Beam" };
+
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
+                                    ImGui::Text("Tier");
+                                    ImGui::PopStyleColor();
+
+                                    gui::combo("##ks_tier", &ks_tier, tiers, IM_ARRAYSIZE(tiers), 360.0f);
+
+                                    if (ks_tier >= 2)
                                     {
-                                        // Australium
-                                        gui::checkbox("Australium", cb_australium);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(120, 120, 120, 255));
-                                        ImGui::TextWrapped("Makes weapon golden (overrides War Paint)");
-                                        ImGui::PopStyleColor();
-
                                         ImGui::Spacing();
-                                        ImGui::Separator();
-                                        ImGui::Spacing();
-
-                                        // Festivized
-                                        gui::checkbox("Festivized", cb_festivized);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(120, 120, 120, 255));
-                                        ImGui::TextWrapped("Adds festive lights");
-                                        ImGui::PopStyleColor();
-
-                                        ImGui::Spacing();
-                                        ImGui::Separator();
-                                        ImGui::Spacing();
-
-                                        // Unusual Effect
                                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
-                                        ImGui::Text("Unusual Effect ID:");
+                                        ImGui::Text("Sheen");
                                         ImGui::PopStyleColor();
+                                        gui::combo("##ks_sheen", &ks_sheen, sheens, IM_ARRAYSIZE(sheens), 360.0f);
+                                    }
 
-                                        ImGui::PushItemWidth(360.0f);
-                                        ImGui::InputText("##unusual", input_unusual, sizeof(input_unusual), ImGuiInputTextFlags_CharsDecimal);
-                                        ImGui::PopItemWidth();
-
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(120, 120, 120, 255));
-                                        ImGui::TextWrapped("701=Hot, 702=Isotope, 703=Cool, 704=Energy Orb");
-                                        ImGui::PopStyleColor();
-
+                                    if (ks_tier >= 3)
+                                    {
                                         ImGui::Spacing();
-                                        ImGui::Separator();
-                                        ImGui::Spacing();
-
-                                        // Killstreak Tier
                                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
-                                        ImGui::Text("Killstreak Tier (1-3):");
+                                        ImGui::Text("Effect");
                                         ImGui::PopStyleColor();
+                                        gui::combo("##ks_effect", &ks_effect, effects, IM_ARRAYSIZE(effects), 360.0f);
+                                    }
 
-                                        ImGui::PushItemWidth(360.0f);
-                                        ImGui::InputText("##ks_tier", input_ks_tier, sizeof(input_ks_tier), ImGuiInputTextFlags_CharsDecimal);
-                                        ImGui::PopItemWidth();
+                                    ImGui::Spacing();
 
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(120, 120, 120, 255));
-                                        ImGui::TextWrapped("1=Basic, 2=Specialized, 3=Professional");
-                                        ImGui::PopStyleColor();
-
-                                        ImGui::Spacing();
-
-                                        // Killstreak Effect
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
-                                        ImGui::Text("Killstreak Effect ID:");
-                                        ImGui::PopStyleColor();
-
-                                        ImGui::PushItemWidth(360.0f);
-                                        ImGui::InputText("##ks_effect", input_ks_effect, sizeof(input_ks_effect), ImGuiInputTextFlags_CharsDecimal);
-                                        ImGui::PopItemWidth();
-
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(120, 120, 120, 255));
-                                        ImGui::TextWrapped("2002-2008 (Fire Horns, Cerebral Discharge, etc)");
-                                        ImGui::PopStyleColor();
-
-                                        ImGui::Spacing();
-                                        ImGui::Separator();
-                                        ImGui::Spacing();
-
-                                        // Current Attributes
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 200, 100, 255));
-                                        ImGui::Text("Active Attributes:");
-                                        ImGui::PopStyleColor();
-
-                                        const auto& skin_info = g_SkinChanger.GetSkinInfo(current_weapon_index);
-                                        if (skin_info.m_Attributes.empty())
+                                    if (gui::button("Apply Killstreak", ImVec2(360, 30)))
+                                    {
+                                        if (ks_tier == 0)
                                         {
-                                            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
-                                            ImGui::Text("None");
-                                            ImGui::PopStyleColor();
+                                            g_SkinChanger.RemoveAttribute(current_weapon, "killstreak_tier");
+                                            g_SkinChanger.RemoveAttribute(current_weapon, "killstreak_effect");
+                                            g_SkinChanger.RemoveAttribute(current_weapon, "killstreak_idleeffect");
                                         }
                                         else
                                         {
-                                            ImGui::BeginChild("attr_list", ImVec2(360, 120), true);
-                                            for (const auto& attr : skin_info.m_Attributes)
+                                            g_SkinChanger.SetAttribute(current_weapon, "killstreak_tier", static_cast<float>(ks_tier));
+                                            if (ks_tier >= 2)
                                             {
-                                                if (attr.attributeIndex == 834)
-                                                {
-                                                    int paintkit_id = *reinterpret_cast<const int*>(&attr.attributeValue);
-                                                    ImGui::Text("Paint ID: %d", paintkit_id);
-                                                }
-                                                else
-                                                {
-                                                    ImGui::Text("Attr %d: %.2f", attr.attributeIndex, attr.attributeValue);
-                                                }
+                                                g_SkinChanger.SetAttribute(current_weapon, "killstreak_idleeffect", static_cast<float>(ks_sheen + 1));
                                             }
-                                            ImGui::EndChild();
+                                            if (ks_tier >= 3)
+                                            {
+                                                g_SkinChanger.SetAttribute(current_weapon, "killstreak_effect", static_cast<float>(ks_effect + 2002));
+                                            }
                                         }
-                                    }
-                                    else
-                                    {
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
-                                        ImGui::TextWrapped("Hold a weapon to customize.");
-                                        ImGui::PopStyleColor();
+                                        I::ClientState->ForceFullUpdate();
                                     }
 
-                                    gui::end_group_scrollable();
+                                    ImGui::Spacing();
+                                    ImGui::Spacing();
+
+                                    // HALLOWEEN EFFECTS
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
+                                    ImGui::Text("HALLOWEEN EFFECTS");
+                                    ImGui::PopStyleColor();
+                                    ImGui::Separator();
+                                    ImGui::Spacing();
+
+                                    static bool pumpkin_explosions = false;
+                                    static bool green_flames = false;
+                                    static bool voice_mod = false;
+                                    static bool jingle_footsteps = false;
+
+                                    if (gui::checkbox("Pumpkin Explosions", pumpkin_explosions))
+                                    {
+                                        if (pumpkin_explosions)
+                                            g_SkinChanger.SetAttribute(current_weapon, "halloween_pumpkin_explosions", 1.0f);
+                                        else
+                                            g_SkinChanger.RemoveAttribute(current_weapon, "halloween_pumpkin_explosions");
+                                        I::ClientState->ForceFullUpdate();
+                                    }
+
+                                    if (gui::checkbox("Green Flames", green_flames))
+                                    {
+                                        if (green_flames)
+                                            g_SkinChanger.SetAttribute(current_weapon, "halloween_green_flames", 1.0f);
+                                        else
+                                            g_SkinChanger.RemoveAttribute(current_weapon, "halloween_green_flames");
+                                        I::ClientState->ForceFullUpdate();
+                                    }
+
+                                    if (gui::checkbox("Voice Modulation", voice_mod))
+                                    {
+                                        if (voice_mod)
+                                            g_SkinChanger.SetAttribute(current_weapon, "halloween_voice_modulation", 1.0f);
+                                        else
+                                            g_SkinChanger.RemoveAttribute(current_weapon, "halloween_voice_modulation");
+                                        I::ClientState->ForceFullUpdate();
+                                    }
+
+                                    if (gui::checkbox("Jingle Footsteps", jingle_footsteps))
+                                    {
+                                        if (jingle_footsteps)
+                                            g_SkinChanger.SetAttribute(current_weapon, "add_jingle_to_footsteps", 1.0f);
+                                        else
+                                            g_SkinChanger.RemoveAttribute(current_weapon, "add_jingle_to_footsteps");
+                                        I::ClientState->ForceFullUpdate();
+                                    }
+
+                                    ImGui::Spacing();
+                                    ImGui::Spacing();
+
+                                    // ITEM QUALITY
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
+                                    ImGui::Text("ITEM QUALITY");
+                                    ImGui::PopStyleColor();
+                                    ImGui::Separator();
+                                    ImGui::Spacing();
+
+                                    static int quality = 0;
+                                    const char* qualities[] = {
+                                        "Normal", "Genuine", "Vintage", "Unusual", "Unique",
+                                        "Community", "Valve", "Self-Made", "Strange", "Haunted", "Collector's"
+                                    };
+
+                                    gui::combo("##quality", &quality, qualities, IM_ARRAYSIZE(qualities), 360.0f);
+
+                                    ImGui::Spacing();
+
+                                    if (gui::button("Apply Quality", ImVec2(360, 30)))
+                                    {
+                                        if (quality > 0)
+                                            g_SkinChanger.SetAttribute(current_weapon, "loot_rarity", static_cast<float>(quality));
+                                        else
+                                            g_SkinChanger.RemoveAttribute(current_weapon, "loot_rarity");
+                                        I::ClientState->ForceFullUpdate();
+                                    }
                                 }
-                                ImGui::EndGroup();
+                                else
+                                {
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 100, 100, 255));
+                                    const char* text = "Equip a weapon to customize";
+                                    float text_width = ImGui::CalcTextSize(text).x;
+                                    ImGui::SetCursorPosX((360 - text_width) * 0.5f);
+                                    ImGui::SetCursorPosY(220);
+                                    ImGui::Text("%s", text);
+                                    ImGui::PopStyleColor();
+                                }
                             }
+                            gui::end_group_scrollable();
                         }
                         ImGui::EndGroup();
                     }
@@ -2004,7 +2186,8 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
     return oEndScene(pDevice);
 }
 
-LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
     if (alive && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
         return true;
     return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
@@ -2033,13 +2216,16 @@ DWORD WINAPI MainThread(LPVOID lpReserved)
 
     App->Start();
 
+    g_SkinChanger.SetPatternScanningMode(true);
+
     bool attached = false;
     while (!attached && alive)
     {
         if (kiero::init(kiero::RenderType::D3D9) == kiero::Status::Success)
         {
             kiero::bind(42, (void**)&oEndScene, hkEndScene);
-            while (window == NULL && alive) {
+            while (window == NULL && alive)
+            {
                 window = GetProcessWindow();
                 Sleep(100);
             }
@@ -2071,7 +2257,6 @@ DWORD WINAPI MainThread(LPVOID lpReserved)
 
     if (init)
     {
-        // Libera a textura
         if (icon_texture)
         {
             icon_texture->Release();
