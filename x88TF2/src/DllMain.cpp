@@ -753,17 +753,10 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 gui::checkbox("Target Players", CFG::Aimbot_Target_Players);
                                 gui::checkbox("Target Buildings", CFG::Aimbot_Target_Buildings);
                                 gui::checkbox("Target Stickies", CFG::Aimbot_TargetStickies);
-
-                                ImGui::Spacing();
-                                ImGui::Separator();
-                                ImGui::Spacing();
-
                                 gui::checkbox("Team Check", CFG::Aimbot_Projectile_TeamCheck);
                                 gui::checkbox("Ignore Invisible", CFG::Aimbot_Ignore_Invisible);
                                 gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
                                 gui::checkbox("Ignore Taunting", CFG::Aimbot_Ignore_Taunting);
-
-                                ImGui::Spacing();
 
                                 gui::combo("Aim Position", &CFG::Aimbot_Projectile_AimPosition,
                                     std::vector<std::string>{ "Auto", "Head", "Body", "Feet" });
@@ -791,9 +784,6 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
 
                                 gui::slider("Delay Ticks", &CFG::shifting_delay_ticks, 0.f, 20.f);
                                 gui::slider("Delay Hitscan", &CFG::shifting_delay_hitscan, 0.f, 10.f);
-
-                                ImGui::Spacing();
-
                                 ImGui::BeginGroup();
                                 gui::checkbox("Recharge", CFG::shifting_active);
                                 ImGui::SameLine(350.0f);
@@ -809,8 +799,6 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 CFG::shifting_recharge_key_mode = recharge_bind_type;
                                 ImGui::EndGroup();
 
-                                ImGui::Spacing();
-
                                 ImGui::BeginGroup();
                                 gui::checkbox("Warp", CFG::shifting_warp);
                                 ImGui::SameLine(350.0f);
@@ -825,10 +813,6 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 CFG::shifting_warp_key = warp_key;
                                 CFG::shifting_warp_key_mode = warp_bind_type;
                                 ImGui::EndGroup();
-
-                                ImGui::Spacing();
-                                ImGui::Separator();
-                                ImGui::Spacing();
 
                                 gui::checkbox("Seed Prediction", CFG::Exploits_SeedPred_Active);
                                 gui::checkbox("No Spread", CFG::Aimbot_Projectile_NoSpread);
@@ -877,8 +861,6 @@ long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
                                 gui::checkbox("Ignore Invisible", CFG::Aimbot_Ignore_Invisible);
                                 gui::checkbox("Ignore Invulnerable", CFG::Aimbot_Ignore_Invulnerable);
                                 gui::checkbox("Team Check", CFG::Aimbot_TeamCheck);
-
-                                ImGui::Spacing();
                                 ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.f), "Spy Tools");
 
                                 static bool auto_disguise = false;

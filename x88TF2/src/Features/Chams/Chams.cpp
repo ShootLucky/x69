@@ -3,7 +3,7 @@
 #include "../VisualUtils/VisualUtils.h"
 #include "../LagRecords/Backtrack.h"
 
-void SetModelStencilForOutlines(C_BaseEntity* pEntity)
+void SetModelStencilForOutlines(C_BaseEntity * pEntity)
 {
     IMatRenderContext* pRenderContext = I::MaterialSystem->GetRenderContext();
     if (!pRenderContext)

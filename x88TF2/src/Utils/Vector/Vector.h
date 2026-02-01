@@ -5,230 +5,243 @@
 class Vec3
 {
 public:
-	float x = 0.0f, y = 0.0f, z = 0.0f;
+    float x = 0.0f, y = 0.0f, z = 0.0f;
 
 public:
-	Vec3(void)
-	{
-		x = y = z = 0.0f;
-	}
+    Vec3(void)
+    {
+        x = y = z = 0.0f;
+    }
 
-	void Zero()
-	{
-		x = y = z = 0.f;
-	}
+    void Zero()
+    {
+        x = y = z = 0.f;
+    }
 
-	Vec3(float X, float Y, float Z)
-	{
-		x = X; y = Y; z = Z;
-	}
+    Vec3(float X, float Y, float Z)
+    {
+        x = X; y = Y; z = Z;
+    }
 
-	Vec3(float *v)
-	{
-		x = v[0]; y = v[1]; z = v[2];
-	}
+    Vec3(float* v)
+    {
+        x = v[0]; y = v[1]; z = v[2];
+    }
 
-	Vec3(const float *v)
-	{
-		x = v[0]; y = v[1]; z = v[2];
-	}
+    Vec3(const float* v)
+    {
+        x = v[0]; y = v[1]; z = v[2];
+    }
 
-	Vec3(const Vec3 &v)
-	{
-		x = v.x; y = v.y; z = v.z;
-	}
+    Vec3(const Vec3& v)
+    {
+        x = v.x; y = v.y; z = v.z;
+    }
 
-	Vec3 &operator=(const Vec3 &v)
-	{
-		x = v.x; y = v.y; z = v.z; return *this;
-	}
+    Vec3& operator=(const Vec3& v)
+    {
+        x = v.x; y = v.y; z = v.z; return *this;
+    }
 
-	float &operator[](int i)
-	{
-		return ((float *)this)[i];
-	}
+    float& operator[](int i)
+    {
+        return ((float*)this)[i];
+    }
 
-	float operator[](int i) const
-	{
-		return ((float *)this)[i];
-	}
+    float operator[](int i) const
+    {
+        return ((float*)this)[i];
+    }
 
-	Vec3 &operator+=(const Vec3 &v)
-	{
-		x += v.x; y += v.y; z += v.z; return *this;
-	}
+    Vec3& operator+=(const Vec3& v)
+    {
+        x += v.x; y += v.y; z += v.z; return *this;
+    }
 
-	Vec3 &operator-=(const Vec3 &v)
-	{
-		x -= v.x; y -= v.y; z -= v.z; return *this;
-	}
+    Vec3& operator-=(const Vec3& v)
+    {
+        x -= v.x; y -= v.y; z -= v.z; return *this;
+    }
 
-	Vec3 &operator*=(const Vec3 &v)
-	{
-		x *= v.x; y *= v.y; z *= v.z; return *this;
-	}
+    Vec3& operator*=(const Vec3& v)
+    {
+        x *= v.x; y *= v.y; z *= v.z; return *this;
+    }
 
-	Vec3 &operator/=(const Vec3 &v)
-	{
-		x /= v.x; y /= v.y; z /= v.z; return *this;
-	}
+    Vec3& operator/=(const Vec3& v)
+    {
+        x /= v.x; y /= v.y; z /= v.z; return *this;
+    }
 
-	Vec3 &operator+=(float v)
-	{
-		x += v; y += v; z += v; return *this;
-	}
+    Vec3& operator+=(float v)
+    {
+        x += v; y += v; z += v; return *this;
+    }
 
-	Vec3 &operator-=(float v)
-	{
-		x -= v; y -= v; z -= v; return *this;
-	}
+    Vec3& operator-=(float v)
+    {
+        x -= v; y -= v; z -= v; return *this;
+    }
 
-	Vec3 &operator*=(float v)
-	{
-		x *= v; y *= v; z *= v; return *this;
-	}
+    Vec3& operator*=(float v)
+    {
+        x *= v; y *= v; z *= v; return *this;
+    }
 
-	Vec3 &operator/=(float v)
-	{
-		x /= v; y /= v; z /= v; return *this;
-	}
+    Vec3& operator/=(float v)
+    {
+        x /= v; y /= v; z /= v; return *this;
+    }
 
-	Vec3 operator+(const Vec3 &v) const
-	{
-		return Vec3(x + v.x, y + v.y, z + v.z);
-	}
+    Vec3 operator+(const Vec3& v) const
+    {
+        return Vec3(x + v.x, y + v.y, z + v.z);
+    }
 
-	Vec3 operator-(const Vec3 &v) const
-	{
-		return Vec3(x - v.x, y - v.y, z - v.z);
-	}
+    Vec3 operator-(const Vec3& v) const
+    {
+        return Vec3(x - v.x, y - v.y, z - v.z);
+    }
 
-	Vec3 operator*(const Vec3 &v) const
-	{
-		return Vec3(x * v.x, y * v.y, z * v.z);
-	}
+    Vec3 operator*(const Vec3& v) const
+    {
+        return Vec3(x * v.x, y * v.y, z * v.z);
+    }
 
-	Vec3 operator/(const Vec3 &v) const
-	{
-		return Vec3(x / v.x, y / v.y, z / v.z);
-	}
+    Vec3 operator/(const Vec3& v) const
+    {
+        return Vec3(x / v.x, y / v.y, z / v.z);
+    }
 
-	Vec3 operator+(float v) const
-	{
-		return Vec3(x + v, y + v, z + v);
-	}
+    Vec3 operator+(float v) const
+    {
+        return Vec3(x + v, y + v, z + v);
+    }
 
-	Vec3 operator-(float v) const
-	{
-		return Vec3(x - v, y - v, z - v);
-	}
+    Vec3 operator-(float v) const
+    {
+        return Vec3(x - v, y - v, z - v);
+    }
 
-	Vec3 operator*(float v) const
-	{
-		return Vec3(x * v, y * v, z * v);
-	}
+    Vec3 operator*(float v) const
+    {
+        return Vec3(x * v, y * v, z * v);
+    }
 
-	Vec3 operator/(float v) const
-	{
-		return Vec3(x / v, y / v, z / v);
-	}
+    Vec3 operator/(float v) const
+    {
+        return Vec3(x / v, y / v, z / v);
+    }
 
-	void Set(float X = 0.0f, float Y = 0.0f, float Z = 0.0f)
-	{
-		x = X; y = Y; z = Z;
-	}
+    void Set(float X = 0.0f, float Y = 0.0f, float Z = 0.0f)
+    {
+        x = X; y = Y; z = Z;
+    }
 
-	float Length(void) const
-	{
-		return sqrtf(x * x + y * y + z * z);
-	}
+    float Length(void) const
+    {
+        return sqrtf(x * x + y * y + z * z);
+    }
 
-	float LengthSqr(void) const
-	{
-		return (x * x + y * y + z * z);
-	}
+    float LengthSqr(void) const
+    {
+        return (x * x + y * y + z * z);
+    }
 
-	Vec3 Normalized()
-	{
-		float flLengthNormal = 1.f / (1.192092896e-07F + Length());
-		return Vec3(x * flLengthNormal, y * flLengthNormal, z * flLengthNormal);
-	}
+    Vec3 Normalized()
+    {
+        float flLengthNormal = 1.f / (1.192092896e-07F + Length());
+        return Vec3(x * flLengthNormal, y * flLengthNormal, z * flLengthNormal);
+    }
 
-	float Normalize()
-	{
-		float fl_Length = Length();
-		float fl_Length_normal = 1.f / (1.192092896e-07F + fl_Length);
+    float Normalize()
+    {
+        float fl_Length = Length();
+        float fl_Length_normal = 1.f / (1.192092896e-07F + fl_Length);
 
-		x = x * fl_Length_normal;
-		y = y * fl_Length_normal;
-		z = z * fl_Length_normal;
+        x = x * fl_Length_normal;
+        y = y * fl_Length_normal;
+        z = z * fl_Length_normal;
 
-		return fl_Length;
-	}
+        return fl_Length;
+    }
 
-	float NormalizeInPlace()
-	{
-		return Normalize();
-	}
+    float NormalizeInPlace()
+    {
+        return Normalize();
+    }
 
-	// vector = vec3 
-	Vec3 Normalized() const
-	{
-		float fl_Length = Length();
-		float fl_Length_normal = 1.f / (1.192092896e-07F + fl_Length);
+    Vec3 Normalized() const
+    {
+        float fl_Length = Length();
+        float fl_Length_normal = 1.f / (1.192092896e-07F + fl_Length);
 
-		return Vec3(
-			x * fl_Length_normal,
-			y * fl_Length_normal,
-			z * fl_Length_normal
-		);
-	}
+        return Vec3(
+            x * fl_Length_normal,
+            y * fl_Length_normal,
+            z * fl_Length_normal
+        );
+    }
 
-	float Length2D(void) const
-	{
-		return sqrtf(x * x + y * y);
-	}
+    float Length2D(void) const
+    {
+        return sqrtf(x * x + y * y);
+    }
 
-	float Length2DSqr(void) const
-	{
-		return (x * x + y * y);
-	}
+    float Length2DSqr(void) const
+    {
+        return (x * x + y * y);
+    }
 
-	float DistTo(const Vec3 &v) const
-	{
-		return (*this - v).Length();
-	}
+    float DistTo(const Vec3& v) const
+    {
+        return (*this - v).Length();
+    }
 
-	float DistToSqr(const Vec3 &v) const
-	{
-		return (*this - v).LengthSqr();
-	}
+    float DistToSqr(const Vec3& v) const
+    {
+        return (*this - v).LengthSqr();
+    }
 
-	float Dot(const Vec3 &v) const
-	{
-		return (x * v.x + y * v.y + z * v.z);
-	}
+    float Dot(const Vec3& v) const
+    {
+        return (x * v.x + y * v.y + z * v.z);
+    }
 
-	Vec3 Cross(const Vec3 &v) const
-	{
-		return Vec3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
-	}
+    Vec3 Cross(const Vec3& v) const
+    {
+        return Vec3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
+    }
 
-	bool IsZero(void) const
-	{
-		return (x > -0.01f && x < 0.01f &&
-			y > -0.01f && y < 0.01f &&
-			z > -0.01f && z < 0.01f);
-	}
+    bool IsZero(void) const
+    {
+        return (x > -0.01f && x < 0.01f &&
+            y > -0.01f && y < 0.01f &&
+            z > -0.01f && z < 0.01f);
+    }
 
-	Vec3 Scale(float fl) {
-		return Vec3(x * fl, y * fl, z * fl);
-	}
+    Vec3 Scale(float fl) {
+        return Vec3(x * fl, y * fl, z * fl);
+    }
 
-	void Init(float ix, float iy, float iz)
-	{
-		x = ix; y = iy; z = iz;
-	}
+    void Init(float ix, float iy, float iz)
+    {
+        x = ix; y = iy; z = iz;
+    }
+
+    // ========== AMALGAM STYLE UPDATES ==========
+
+    // Verifica se o vetor tem valores inválidos
+    bool IsValid() const
+    {
+        // CORREÇÃO: Removido std::isfinite para compatibilidade
+        return isfinite(x) && isfinite(y) && isfinite(z);
+    }
+
+    Vec3 Lerp(const Vec3& b, float t) const
+    {
+        return Vec3(x + (b.x - x) * t, y + (b.y - y) * t, z + (b.z - z) * t);
+    }
 };
 
 class Vec2

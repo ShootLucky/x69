@@ -65,6 +65,22 @@ struct ProjTarget_t : AimTarget_t
     float TimeToTarget = 0.0f;
     float ProjectileTime = 0.0f;
     float RequiredCharge = 0.0f;
+    float FOV = 0.0f;           // Field of View to target
+    float DistTo = 0.0f;        // Distance to target
+};
+
+// ========== ARC CALCULATION CACHE ==========
+struct ArcCache_t
+{
+    Vec3 vFrom = {};
+    Vec3 vTo = {};
+    float flSpeed = 0.0f;
+    float flGravity = 0.0f;
+    bool bHighArc = false;
+    Vec3 vAngleResult = {};
+    float flTimeResult = 0.0f;
+    bool bValid = false;
+    int nFrameCalculated = 0;
 };
 
 // ========== PROJECTILE AIMBOT ==========
@@ -87,8 +103,25 @@ private:
     // Info structure para CalculateAngle
     Info_t m_tInfo = {};
 
+    // ========== CACHE SYSTEM PARA PERFORMANCE ==========
+    ArcCache_t m_ArcCache = {};
+    static constexpr int CACHE_VALIDITY_FRAMES = 2;
+
+    // Pre-computed values
+    float m_flCachedGravity = 0.0f;
+    int m_nLastGravityFrame = 0;
+
 private:
     bool GetProjectileInfo(C_TFWeaponBase* pWeapon);
+
+    // ========== OPTIMIZED ARC CALCULATION ==========
+    bool CalcProjAngle_Optimized(
+        const Vec3& vFrom,
+        const Vec3& vTo,
+        Vec3& vAngleOut,
+        float& flTimeOut,
+        bool bHighArc = false
+    );
 
     bool CalcProjAngle(
         const Vec3& vFrom,
@@ -187,6 +220,10 @@ private:
         C_TFWeaponBase* pWeapon,
         bool bVisuals = true
     );
+
+    // ========== HELPER FUNCTIONS ==========
+    inline float GetCachedGravity();
+    inline bool IsCacheValid(const ArcCache_t& cache, const Vec3& vFrom, const Vec3& vTo, float flSpeed, bool bHighArc);
 
 public:
     // ========== PUBLIC FUNCTIONS ==========
